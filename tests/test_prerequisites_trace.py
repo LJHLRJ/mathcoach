@@ -1,9 +1,5 @@
 """先修链诊断：BFS 沿先修边向上 1—2 层，识别概念缺口。"""
-from datetime import datetime, timezone
-
-from mathcoach.domain.prerequisites import Gap, MistakeStat, trace_gap
-
-NOW = datetime(2026, 11, 21, tzinfo=timezone.utc)
+from mathcoach.domain.prerequisites import MistakeStat, trace_gap
 
 PREREQ = {
     "hs-calculus-derivative-001": ["hs-calculus-limit-001"],

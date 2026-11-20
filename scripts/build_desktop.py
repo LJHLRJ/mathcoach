@@ -87,6 +87,13 @@ def main() -> int:
         return 2
 
     if _missing("streamlit") or _missing("PyInstaller") or _missing("webview"):
+        # 先打印命令，保证 --dry-run 在没有打包依赖时也能用于核对参数
+        command = _pyinstaller_command(args.name, args.onefile, args.console)
+        print("将执行：")
+        print(" ".join(command))
+        if args.dry_run:
+            print("--dry-run：未执行构建。")
+            return 0
         _print_prerequisites()
         return 2
 

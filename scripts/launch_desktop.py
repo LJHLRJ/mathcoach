@@ -48,6 +48,8 @@ def streamlit_argv(port: int) -> list[str]:
         f"--server.port={port}",
         "--browser.gatherUsageStats=false",
         "--global.developmentMode=false",
+        # 打包后不需要热重载，禁用文件监听以减少冻结环境开销
+        "--server.fileWatcherType=none",
     ]
 
 
