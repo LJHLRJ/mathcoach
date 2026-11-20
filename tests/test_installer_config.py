@@ -9,6 +9,7 @@ def test_windows_installer_uses_per_user_install():
 
     assert "DefaultDirName={localappdata}\\Programs\\MathCoach" in text
     assert "PrivilegesRequired=lowest" in text
+    assert "OutputDir=dist\\installer" in text
     assert "OutputBaseFilename=MathCoachSetup-{#MyAppVersion}" in text
     assert "UninstallDisplayIcon={app}\\MathCoach.exe" in text
     assert 'Source: "dist\\MathCoach\\*"' in text

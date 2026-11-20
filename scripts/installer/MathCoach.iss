@@ -15,7 +15,8 @@ DefaultDirName={localappdata}\Programs\MathCoach
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-OutputDir=..\..\dist\installer
+; OutputDir 按 ISCC 运行目录解析；CI 从仓库根目录运行
+OutputDir=dist\installer
 OutputBaseFilename=MathCoachSetup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
