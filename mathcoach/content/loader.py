@@ -1,0 +1,77 @@
+"""卡片加载：YAML → dataclass，启动即校验，失败中止。"""
+from pathlib import Path
+
+import yaml
+
+from ..domain.models import Difficulty, Exercise, ExerciseKind, KnowledgeCard, Stage
+from .validator import ValidationResult, validate
+
+CURRICULUM_FILE = "curriculum.yaml"
+
+
+class ContentError(RuntimeError):
+    """内容校验失败：启动中止。"""
+
+
+def _read_yaml(path: Path):
+    with path.open("r", encoding="utf-8") as handle:
+        return yaml.safe_load(handle) or []
+
+
+def load_curriculum(root: Path) -> list[dict]:
+    return _read_yaml(Path(root) / CURRICULUM_FILE)
+
+
+def load_raw_cards(root: Path) -> list[dict]:
+    cards: list[dict] = []
+    for path in sorted(Path(root).rglob("*.yaml")):
+        if path.name == CURRICULUM_FILE:
+            continue
+        data = _read_yaml(path)
+        if isinstance(data, list):
+            cards.extend(data)
+        elif isinstance(data, dict):
+            cards.append(data)
+    return cards
+
+
+def _exercise_from_dict(card_id: str, data: dict) -> Exercise:
+    return Exercise(
+        id=data["id"],
+        card_id=card_id,  # 由所属卡片注入，避免 YAML 重复维护
+        kind=ExerciseKind(data["kind"]),
+        stem=data["stem"],
+        answer=str(data["answer"]),
+        solution_outline=data["solution_outline"],
+        options=tuple(data.get("options") or ()),
+        accepted=tuple(data.get("accepted") or ()),
+        variants=tuple(data.get("variants") or ()),
+    )
+
+
+def _card_from_dict(data: dict) -> KnowledgeCard:
+    return KnowledgeCard(
+        id=data["id"],
+        name=data["name"],
+        stage=Stage(data["stage"]),
+        course=data["course"],
+        chapter=data["chapter"],
+        difficulty=Difficulty(data["difficulty"]),
+        intuition=data["intuition"],
+        definition=data["definition"],
+        mistakes=tuple(data.get("mistakes") or ()),
+        example=data["example"],
+        exercises=tuple(_exercise_from_dict(data["id"], ex) for ex in data["exercises"]),
+        source=data["source"],
+    )
+
+
+def load_content(root: Path, strict: bool) -> tuple[list[KnowledgeCard], ValidationResult]:
+    root = Path(root)
+    curriculum = load_curriculum(root)
+    raw_cards = load_raw_cards(root)
+    result = validate(curriculum, raw_cards, strict=strict)
+    if not result.ok:
+        lines = [f"{issue.location}: {issue.message}" for issue in result.issues]
+        raise ContentError("内容校验失败：\n" + "\n".join(lines))
+    return [_card_from_dict(card) for card in raw_cards], result
