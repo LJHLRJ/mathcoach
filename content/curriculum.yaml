@@ -1,0 +1,5 @@
+- stage: highschool
+  course: 函数与导数
+  module: 函数与导数
+  chapter: 函数概念
+  card_ids: [hs-function-intro-001]
