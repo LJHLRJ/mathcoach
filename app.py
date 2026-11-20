@@ -46,6 +46,7 @@ from mathcoach.session.daily import (
     time_is_up,
 )
 from mathcoach.session.engine import SessionEngine
+from mathcoach.timeutil import local_day, local_day_key
 
 CONTENT_ROOT = Path(__file__).parent / "content"
 MODE_SESSION = "陪练"
@@ -388,7 +389,7 @@ def _render_active_quiz(
 
 def _render_daily_challenge() -> None:
     now = datetime.now(timezone.utc)
-    day_key = now.date().isoformat()
+    day_key = local_day_key(now)
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
     st.subheader("每日挑战 · 5 分钟")
@@ -412,7 +413,7 @@ def _render_daily_challenge() -> None:
         if st.button("开始 5 分钟挑战", key="start_daily"):
             st.session_state.daily_state = DailyState(
                 date_key=day_key,
-                questions=build_daily_questions(cards, now.date()),
+                questions=build_daily_questions(cards, local_day(now)),
                 started_at=now,
             )
             st.rerun()

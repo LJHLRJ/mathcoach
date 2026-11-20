@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 from ..domain.models import MistakeEntry, ReviewItem, ReviewState
+from ..timeutil import end_of_local_day, start_of_local_day_after
 
 REVIEW_LIMIT = 3
 MASTERY_STREAK = 2
@@ -23,10 +24,6 @@ class ReviewPlan:
     today: tuple[ReviewItem, ...]
     tomorrow: tuple[ReviewItem, ...]
     in_three_days: tuple[ReviewItem, ...]
-
-
-def _end_of_day(value: datetime) -> datetime:
-    return value.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
 def next_review(
@@ -45,14 +42,14 @@ def next_review(
             ReviewState.REVIEWING,
             review_count,
             streak,
-            _end_of_day(now + timedelta(days=1)),
+            start_of_local_day_after(now, 1),
         )
 
     return (
         ReviewState.REVIEWING,
         review_count,
         0,
-        _end_of_day(now + timedelta(days=3)),
+        start_of_local_day_after(now, 3),
     )
 
 
@@ -60,9 +57,9 @@ def build_plan(
     items: Iterable[ReviewItem], now: datetime, limit: int = REVIEW_LIMIT
 ) -> ReviewPlan:
     """把待复习项分到三档，每档最多 limit 项。"""
-    today_end = _end_of_day(now)
-    tomorrow_end = _end_of_day(now + timedelta(days=1))
-    three_day_end = _end_of_day(now + timedelta(days=3))
+    today_end = end_of_local_day(now)
+    tomorrow_end = end_of_local_day(now + timedelta(days=1))
+    three_day_end = end_of_local_day(now + timedelta(days=3))
     buckets: dict[str, list[ReviewItem]] = {
         "today": [],
         "tomorrow": [],

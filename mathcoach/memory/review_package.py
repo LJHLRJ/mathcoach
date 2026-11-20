@@ -6,6 +6,7 @@ from datetime import datetime
 
 from ..domain.models import KnowledgeCard
 from ..session.daily import DailyQuestion
+from ..timeutil import end_of_local_day
 from .repository import Repository
 
 REVIEW_PACKAGE_SIZE = 5
@@ -16,10 +17,6 @@ REVIEW_PACKAGE_LIMIT_S = 900
 class ReviewPackage:
     questions: tuple[DailyQuestion, ...]
     reason: str
-
-
-def _end_of_day(value: datetime) -> datetime:
-    return value.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
 def build_review_package(
@@ -37,7 +34,7 @@ def build_review_package(
     if not items:
         return ReviewPackage((), "暂无待复习错题，先完成一次小测。")
 
-    today_end = _end_of_day(now)
+    today_end = end_of_local_day(now)
     ordered = sorted(
         items,
         key=lambda item: (item.due_at > today_end, item.due_at),

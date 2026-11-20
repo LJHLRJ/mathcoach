@@ -26,7 +26,7 @@ from ..domain.models import (
 from ..domain.receipt import build_receipt
 from ..llm.base import Provider, RenderTask
 from ..memory.repository import InMemoryRepository, Repository
-from ..safety.guards import REFUSAL_TEXT, Blocked, detect_injection
+from ..safety.guards import REFUSAL_TEXT, detect_injection
 from ..safety.redlines import (
     ConfirmationRequired,
     WriteBlocked,

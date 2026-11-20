@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from ..domain.models import KnowledgeCard, MistakeEntry, Receipt, Stage
+from ..domain.models import KnowledgeCard, MistakeEntry, Receipt
 from ..memory.repository import Repository
 from ..safety.redlines import (
     ConfirmationRequired,
@@ -60,7 +60,7 @@ def _tag(text: object) -> str:
 
 
 def _when(value: datetime) -> str:
-    return value.strftime("%Y-%m-%d %H:%M")
+    return value.astimezone().strftime("%Y-%m-%d %H:%M")
 
 
 def _knowledge_section(cards: list[KnowledgeCard]) -> str:

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from ..domain.models import Independence, MistakeEntry
+from ..timeutil import end_of_local_day, local_day
 from .repository import Repository
 
 
@@ -30,21 +31,18 @@ class WeeklyReport:
     trend: ErrorTrend
 
 
-def _end_of_day(value: datetime) -> datetime:
-    return value.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-
 def build_error_trend(
     mistakes: list[MistakeEntry], now: datetime, days: int = 7
 ) -> ErrorTrend:
-    this_start = now.date() - timedelta(days=days - 1)
+    today = local_day(now)
+    this_start = today - timedelta(days=days - 1)
     last_start = this_start - timedelta(days=days)
     last_end = this_start - timedelta(days=1)
 
     this_counter: Counter[str] = Counter()
     last_counter: Counter[str] = Counter()
     for mistake in mistakes:
-        day = mistake.created_at.date()
+        day = local_day(mistake.created_at)
         if day >= this_start:
             this_counter[mistake.error_type.value] += 1
         elif last_start <= day <= last_end:
@@ -67,20 +65,22 @@ def build_error_trend(
 def build_weekly_report(
     repository: Repository, now: datetime, days: int = 7
 ) -> WeeklyReport:
-    end = now.date()
+    end = local_day(now)
     start = end - timedelta(days=days - 1)
 
     receipts = [
         receipt
         for receipt in repository.list_receipts(limit=None)
-        if start <= receipt.created_at.date() <= end
+        if start <= local_day(receipt.created_at) <= end
     ]
     mistakes = [
         mistake
         for mistake in repository.list_mistakes(limit=None)
-        if start <= mistake.created_at.date() <= end
+        if start <= local_day(mistake.created_at) <= end
     ]
-    daily = Counter(receipt.created_at.date().isoformat() for receipt in receipts)
+    daily = Counter(
+        local_day(receipt.created_at).isoformat() for receipt in receipts
+    )
     daily_receipts = tuple(
         (
             (start + timedelta(days=offset)).isoformat(),
@@ -97,7 +97,7 @@ def build_weekly_report(
     due_today = sum(
         1
         for item in repository.list_review_items()
-        if item.due_at <= _end_of_day(now)
+        if item.due_at <= end_of_local_day(now)
     )
 
     return WeeklyReport(

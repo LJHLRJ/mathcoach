@@ -1,6 +1,5 @@
 """学习包导出：内容、脱敏、确认门与仓库禁写。"""
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 

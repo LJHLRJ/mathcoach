@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from ..domain.models import Independence, ReviewState
+from ..timeutil import end_of_local_day
 from .repository import Repository
 
 
@@ -24,10 +25,6 @@ class DashboardSummary:
     top_courses: tuple[tuple[str, int], ...]
 
 
-def _end_of_day(value: datetime) -> datetime:
-    return value.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-
 def build_dashboard(repository: Repository, now: datetime) -> DashboardSummary:
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
@@ -43,7 +40,7 @@ def build_dashboard(repository: Repository, now: datetime) -> DashboardSummary:
     )
     errors = Counter(mistake.error_type.value for mistake in mistakes)
     courses = Counter(mistake.course for mistake in mistakes)
-    today_end = _end_of_day(now)
+    today_end = end_of_local_day(now)
 
     return DashboardSummary(
         receipts=len(receipts),
