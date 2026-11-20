@@ -25,7 +25,7 @@ from ..domain.models import (
 from .repository import DEFAULT_CONSENT
 from .scheduler import next_review
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA = (
     """
@@ -128,6 +128,26 @@ _SCHEMA = (
 )
 
 
+# 迁移脚本按版本号登记；1 号就是现有 v1 建表脚本，2 号只追加列，不改历史列
+_MIGRATIONS: dict[int, tuple[str, ...]] = {
+    1: _SCHEMA,
+    2: (
+        "ALTER TABLE mistakes ADD COLUMN ease REAL NOT NULL DEFAULT 2.5",
+        "ALTER TABLE mistakes ADD COLUMN interval_days INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE mistakes ADD COLUMN next_review_at TEXT NOT NULL "
+        "DEFAULT '1970-01-01T00:00:00+00:00'",
+    ),
+}
+
+
+def _migrate(connection: sqlite3.Connection, from_version: int) -> None:
+    """从 from_version 逐级迁移到 SCHEMA_VERSION。"""
+    for version in range(from_version + 1, SCHEMA_VERSION + 1):
+        for statement in _MIGRATIONS[version]:
+            connection.execute(statement)
+        connection.execute("UPDATE schema_version SET version = ?", (version,))
+
+
 def _text(value: datetime) -> str:
     return value.isoformat()
 
@@ -141,6 +161,7 @@ class SQLiteRepository:
         self, path: Path | str, consent: Consent | None = None
     ) -> None:
         self.path = Path(path)
+        self.db_path = str(self.path)  # 兼容迁移测试与外部按路径检查 schema
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._connection = sqlite3.connect(str(self.path), check_same_thread=False)
@@ -154,6 +175,7 @@ class SQLiteRepository:
 
     def _create_schema(self) -> None:
         with self._lock, self._connection:
+            # v1 建表脚本全部使用 IF NOT EXISTS，可安全用于全新库和旧库
             for statement in _SCHEMA:
                 self._connection.execute(statement)
             row = self._connection.execute(
@@ -161,11 +183,14 @@ class SQLiteRepository:
             ).fetchone()
             if row is None:
                 self._connection.execute(
-                    "INSERT INTO schema_version(version) VALUES (?)", (SCHEMA_VERSION,)
+                    "INSERT INTO schema_version(version) VALUES (1)"
                 )
-            elif row["version"] != SCHEMA_VERSION:
+                _migrate(self._connection, 1)
+            elif row["version"] < SCHEMA_VERSION:
+                _migrate(self._connection, row["version"])
+            elif row["version"] > SCHEMA_VERSION:
                 raise RuntimeError(
-                    f"数据库版本 {row['version']} 与当前版本 {SCHEMA_VERSION} 不一致"
+                    f"数据库版本 {row['version']} 高于当前版本 {SCHEMA_VERSION}"
                 )
 
     def save_consent(self, consent: Consent) -> None:
