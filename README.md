@@ -52,8 +52,17 @@ export MODEL="your-model"
 
 ## 运行
 
+从源码运行：
+
 ```bash
 streamlit run app.py
+```
+
+也可以安装为本地包后运行（安装包包含 `app.py` 与全部知识卡片）：
+
+```bash
+pip install .
+mathcoach
 ```
 
 ## 测试

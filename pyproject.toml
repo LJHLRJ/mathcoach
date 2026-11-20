@@ -12,12 +12,24 @@ dependencies = [
   "platformdirs>=4.0",
 ]
 
+[project.scripts]
+mathcoach = "mathcoach.launcher:main"
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+py-modules = ["app"]
+
 [tool.setuptools.packages.find]
-include = ["mathcoach*"]
+include = ["mathcoach*", "content*"]
+
+[tool.setuptools.package-data]
+content = ["*.yaml"]
+"content.highschool" = ["*.yaml"]
+"content.undergraduate" = ["*.yaml"]
+"content.graduate" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

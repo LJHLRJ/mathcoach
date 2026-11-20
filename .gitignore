@@ -19,6 +19,11 @@ venv/
 .coverage
 htmlcov/
 
+# 构建产物
+dist/
+build/
+*.egg-info/
+
 # Streamlit
 .streamlit/
 

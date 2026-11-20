@@ -1,0 +1,7 @@
+include README.md
+include pyproject.toml
+include app.py
+recursive-include content *.yaml
+recursive-include content *.py
+recursive-include prompts *.md
+recursive-include docs *.md
