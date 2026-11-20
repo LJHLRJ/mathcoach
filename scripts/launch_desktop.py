@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
@@ -97,7 +98,22 @@ def run_window(port: int) -> None:
     webview.start()
 
 
+def _ensure_std_streams() -> None:
+    """PyInstaller --windowed 下 stdout/stderr 为 None，补齐以兼容 Streamlit 日志。"""
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
+
 def main() -> int:
+    _ensure_std_streams()
+    # Windows 控制台默认 cp1252，错误提示里的中文需要 UTF-8 才能正常输出
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
+
     if SERVER_FLAG in sys.argv:
         index = sys.argv.index(SERVER_FLAG)
         run_streamlit_server(int(sys.argv[index + 1]))

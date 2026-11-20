@@ -24,6 +24,14 @@ def _missing(module: str) -> bool:
     return importlib.util.find_spec(module) is None
 
 
+def _configure_utf8_stdio() -> None:
+    """Windows 控制台默认 cp1252，打印中文会崩溃；统一改为 UTF-8。"""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
+
+
 def _print_prerequisites() -> None:
     print("缺少打包依赖。请先手动执行（脚本不会自动安装）：")
     print("  python -m pip install -r requirements.txt")
@@ -66,6 +74,7 @@ def _pyinstaller_command(name: str, onefile: bool, console: bool) -> list[str]:
 
 
 def main() -> int:
+    _configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="构建 MathCoach 桌面客户端")
     parser.add_argument("--name", default=DEFAULT_NAME, help="产物名称")
     parser.add_argument("--onefile", action="store_true", help="生成单文件产物（启动更慢）")
