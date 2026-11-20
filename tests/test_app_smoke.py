@@ -159,6 +159,28 @@ def test_app_review_package_empty_state(tmp_path, monkeypatch):
     assert any("暂无待复习错题" in info.value for info in at.info)
 
 
+def test_app_export_package_requires_confirmation(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    export_dir = tmp_path / "export"
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    at.selectbox[1].select("导出学习包").run()
+    assert at.subheader[0].value == "导出学习包"
+
+    at.text_input[0].set_value(str(export_dir))
+    at.button[0].click().run()
+    assert not at.exception
+    assert any("导出未执行" in error.value for error in at.error)
+    assert not export_dir.exists()
+
+    at.text_input[1].set_value("我确认执行此操作")
+    at.button[0].click().run()
+    assert not at.exception
+    assert export_dir.exists()
+    assert (export_dir / "learning_package.md").exists()
+    assert (export_dir / "anki.tsv").exists()
+
+
 def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file("app.py", default_timeout=15)

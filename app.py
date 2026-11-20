@@ -8,6 +8,11 @@ import streamlit as st
 from mathcoach.config import content_strict
 from mathcoach.content.loader import ContentError, load_content
 from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
+from mathcoach.export.package import (
+    build_export_artifact,
+    describe_export,
+    write_export,
+)
 from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.dashboard import build_dashboard
 from mathcoach.memory.path import build_learning_path
@@ -51,6 +56,7 @@ MODE_PATH = "学习路径"
 MODE_WEEKLY = "周报"
 MODE_REVIEW = "智能复习包"
 MODE_VARIANTS = "错题变式"
+MODE_EXPORT = "导出学习包"
 MODES = (
     MODE_SESSION,
     MODE_DASHBOARD,
@@ -60,6 +66,7 @@ MODES = (
     MODE_WEEKLY,
     MODE_REVIEW,
     MODE_VARIANTS,
+    MODE_EXPORT,
 )
 
 st.set_page_config(page_title="数学陪练", page_icon="📘")
@@ -656,6 +663,46 @@ def _render_variant_practice() -> None:
         st.rerun()
 
 
+def _render_export() -> None:
+    st.subheader("导出学习包")
+    repository = st.session_state.repository
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        st.info("游客模式不可导出，请先开启本机记忆或错题本。")
+        return
+
+    default_dir = str(Path.home() / "mathcoach-exports")
+    directory = st.text_input("导出目录", value=default_dir, key="export_dir")
+    now = datetime.now(timezone.utc)
+    artifact = build_export_artifact(repository, cards, Path(directory), now)
+
+    st.markdown(f"**导出摘要**：{artifact.summary_text()}")
+    st.code(describe_export(artifact), language="text")
+    for name in artifact.files:
+        st.markdown(f"- {name}")
+    with st.expander("预览 learning_package.md"):
+        st.code(artifact.files["learning_package.md"][:3000], language="markdown")
+    st.caption("只含学习字段，不含聊天原文或身份信息；导出目录不能在仓库内。")
+
+    confirmation = st.text_input(
+        "确认语句（我确认执行此操作）", key="export_confirmation"
+    )
+    if st.button("确认导出", key="confirm_export"):
+        try:
+            written = write_export(
+                artifact,
+                consent=consent,
+                confirmation=confirmation,
+                repository=repository,
+            )
+        except ConfirmationRequired:
+            st.error("导出未执行：请输入完整确认语句“我确认执行此操作”。")
+        except WriteBlocked as exc:
+            st.error(f"导出未执行：{exc.reason}")
+        else:
+            st.success(f"已导出 {len(written)} 个文件到 {directory}")
+
+
 _render_sidebar()
 
 st.title("数学陪练")
@@ -677,5 +724,7 @@ elif mode == MODE_REVIEW:
     _render_review_package()
 elif mode == MODE_VARIANTS:
     _render_variant_practice()
+elif mode == MODE_EXPORT:
+    _render_export()
 else:
     _render_session()
