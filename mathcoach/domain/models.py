@@ -149,6 +149,14 @@ class ReviewItem:
     due_at: datetime
 
 
+@dataclass(frozen=True)
+class AuditEntry:
+    id: int
+    op: str
+    result: str
+    created_at: datetime
+
+
 @dataclass
 class SessionState:
     phase: Phase = Phase.GOAL_CONFIRM
@@ -160,6 +168,7 @@ class SessionState:
     attempts: list[dict] = field(default_factory=list)  # 每次作答快照，供后续诊断使用
     hint_requests: list[str] = field(default_factory=list)  # 本题主动请求过的提示类型
     diagnosis: ErrorType | None = None  # 连错 2 次后的错因诊断结果
+    observed: bool = False  # 本次会话出现过边界请求；只存会话，不写入档案
     goal: str = ""
     started_at: datetime | None = None
     exercise_started_at: datetime | None = None  # 单题计时起点，收据用时按题计算

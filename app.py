@@ -10,6 +10,7 @@ from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
 from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.repository import build_repository, load_consent
 from mathcoach.memory.scheduler import build_plan
+from mathcoach.safety.guards import REFUSAL_TEXT, Blocked
 from mathcoach.session.engine import SessionEngine
 
 CONTENT_ROOT = Path(__file__).parent / "content"
@@ -151,6 +152,7 @@ def _render_sidebar() -> None:
         new_consent = Consent(memory=memory, mistake_book=mistake_book)
         if new_consent != consent:
             repository.save_consent(new_consent)
+            repository.record_audit("consent", "ok")
             new_repository = build_repository(new_consent)
             new_repository.save_consent(new_consent)
             repository.close()
@@ -201,6 +203,8 @@ if view.phase is Phase.GOAL_CONFIRM:
     if st.button("确认目标", key="confirm_goal"):
         try:
             engine.confirm_goal(goal)
+        except Blocked:
+            st.error(REFUSAL_TEXT)
         except ValueError as exc:
             st.error(str(exc))
         else:

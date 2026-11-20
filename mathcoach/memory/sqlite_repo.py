@@ -5,10 +5,11 @@ import json
 import sqlite3
 import threading
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ..domain.models import (
+    AuditEntry,
     Consent,
     ErrorType,
     ExerciseKind,
@@ -363,6 +364,33 @@ class SQLiteRepository:
             ).fetchall()
         return [
             ReviewItem(mistake=self._to_mistake(row), due_at=_datetime(row["due_at"]))
+            for row in rows
+        ]
+
+    def record_audit(
+        self, op: str, result: str, now: datetime | None = None
+    ) -> None:
+        timestamp = _text(now or datetime.now(timezone.utc))
+        with self._lock, self._connection:
+            self._connection.execute(
+                "INSERT INTO audit_log(op, created_at, result) VALUES (?, ?, ?)",
+                (op, timestamp, result),
+            )
+
+    def list_audit(self, limit: int = 50) -> list[AuditEntry]:
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT id, op, result, created_at FROM audit_log "
+                "ORDER BY id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [
+            AuditEntry(
+                id=row["id"],
+                op=row["op"],
+                result=row["result"],
+                created_at=_datetime(row["created_at"]),
+            )
             for row in rows
         ]
 

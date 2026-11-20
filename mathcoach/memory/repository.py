@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
 from ..config import db_path as default_db_path
 from ..domain.models import (
+    AuditEntry,
     Consent,
     MistakeEntry,
     Receipt,
@@ -42,6 +43,12 @@ class Repository(Protocol):
 
     def list_review_items(self) -> list[ReviewItem]: ...
 
+    def record_audit(
+        self, op: str, result: str, now: datetime | None = None
+    ) -> None: ...
+
+    def list_audit(self, limit: int = 50) -> list[AuditEntry]: ...
+
     def close(self) -> None: ...
 
 
@@ -53,6 +60,7 @@ class InMemoryRepository:
         self._receipts: list[Receipt] = []
         self._mistakes: dict[str, MistakeEntry] = {}
         self._due_at: dict[str, datetime] = {}
+        self._audit: list[AuditEntry] = []
 
     def save_consent(self, consent: Consent) -> None:
         self._consent = consent
@@ -126,6 +134,21 @@ class InMemoryRepository:
         ]
         items.sort(key=lambda item: item.due_at)
         return items
+
+    def record_audit(
+        self, op: str, result: str, now: datetime | None = None
+    ) -> None:
+        self._audit.append(
+            AuditEntry(
+                id=len(self._audit) + 1,
+                op=op,
+                result=result,
+                created_at=now or datetime.now(timezone.utc),
+            )
+        )
+
+    def list_audit(self, limit: int = 50) -> list[AuditEntry]:
+        return list(reversed(self._audit))[:limit]
 
     def close(self) -> None:
         return None

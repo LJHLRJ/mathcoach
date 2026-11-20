@@ -26,6 +26,12 @@ from ..domain.models import (
 from ..domain.receipt import build_receipt
 from ..llm.base import Provider, RenderTask
 from ..memory.repository import InMemoryRepository, Repository
+from ..safety.guards import REFUSAL_TEXT, Blocked, detect_injection
+from ..safety.redlines import (
+    ConfirmationRequired,
+    WriteBlocked,
+    assert_write_allowed,
+)
 from .state import SessionView
 
 
@@ -65,6 +71,11 @@ class SessionEngine:
         goal = goal.strip()
         if not goal:
             raise ValueError("目标不能为空")
+        blocked = detect_injection(goal)
+        if blocked is not None:
+            self.state.observed = True
+            self.repository.record_audit("goal", f"blocked:{blocked.reason}")
+            raise blocked
         self.state.goal = goal
         self.state.started_at = datetime.now(timezone.utc)
         self.state.phase = Phase.EXPLAIN
@@ -120,6 +131,13 @@ class SessionEngine:
             raise RuntimeError("当前不在小测阶段")
         exercise = self.current_exercise
         answer_level = self.state.hint_level  # 本次作答实际用到的层级
+        blocked = detect_injection(answer)
+        if blocked is not None:
+            self.state.observed = True
+            self.repository.record_audit("answer", f"blocked:{blocked.reason}")
+            return self._render_quiz(
+                notice=f"{REFUSAL_TEXT} 本次不计入连错。"
+            )
         judgement = evaluate(exercise, answer)
         self.state.attempts.append(
             {
@@ -201,6 +219,18 @@ class SessionEngine:
             and attempt.get("correct") is False
         ]
 
+    def _safe_write(self, op: str, action) -> bool:
+        try:
+            assert_write_allowed(
+                op, consent=self.consent, observed=self.state.observed
+            )
+        except (WriteBlocked, ConfirmationRequired) as exc:
+            self.repository.record_audit(op, f"blocked:{exc.reason}")
+            return False
+        action()
+        self.repository.record_audit(op, "ok")
+        return True
+
     def _record_mistake(self, exercise: Exercise, answer: str) -> None:
         if not self.consent.mistake_book:
             return
@@ -212,29 +242,28 @@ class SessionEngine:
                 self._wrong_answers(exercise.id),
                 tuple(self.state.hint_requests),
             ).error_type
-        self.repository.save_mistake(
-            MistakeEntry(
-                id=uuid4().hex,
-                exercise_id=exercise.id,
-                card_id=self.card.id,
-                stage=self.card.stage,
-                course=self.card.course,
-                exercise_type=exercise.kind,
-                stem=exercise.stem,
-                user_answer=answer,
-                correct_answer=exercise.answer,
-                error_type=error_type,
-                max_hint_level=self.state.max_hint_level,
-                created_at=now,
-                exercise_snapshot={
-                    "id": exercise.id,
-                    "kind": exercise.kind.value,
-                    "stem": exercise.stem,
-                    "options": list(exercise.options),
-                    "solution_outline": exercise.solution_outline,
-                },
-            )
+        entry = MistakeEntry(
+            id=uuid4().hex,
+            exercise_id=exercise.id,
+            card_id=self.card.id,
+            stage=self.card.stage,
+            course=self.card.course,
+            exercise_type=exercise.kind,
+            stem=exercise.stem,
+            user_answer=answer,
+            correct_answer=exercise.answer,
+            error_type=error_type,
+            max_hint_level=self.state.max_hint_level,
+            created_at=now,
+            exercise_snapshot={
+                "id": exercise.id,
+                "kind": exercise.kind.value,
+                "stem": exercise.stem,
+                "options": list(exercise.options),
+                "solution_outline": exercise.solution_outline,
+            },
         )
+        self._safe_write("mistake", lambda: self.repository.save_mistake(entry))
 
     def confirm_diagnosis(self, error_type: str | None = None) -> SessionView:
         if self.state.phase is not Phase.DIAGNOSE:
@@ -249,8 +278,11 @@ class SessionEngine:
         if self.state.diagnosis is not None and self.consent.mistake_book:
             existing = self.repository.find_mistake(self.current_exercise.id)
             if existing is not None:
-                self.repository.save_mistake(
-                    replace(existing, error_type=self.state.diagnosis)
+                self._safe_write(
+                    "mistake",
+                    lambda: self.repository.save_mistake(
+                        replace(existing, error_type=self.state.diagnosis)
+                    ),
                 )
         label = self.state.diagnosis.value if self.state.diagnosis else "未确定"
         return self._set(
@@ -304,12 +336,18 @@ class SessionEngine:
     def _persist_receipt(self, receipt: Receipt) -> None:
         exercise = self.current_exercise
         if self.consent.memory:
-            self.repository.save_receipt(receipt, exercise.id)
+            self._safe_write(
+                "receipt",
+                lambda: self.repository.save_receipt(receipt, exercise.id),
+            )
         if self.consent.mistake_book:
-            self.repository.record_review(
-                exercise.id,
-                independent=receipt.independence is Independence.INDEPENDENT,
-                now=datetime.now(timezone.utc),
+            self._safe_write(
+                "review",
+                lambda: self.repository.record_review(
+                    exercise.id,
+                    independent=receipt.independence is Independence.INDEPENDENT,
+                    now=datetime.now(timezone.utc),
+                ),
             )
 
     def _issue_receipt(self) -> SessionView:
