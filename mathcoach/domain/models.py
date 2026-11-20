@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from uuid import uuid4
 
+from .spaced_repetition import DEFAULT_EASE, DEFAULT_INTERVAL
+
 
 class Stage(str, Enum):
     HIGH_SCHOOL = "highschool"
@@ -142,6 +144,9 @@ class MistakeEntry:
     consecutive_correct: int = 0
     receipt_ids: tuple[str, ...] = ()
     exercise_snapshot: dict[str, object] = field(default_factory=dict)
+    ease: float = DEFAULT_EASE  # SM-2 难度因子，默认 2.5
+    interval_days: int = DEFAULT_INTERVAL  # 当前复习间隔，默认 1 天
+    next_review_at: datetime | None = None  # 下次到期时间；None 表示按 created_at 立即到期
 
 
 @dataclass(frozen=True)

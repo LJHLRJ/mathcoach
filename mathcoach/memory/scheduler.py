@@ -8,11 +8,13 @@
 """
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Iterable
 
 from ..domain.models import MistakeEntry, ReviewItem, ReviewState
+from ..domain.spaced_repetition import Bucket, bucket_for
 from ..timeutil import end_of_local_day, start_of_local_day_after
 
 REVIEW_LIMIT = 3
@@ -85,3 +87,11 @@ def build_plan(
         tomorrow=tuple(buckets["tomorrow"]),
         in_three_days=tuple(buckets["in_three_days"]),
     )
+
+
+def build_review_queue(repo, now: datetime) -> dict[Bucket, list[MistakeEntry]]:
+    """只返回 next_review_at <= now 的条目，按 interval_days 映射到三档。"""
+    queue: dict[Bucket, list[MistakeEntry]] = defaultdict(list)
+    for item in repo.list_due_mistakes(now):
+        queue[bucket_for(item.interval_days)].append(item)
+    return dict(queue)

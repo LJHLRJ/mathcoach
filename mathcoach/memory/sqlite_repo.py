@@ -7,6 +7,7 @@ import threading
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 from ..domain.models import (
     AuditEntry,
@@ -22,6 +23,7 @@ from ..domain.models import (
     ReviewState,
     Stage,
 )
+from ..domain.spaced_repetition import Quality, update_schedule
 from .repository import DEFAULT_CONSENT
 from .scheduler import next_review
 
@@ -264,8 +266,9 @@ class SQLiteRepository:
                         id, exercise_id, card_id, stage, course, exercise_type,
                         stem, user_answer, correct_answer, error_type,
                         max_hint_level, created_at, review_state, review_count,
-                        consecutive_correct, receipt_ids, exercise_snapshot
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        consecutive_correct, receipt_ids, exercise_snapshot,
+                        ease, interval_days, next_review_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         stored.id,
@@ -285,6 +288,9 @@ class SQLiteRepository:
                         stored.consecutive_correct,
                         ",".join(stored.receipt_ids),
                         json.dumps(stored.exercise_snapshot, ensure_ascii=False),
+                        stored.ease,
+                        stored.interval_days,
+                        _text(stored.next_review_at or stored.created_at),
                     ),
                 )
             else:
@@ -335,6 +341,44 @@ class SQLiteRepository:
             ).fetchone()
         return self._to_mistake(row) if row is not None else None
 
+    def add_mistake(self, card_id: str, error_type: str, now: datetime) -> str:
+        """测试与内部迁移用的最小错题写入，返回错题 id。"""
+        identifier = uuid4().hex
+        entry = MistakeEntry(
+            id=identifier,
+            exercise_id=f"{card_id}-{identifier}",  # 保证 exercise_id 唯一
+            card_id=card_id,
+            stage=Stage.HIGH_SCHOOL,
+            course="",
+            exercise_type=ExerciseKind.CHOICE,
+            stem="",
+            user_answer="",
+            correct_answer="",
+            error_type=ErrorType(error_type),
+            max_hint_level=0,
+            created_at=now,
+            next_review_at=now,  # 新错题立即可复习
+        )
+        self.save_mistake(entry)
+        return identifier
+
+    def get_mistake(self, mistake_id: str) -> MistakeEntry | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM mistakes WHERE id = ?", (mistake_id,)
+            ).fetchone()
+        return self._to_mistake(row) if row is not None else None
+
+    def list_due_mistakes(self, now: datetime) -> list[MistakeEntry]:
+        """按 SM-2 的 next_review_at 过滤到期错题，已掌握的不再返回。"""
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT * FROM mistakes WHERE next_review_at <= ? "
+                "AND review_state != ? ORDER BY next_review_at",
+                (_text(now), ReviewState.MASTERED.value),
+            ).fetchall()
+        return [self._to_mistake(row) for row in rows]
+
     def list_mistakes(
         self, limit: int | None = 50, include_mastered: bool = True
     ) -> list[MistakeEntry]:
@@ -352,8 +396,11 @@ class SQLiteRepository:
         return [self._to_mistake(row) for row in rows]
 
     def record_review(
-        self, exercise_id: str, independent: bool, now: datetime
+        self, exercise_id: str, independent: bool | Quality, now: datetime
     ) -> MistakeEntry | None:
+        # 兼容两种调用：旧路径传 bool，新 SM-2 路径传 Quality
+        if isinstance(independent, Quality):
+            return self.record_sm2_review(exercise_id, independent, now)
         with self._lock, self._connection:
             row = self._connection.execute(
                 "SELECT * FROM mistakes WHERE exercise_id = ?", (exercise_id,)
@@ -393,6 +440,51 @@ class SQLiteRepository:
                 review_state=state,
                 review_count=review_count,
                 consecutive_correct=streak,
+            )
+
+    def record_sm2_review(
+        self, mistake_id: str, quality: Quality, now: datetime
+    ) -> MistakeEntry | None:
+        """按 SM-2 更新难度因子与间隔；不改动旧状态机的掌握计数。"""
+        with self._lock, self._connection:
+            row = self._connection.execute(
+                "SELECT * FROM mistakes WHERE id = ?", (mistake_id,)
+            ).fetchone()
+            if row is None:
+                return None
+            entry = self._to_mistake(row)
+            schedule = update_schedule(
+                entry.ease, entry.interval_days, quality, now
+            )
+            self._connection.execute(
+                """
+                UPDATE mistakes SET ease = ?, interval_days = ?, next_review_at = ?
+                WHERE id = ?
+                """,
+                (
+                    schedule.ease,
+                    schedule.interval_days,
+                    _text(schedule.next_review_at),
+                    mistake_id,
+                ),
+            )
+            # 同步旧复习队列，避免复习清单与 SM-2 到期时间分叉
+            cursor = self._connection.execute(
+                "UPDATE review_queue SET due_at = ? "
+                "WHERE mistake_id = ? AND completed = 0",
+                (_text(schedule.next_review_at), mistake_id),
+            )
+            if cursor.rowcount == 0:
+                self._connection.execute(
+                    "INSERT INTO review_queue(mistake_id, due_at, completed) "
+                    "VALUES (?, ?, 0)",
+                    (mistake_id, _text(schedule.next_review_at)),
+                )
+            return replace(
+                entry,
+                ease=schedule.ease,
+                interval_days=schedule.interval_days,
+                next_review_at=schedule.next_review_at,
             )
 
     def list_review_items(self) -> list[ReviewItem]:
@@ -547,4 +639,9 @@ class SQLiteRepository:
                 item for item in row["receipt_ids"].split(",") if item
             ),
             exercise_snapshot=json.loads(row["exercise_snapshot"] or "{}"),
+            ease=row["ease"],
+            interval_days=row["interval_days"],
+            next_review_at=(
+                _datetime(row["next_review_at"]) if row["next_review_at"] else None
+            ),
         )
