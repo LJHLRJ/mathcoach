@@ -48,6 +48,34 @@ class ValidationResult:
         return not self.issues
 
 
+class ValidationError(RuntimeError):
+    """先修关系校验失败。"""
+
+
+def validate_prerequisites(
+    prereq: dict[str, list[str]], card_ids: list[str]
+) -> None:
+    """校验先修关系：卡片存在、不允许自指、DFS 检测环。"""
+    known = set(card_ids)
+    for child, parents in prereq.items():
+        if child not in known:
+            raise ValidationError(f"先修关系引用未知卡片：{child}")
+        for parent in parents:
+            if parent == child:
+                raise ValidationError(f"自指：{child}")
+            if parent not in known:
+                raise ValidationError(f"先修祖先未知：{parent}")
+
+    def visit(node: str, path: list[str]) -> None:
+        if node in path:
+            raise ValidationError(f"先修关系存在环：{' -> '.join(path + [node])}")
+        for parent in prereq.get(node, []):
+            visit(parent, path + [node])
+
+    for node in prereq:
+        visit(node, [])
+
+
 def _blank(data: dict, key: str) -> bool:
     """字段缺失或为空；注意 False / 0 是合法答案，不算空。"""
     return key not in data or data[key] is None or data[key] == "" or data[key] == []

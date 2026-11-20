@@ -7,6 +7,7 @@ from ..domain.models import Difficulty, Exercise, ExerciseKind, KnowledgeCard, S
 from .validator import ValidationResult, validate
 
 CURRICULUM_FILE = "curriculum.yaml"
+PREREQUISITES_FILE = "prerequisites.yaml"
 
 
 class ContentError(RuntimeError):
@@ -25,7 +26,8 @@ def load_curriculum(root: Path) -> list[dict]:
 def load_raw_cards(root: Path) -> list[dict]:
     cards: list[dict] = []
     for path in sorted(Path(root).rglob("*.yaml")):
-        if path.name == CURRICULUM_FILE:
+        # curriculum 与 prerequisites 是索引/关系文件，不是知识卡片
+        if path.name in (CURRICULUM_FILE, PREREQUISITES_FILE):
             continue
         data = _read_yaml(path)
         if isinstance(data, list):
@@ -33,6 +35,20 @@ def load_raw_cards(root: Path) -> list[dict]:
         elif isinstance(data, dict):
             cards.append(data)
     return cards
+
+
+def load_prerequisites(root: Path) -> dict[str, list[str]]:
+    """读取先修关系；文件不存在时返回空关系，便于渐进启用。"""
+    path = Path(root) / PREREQUISITES_FILE
+    if not path.exists():
+        return {}
+    data = _read_yaml(path)
+    if not isinstance(data, dict):
+        raise ContentError(f"{PREREQUISITES_FILE} 必须是字典：card_id -> [先修 card_id]")
+    return {
+        str(child): [str(parent) for parent in (parents or [])]
+        for child, parents in data.items()
+    }
 
 
 def _canonical_answer(value) -> str:

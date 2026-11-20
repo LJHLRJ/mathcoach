@@ -6,7 +6,12 @@ from pathlib import Path
 import streamlit as st
 
 from mathcoach.config import content_strict
-from mathcoach.content.loader import ContentError, load_content
+from mathcoach.content.loader import (
+    ContentError,
+    load_content,
+    load_prerequisites,
+)
+from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
 from mathcoach.export.package import (
     build_export_artifact,
@@ -77,7 +82,11 @@ st.set_page_config(page_title="数学陪练", page_icon="📘")
 def _load_cards():
     try:
         cards, result = load_content(CONTENT_ROOT, strict=content_strict())
-    except ContentError as exc:
+        # 先修关系是启动硬校验：ID 必须存在且无环
+        validate_prerequisites(
+            load_prerequisites(CONTENT_ROOT), [card.id for card in cards]
+        )
+    except (ContentError, ValidationError) as exc:
         st.error(f"内容加载失败：\n{exc}")
         st.stop()
     for warning in result.warnings:
