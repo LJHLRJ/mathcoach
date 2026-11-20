@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import multiprocessing as mp
+import sys
 from enum import Enum
 
 ALLOWED_FUNCTIONS = frozenset(
@@ -41,7 +42,8 @@ ALLOWED_FUNCTIONS = frozenset(
 )
 _BIN_OPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
 _UNARY_OPS = (ast.UAdd, ast.USub)
-DEFAULT_TIMEOUT_S = 2.0
+DEFAULT_TIMEOUT_S = 5.0 if sys.platform == "win32" else 2.0
+# Windows 只有 spawn，子进程需重新导入 sympy，冷启动明显慢于 fork
 
 
 class SymbolicVerdict(str, Enum):
