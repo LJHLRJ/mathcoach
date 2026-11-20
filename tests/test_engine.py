@@ -97,3 +97,40 @@ def test_actions_are_phase_guarded(engine):
         engine.begin_quiz()
     with pytest.raises(ValueError):
         engine.confirm_goal("   ")
+
+
+def test_advance_resets_max_hint_level(engine):
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+
+    # 第 1 题：先答错两次，再请求“给步骤”升到 L4
+    engine.submit_answer("y² = x")
+    engine.retry()
+    engine.submit_answer("x = 1")
+    engine.retry()
+    engine.request_hint("step")
+    engine.retry()
+    view = engine.submit_answer("y = x²")
+    assert view.receipt.max_hint_level == 4
+
+    engine.advance()  # 进入第 2 题，必须把 max_hint_level 归零
+    view = engine.submit_answer("x ≥ 2")  # 第 2 题在 L1 独立答对
+    assert view.receipt.independence is Independence.INDEPENDENT
+    assert view.receipt.max_hint_level == 1
+
+
+def test_wrong_answer_does_not_inflate_max_hint_level(engine):
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+    engine.submit_answer("y² = x")  # 在 L1 作答答错
+    assert engine.state.max_hint_level == 1  # 不是升到 L2 后的 2
+
+
+def test_hint_level_3_uses_card_intuition(engine):
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+    engine.submit_answer("y² = x")  # L1 → L2
+    engine.retry()
+    view = engine.submit_answer("x = 1")  # L2 → L3
+    assert engine.state.hint_level == 3
+    assert engine.card.intuition in view.body

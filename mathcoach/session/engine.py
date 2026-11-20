@@ -91,9 +91,11 @@ class SessionEngine:
         if self.state.phase is not Phase.QUIZ:
             raise RuntimeError("当前不在小测阶段")
         exercise = self.current_exercise
+        answer_level = self.state.hint_level  # 本次作答实际用到的层级
         self.state.attempts.append(
             {"exercise_id": exercise.id, "answer": answer, "hint_level": self.state.hint_level}
         )
+        self.state.max_hint_level = max(self.state.max_hint_level, answer_level)
         if judge(exercise, answer):
             return self._issue_receipt()
 
@@ -114,7 +116,6 @@ class SessionEngine:
 
         self.state.phase = Phase.HINT
         self.state.hint_level = next_level(self.state.hint_level)
-        self.state.max_hint_level = max(self.state.max_hint_level, self.state.hint_level)
         return self._set(
             SessionView(
                 phase=Phase.HINT,
@@ -127,11 +128,11 @@ class SessionEngine:
     def _hint_text(self, level: int) -> str:
         exercise = self.current_exercise
         if level <= 1:
-            return "先圈出题目在问什么，再找已知条件。"
+            return "先说说这题在问什么、考哪个概念？"
         if level == 2:
-            return f"回到概念：{self.card.intuition}"
+            return "先看题目里的关键条件/最高阶项。"
         if level == 3:
-            return f"看一个类似例子：{self.card.example}"
+            return f"回到概念：{self.card.intuition}"
         if level == 4:
             return f"只演示最关键一步：{exercise.solution_outline}"
         if level == 5:
@@ -142,6 +143,7 @@ class SessionEngine:
         if self.state.phase not in (Phase.QUIZ, Phase.HINT):
             raise RuntimeError("当前不能请求提示")
         attempted = {attempt["hint_level"] for attempt in self.state.attempts}
+        # M1 只做门槛判定，实际可达性依赖 M2 连错诊断；测试覆盖门槛逻辑即可。
         level, message = grant_requested_level(self.state.hint_level, kind, attempted)
         self.state.hint_level = level
         self.state.max_hint_level = max(self.state.max_hint_level, level)
@@ -196,6 +198,7 @@ class SessionEngine:
             self.state.phase = Phase.QUIZ
             self.state.hint_level = initial_level()
             self.state.consecutive_wrong = 0
+            self.state.max_hint_level = 0  # 跨题不继承上一题的提示层级
             self.state.exercise_id = self.current_exercise.id
             return self._render_quiz()
 

@@ -112,6 +112,20 @@ def validate(curriculum: list[dict], cards: list[dict], strict: bool) -> Validat
             for key in KIND_REQUIRED[kind]:
                 if _blank(exercise, key):
                     result.issues.append(Issue(ex_location, f"{kind} 题缺少 {key}"))
+            if kind in ("choice", "find_error"):
+                options = exercise.get("options") or []
+                if exercise.get("answer") not in options:
+                    result.issues.append(Issue(ex_location, "answer 不在 options 中"))
+            if kind == "multi":
+                answers = exercise.get("answer")
+                if not isinstance(answers, list):
+                    result.issues.append(Issue(ex_location, "multi 的 answer 必须是列表"))
+                else:
+                    options = set(exercise.get("options") or [])
+                    if not set(answers).issubset(options):
+                        result.issues.append(
+                            Issue(ex_location, "multi 的 answer 含 options 外的元素")
+                        )
 
     for card_id in sorted(referenced - loaded):
         issue = Issue(f"curriculum.card_ids[{card_id}]", "索引引用了未加载的卡片（未完成条目）")

@@ -25,7 +25,10 @@ def independence_for(max_hint_level: int) -> Independence:
 def grant_requested_level(
     current: int, request: str, attempted_levels: set[int]
 ) -> tuple[int, str]:
-    """处理用户主动请求提示，返回 (新层级, 给用户的一句话说明)。"""
+    """处理用户主动请求提示，返回 (新层级, 给用户的一句话说明)。
+
+    M1 中 L5 仅在用户已在 L4 作答过时可达；连错诊断与 L5 的完整触发场景在 M2 补全。
+    """
     if request == "step":
         return MAX_REQUESTED_LEVEL, "按你的要求给步骤，最高到 L4。"
     if request == "answer":

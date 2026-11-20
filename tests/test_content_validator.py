@@ -110,3 +110,26 @@ def test_card_not_referenced_by_curriculum_is_error():
     result = validate(curriculum, [_card()], strict=False)
     assert not result.ok
     assert any("未出现在任何 card_ids" in issue.message for issue in result.issues)
+
+
+def test_choice_answer_must_be_in_options():
+    card = _card()
+    card["exercises"][0]["answer"] = "Z"
+    result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
+    assert not result.ok
+    assert any("answer 不在 options 中" in issue.message for issue in result.issues)
+
+
+def test_multi_answer_must_subset_options():
+    card = _card()
+    card["exercises"][0] = {
+        "id": "hs-001-e1",
+        "kind": "multi",
+        "stem": "题干",
+        "options": ["A", "B"],
+        "answer": ["A", "Z"],
+        "solution_outline": "因为 A",
+    }
+    result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
+    assert not result.ok
+    assert any("multi 的 answer 含 options 外的元素" in issue.message for issue in result.issues)
