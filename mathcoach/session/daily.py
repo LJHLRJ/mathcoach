@@ -45,17 +45,19 @@ class DailyState:
     date_key: str
     questions: tuple[DailyQuestion, ...]
     started_at: datetime
+    time_limit_s: int = DAILY_TIME_LIMIT_S
     index: int = 0
     correct: int = 0
     finished: bool = False
     timed_out: bool = False
     feedback: str = ""
+    persisted: bool = False
 
 
-def build_daily_questions(
-    cards: list[KnowledgeCard], day: date, count: int = DAILY_QUESTION_COUNT
+def build_quiz_questions(
+    cards: list[KnowledgeCard], seed: int, count: int = DAILY_QUESTION_COUNT
 ) -> tuple[DailyQuestion, ...]:
-    """同一天、同一内容集合下结果稳定；优先每个学段各取一题。"""
+    """给定种子确定性抽题，优先每个学段各取一题。"""
     pool = sorted(
         ((card, exercise) for card in cards for exercise in card.exercises),
         key=lambda pair: (pair[0].id, pair[1].id),
@@ -63,7 +65,7 @@ def build_daily_questions(
     if not pool:
         return ()
 
-    rng = random.Random(day.toordinal())
+    rng = random.Random(seed)
     by_stage: dict[str, list[tuple[KnowledgeCard, Exercise]]] = {}
     for card, exercise in pool:
         by_stage.setdefault(card.stage.value, []).append((card, exercise))
@@ -91,12 +93,19 @@ def build_daily_questions(
     return tuple(selected[:count])
 
 
+def build_daily_questions(
+    cards: list[KnowledgeCard], day: date, count: int = DAILY_QUESTION_COUNT
+) -> tuple[DailyQuestion, ...]:
+    """同一天、同一内容集合下结果稳定。"""
+    return build_quiz_questions(cards, day.toordinal(), count)
+
+
 def elapsed_seconds(state: DailyState, now: datetime) -> int:
     return max(0, int((now - state.started_at).total_seconds()))
 
 
 def remaining_seconds(state: DailyState, now: datetime) -> int:
-    return max(0, DAILY_TIME_LIMIT_S - elapsed_seconds(state, now))
+    return max(0, state.time_limit_s - elapsed_seconds(state, now))
 
 
 def time_is_up(state: DailyState, now: datetime) -> bool:
@@ -153,7 +162,7 @@ def build_daily_result(state: DailyState, now: datetime) -> DailyResult:
         date=state.date_key,
         correct=state.correct,
         total=len(state.questions),
-        duration_s=min(DAILY_TIME_LIMIT_S, elapsed_seconds(state, now)),
+        duration_s=min(state.time_limit_s, elapsed_seconds(state, now)),
         completed_at=now,
     )
 

@@ -114,6 +114,51 @@ def test_app_variant_practice_shows_variant(tmp_path, monkeypatch):
     assert any("变式题干" in markdown.value for markdown in at.markdown)
 
 
+def test_app_learning_path_mode(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    at.selectbox[1].select("学习路径").run()
+
+    assert not at.exception
+    assert at.subheader[0].value == "学习路径"
+    assert any("建议下一张" in success.value for success in at.success)
+
+
+def test_app_weekly_report_mode(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    at.selectbox[1].select("周报").run()
+
+    assert not at.exception
+    assert at.subheader[0].value.startswith("学习周报")
+    assert any("错因趋势" in markdown.value for markdown in at.markdown)
+
+
+def test_app_challenge_can_start(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    at.selectbox[1].select("挑战赛").run()
+    assert at.subheader[0].value.startswith("挑战赛")
+
+    at.button[0].click().run()
+    assert not at.exception
+    assert any("剩余" in caption.value for caption in at.caption)
+
+
+def test_app_review_package_empty_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    at.selectbox[1].select("智能复习包").run()
+
+    assert not at.exception
+    assert at.subheader[0].value.startswith("智能复习包")
+    assert any("暂无待复习错题" in info.value for info in at.info)
+
+
 def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file("app.py", default_timeout=15)

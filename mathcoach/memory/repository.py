@@ -9,6 +9,7 @@ from typing import Protocol
 from ..config import db_path as default_db_path
 from ..domain.models import (
     AuditEntry,
+    ChallengeResult,
     Consent,
     DailyResult,
     MistakeEntry,
@@ -54,6 +55,10 @@ class Repository(Protocol):
 
     def get_daily_result(self, day: str) -> DailyResult | None: ...
 
+    def save_challenge_result(self, result: ChallengeResult) -> ChallengeResult: ...
+
+    def list_challenge_results(self, limit: int = 10) -> list[ChallengeResult]: ...
+
     def close(self) -> None: ...
 
 
@@ -67,6 +72,7 @@ class InMemoryRepository:
         self._due_at: dict[str, datetime] = {}
         self._audit: list[AuditEntry] = []
         self._daily: dict[str, DailyResult] = {}
+        self._challenges: list[ChallengeResult] = []
 
     def save_consent(self, consent: Consent) -> None:
         self._consent = consent
@@ -161,6 +167,18 @@ class InMemoryRepository:
 
     def get_daily_result(self, day: str) -> DailyResult | None:
         return self._daily.get(day)
+
+    def save_challenge_result(self, result: ChallengeResult) -> ChallengeResult:
+        stored = replace(result, id=len(self._challenges) + 1)
+        self._challenges.append(stored)
+        return stored
+
+    def list_challenge_results(self, limit: int = 10) -> list[ChallengeResult]:
+        ordered = sorted(
+            self._challenges,
+            key=lambda result: (-result.score, result.duration_s, result.id),
+        )
+        return ordered[:limit]
 
     def close(self) -> None:
         return None

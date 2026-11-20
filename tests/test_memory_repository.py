@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 
 from mathcoach.domain.models import (
+    ChallengeResult,
     Consent,
     DailyResult,
     ErrorType,
@@ -167,5 +168,23 @@ def test_daily_result_persists_across_restart(tmp_path):
     try:
         assert reopened.get_daily_result("2026-11-20") == result
         assert reopened.get_daily_result("2026-11-21") is None
+    finally:
+        reopened.close()
+
+
+def test_challenge_results_persist_and_sort(tmp_path):
+    path = tmp_path / "mathcoach.sqlite3"
+    repository = SQLiteRepository(path)
+    repository.save_challenge_result(ChallengeResult(5, 10, 200, NOW))
+    repository.save_challenge_result(ChallengeResult(8, 10, 250, NOW))
+    repository.close()
+
+    reopened = SQLiteRepository(path)
+    try:
+        best = reopened.list_challenge_results()
+        assert [(entry.score, entry.duration_s) for entry in best] == [
+            (8, 250),
+            (5, 200),
+        ]
     finally:
         reopened.close()

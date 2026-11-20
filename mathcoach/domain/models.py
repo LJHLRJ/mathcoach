@@ -111,6 +111,7 @@ class Receipt:
     independence: Independence
     created_at: datetime
     restatement_quality: str | None = None
+    exercise_id: str = ""
     id: str = field(default_factory=lambda: uuid4().hex)
 
 
@@ -164,6 +165,15 @@ class DailyResult:
     total: int
     duration_s: int
     completed_at: datetime
+
+
+@dataclass(frozen=True)
+class ChallengeResult:
+    score: int
+    total: int
+    duration_s: int
+    created_at: datetime
+    id: int = 0
 
 
 @dataclass

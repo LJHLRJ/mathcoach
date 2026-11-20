@@ -24,4 +24,5 @@ def build_receipt(
         independence=independence_for(max_hint_level),
         created_at=datetime.now(timezone.utc),
         restatement_quality=restatement_quality,
+        exercise_id=exercise.id,
     )

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ..domain.models import (
     AuditEntry,
+    ChallengeResult,
     Consent,
     DailyResult,
     ErrorType,
@@ -113,6 +114,15 @@ _SCHEMA = (
         total INTEGER NOT NULL,
         duration_s INTEGER NOT NULL,
         completed_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS challenge_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        score INTEGER NOT NULL,
+        total INTEGER NOT NULL,
+        duration_s INTEGER NOT NULL,
+        created_at TEXT NOT NULL
     )
     """,
 )
@@ -436,6 +446,41 @@ class SQLiteRepository:
             completed_at=_datetime(row["completed_at"]),
         )
 
+    def save_challenge_result(self, result: ChallengeResult) -> ChallengeResult:
+        with self._lock, self._connection:
+            cursor = self._connection.execute(
+                """
+                INSERT INTO challenge_results(score, total, duration_s, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    result.score,
+                    result.total,
+                    result.duration_s,
+                    _text(result.created_at),
+                ),
+            )
+            result_id = int(cursor.lastrowid)
+        return replace(result, id=result_id)
+
+    def list_challenge_results(self, limit: int = 10) -> list[ChallengeResult]:
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT * FROM challenge_results "
+                "ORDER BY score DESC, duration_s ASC, id ASC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [
+            ChallengeResult(
+                id=row["id"],
+                score=row["score"],
+                total=row["total"],
+                duration_s=row["duration_s"],
+                created_at=_datetime(row["created_at"]),
+            )
+            for row in rows
+        ]
+
     def close(self) -> None:
         with self._lock:
             self._connection.close()
@@ -453,6 +498,7 @@ class SQLiteRepository:
             goal=row["goal"],
             independence=Independence(row["independence"]),
             created_at=_datetime(row["created_at"]),
+            exercise_id=row["exercise_id"],
         )
 
     def _to_mistake(self, row: sqlite3.Row) -> MistakeEntry:
