@@ -48,6 +48,20 @@ st.write(view.body)
 if view.notice:
     st.info(view.notice)
 
+
+def _render_hint_actions() -> None:
+    with st.expander("需要提示？"):
+        if st.button("给步骤（最高 L4）", key="hint_step"):
+            engine.request_hint("step")
+            st.rerun()
+        if st.button("直接给答案（最高 L4）", key="hint_answer"):
+            engine.request_hint("answer")
+            st.rerun()
+        if st.button("开放 L5（需先尝试 L1—L4）", key="hint_level5"):
+            engine.request_hint("level5")
+            st.rerun()
+
+
 if view.phase is Phase.GOAL_CONFIRM:
     goal = st.text_input("今天想练到什么？", key="goal_input")
     if st.button("确认目标", key="confirm_goal"):
@@ -72,21 +86,13 @@ elif view.phase is Phase.QUIZ:
     if st.button("提交答案", key="submit_answer"):
         engine.submit_answer(answer)
         st.rerun()
-    with st.expander("需要提示？"):
-        if st.button("给步骤（最高 L4）", key="hint_step"):
-            engine.request_hint("step")
-            st.rerun()
-        if st.button("直接给答案（最高 L4）", key="hint_answer"):
-            engine.request_hint("answer")
-            st.rerun()
-        if st.button("开放 L5（需先尝试 L1—L4）", key="hint_level5"):
-            engine.request_hint("level5")
-            st.rerun()
+    _render_hint_actions()
 
 elif view.phase is Phase.HINT:
     if st.button("再试一次", key="retry"):
         engine.retry()
         st.rerun()
+    _render_hint_actions()
 
 elif view.phase is Phase.RECEIPT:
     if st.button("继续", key="advance"):

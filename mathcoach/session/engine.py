@@ -73,6 +73,7 @@ class SessionEngine:
         self.state.exercise_id = self.current_exercise.id
         self.state.hint_level = initial_level()
         self.state.consecutive_wrong = 0
+        self.state.exercise_started_at = datetime.now(timezone.utc)
         return self._render_quiz()
 
     def _render_quiz(self) -> SessionView:
@@ -166,8 +167,10 @@ class SessionEngine:
     def _issue_receipt(self) -> SessionView:
         self.state.phase = Phase.RECEIPT
         elapsed = 0
-        if self.state.started_at is not None:
-            elapsed = int((datetime.now(timezone.utc) - self.state.started_at).total_seconds())
+        if self.state.exercise_started_at is not None:
+            elapsed = int(
+                (datetime.now(timezone.utc) - self.state.exercise_started_at).total_seconds()
+            )
         receipt = build_receipt(
             card=self.card,
             exercise=self.current_exercise,
@@ -200,6 +203,7 @@ class SessionEngine:
             self.state.consecutive_wrong = 0
             self.state.max_hint_level = 0  # 跨题不继承上一题的提示层级
             self.state.exercise_id = self.current_exercise.id
+            self.state.exercise_started_at = datetime.now(timezone.utc)
             return self._render_quiz()
 
         self.state.phase = Phase.WRAPUP

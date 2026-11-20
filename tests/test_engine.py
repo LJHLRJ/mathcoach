@@ -1,4 +1,5 @@
 """状态机全部转移路径必须可测，app 不得参与判定。"""
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,8 @@ CONTENT_ROOT = Path(__file__).resolve().parents[1] / "content"
 @pytest.fixture()
 def engine() -> SessionEngine:
     cards, _ = load_content(CONTENT_ROOT, strict=False)
-    return SessionEngine(card=cards[0], provider=OfflineProvider())
+    card = next(card for card in cards if card.id == "hs-function-intro-001")
+    return SessionEngine(card=card, provider=OfflineProvider())
 
 
 def test_happy_path_issues_receipt(engine):
@@ -134,3 +136,12 @@ def test_hint_level_3_uses_card_intuition(engine):
     view = engine.submit_answer("x = 1")  # L2 → L3
     assert engine.state.hint_level == 3
     assert engine.card.intuition in view.body
+
+
+def test_receipt_duration_measures_single_exercise(engine):
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+    # 模拟本题已用时 5 秒；收据应按单题计时而非整个会话
+    engine.state.exercise_started_at = datetime.now(timezone.utc) - timedelta(seconds=5)
+    view = engine.submit_answer("y = x²")
+    assert view.receipt.duration_s >= 5

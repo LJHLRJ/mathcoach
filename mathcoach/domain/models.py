@@ -122,3 +122,4 @@ class SessionState:
     attempts: list[dict] = field(default_factory=list)  # 每次作答快照，供后续诊断使用
     goal: str = ""
     started_at: datetime | None = None
+    exercise_started_at: datetime | None = None  # 单题计时起点，收据用时按题计算
