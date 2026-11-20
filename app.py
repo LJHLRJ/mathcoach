@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import mathcoach
 import streamlit as st
 
 from mathcoach.config import content_strict, resolve_content_root
@@ -54,6 +55,7 @@ from mathcoach.session.daily import (
 from mathcoach.session.diagnosis_view import render_gaps
 from mathcoach.session.engine import SessionEngine
 from mathcoach.timeutil import local_day, local_day_key
+from mathcoach.update_check import UpdateCheckError, check_for_update
 
 CONTENT_ROOT = resolve_content_root(Path(__file__))
 MODE_SESSION = "陪练"
@@ -221,6 +223,33 @@ def _render_answer_input(exercise: Exercise, key_suffix: str | None = None) -> s
     return st.text_input(labels.get(exercise.kind, "输入答案"), key=f"text_{suffix}")
 
 
+def _render_update_section() -> None:
+    with st.expander("关于与更新", expanded=False):
+        st.caption(f"版本 {mathcoach.__version__}")
+        if st.button("检查更新", key="check_update"):
+            try:
+                release = check_for_update(mathcoach.__version__)
+            except UpdateCheckError:
+                st.session_state.update_notice = ("error", None)
+            else:
+                st.session_state.update_notice = (
+                    ("current", None) if release is None else ("update", release)
+                )
+        notice = st.session_state.get("update_notice")
+        if notice is None:
+            return
+        status, release = notice
+        if status == "error":
+            st.caption("无法检查更新（离线或网络不可用）。")
+        elif status == "current":
+            st.caption("已是最新版本。")
+        elif release is not None:
+            st.success(f"发现新版本 {release.version}")
+            if release.notes:
+                st.caption(release.notes[:200])
+            st.link_button("打开下载页", release.page_url)
+
+
 def _render_sidebar() -> None:
     consent: Consent = st.session_state.consent
     repository = st.session_state.repository
@@ -255,6 +284,8 @@ def _render_sidebar() -> None:
             _render_review_plan(repository)
         else:
             st.caption("错题本已关闭。")
+        st.divider()
+        _render_update_section()
 
 
 def _render_hint_actions() -> None:

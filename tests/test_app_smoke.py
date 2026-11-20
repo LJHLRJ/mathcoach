@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
+import mathcoach
 from streamlit.testing.v1 import AppTest
 
 from mathcoach.domain.models import (
@@ -199,6 +200,17 @@ def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
     at.button[0].click().run()
     assert not at.exception
     assert "收据已生成" in at.subheader[0].value
+
+
+def test_app_sidebar_shows_version_and_update_entry(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15).run()
+
+    assert not at.exception
+    assert any(
+        f"版本 {mathcoach.__version__}" in caption.value for caption in at.caption
+    )
+    assert any(button.label == "检查更新" for button in at.button)
 
 
 def test_app_sidebar_shows_persisted_mistake_after_restart(tmp_path, monkeypatch):
