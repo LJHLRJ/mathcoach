@@ -13,6 +13,7 @@ from mathcoach.content.loader import (
 )
 from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
+from mathcoach.domain.prerequisites import Gap, trace_gap
 from mathcoach.export.package import (
     build_export_artifact,
     describe_export,
@@ -21,7 +22,7 @@ from mathcoach.export.package import (
 from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.dashboard import build_dashboard
 from mathcoach.memory.path import build_learning_path
-from mathcoach.memory.report import build_weekly_report
+from mathcoach.memory.report import build_mistake_stats, build_weekly_report
 from mathcoach.memory.repository import build_repository, load_consent
 from mathcoach.memory.review_package import (
     REVIEW_PACKAGE_LIMIT_S,
@@ -50,6 +51,7 @@ from mathcoach.session.daily import (
     submit_daily_answer,
     time_is_up,
 )
+from mathcoach.session.diagnosis_view import render_gaps
 from mathcoach.session.engine import SessionEngine
 from mathcoach.timeutil import local_day, local_day_key
 
@@ -95,6 +97,24 @@ def _load_cards():
 
 
 cards = _load_cards()
+prerequisites = load_prerequisites(CONTENT_ROOT)
+
+
+def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
+    """汇总未掌握错题的先修缺口；同一链路只保留一次。"""
+    stats = build_mistake_stats(repository.list_mistakes(limit=None))
+    entries = repository.list_mistakes(limit=None, include_mastered=False)
+    if card_id is not None:
+        entries = [entry for entry in entries if entry.card_id == card_id]
+    gaps: list[Gap] = []
+    seen: set[tuple[str, ...]] = set()
+    for entry in entries:
+        for gap in trace_gap(entry.card_id, prerequisites, stats):
+            if gap.chain not in seen:
+                seen.add(gap.chain)
+                gaps.append(gap)
+    return gaps
+
 
 if "provider" not in st.session_state:
     st.session_state.provider = build_provider()
@@ -126,6 +146,9 @@ def _render_mistake_book(repository) -> None:
                 f"你的答案：{entry.user_answer} · 正确答案：{entry.correct_answer} · "
                 f"{entry.error_type.value} · {entry.review_state.value}"
             )
+            gaps = _collect_gaps(repository, entry.card_id)
+            if gaps:
+                st.markdown(render_gaps(gaps))
 
 
 def _render_review_plan(repository) -> None:
@@ -339,6 +362,9 @@ def _render_dashboard() -> None:
             "**高频课程**："
             + " · ".join(f"{name} {count}" for name, count in summary.top_courses)
         )
+    gaps = _collect_gaps(st.session_state.repository)
+    if gaps:
+        st.markdown(render_gaps(gaps))
     if summary.receipts == 0 and summary.mistakes == 0:
         st.info("还没有学习记录，先完成一次讲解 → 小测闭环。")
 
@@ -584,7 +610,13 @@ def _render_review_package() -> None:
 
     state: DailyState | None = st.session_state.get("review_state")
     if state is None:
-        package = build_review_package(repository, cards, now)
+        gaps = _collect_gaps(repository)
+        if gaps:
+            st.markdown(render_gaps(gaps))
+        priority = {gap.chain[-1] for gap in gaps}
+        package = build_review_package(
+            repository, cards, now, priority_card_ids=priority
+        )
         if not package.questions:
             st.info(package.reason)
             return

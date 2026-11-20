@@ -24,6 +24,7 @@ def build_review_package(
     cards: list[KnowledgeCard],
     now: datetime,
     count: int = REVIEW_PACKAGE_SIZE,
+    priority_card_ids: set[str] | None = None,
 ) -> ReviewPackage:
     by_exercise = {
         exercise.id: (card, exercise)
@@ -35,9 +36,14 @@ def build_review_package(
         return ReviewPackage((), "暂无待复习错题，先完成一次小测。")
 
     today_end = end_of_local_day(now)
+    priority = priority_card_ids or set()
     ordered = sorted(
         items,
-        key=lambda item: (item.due_at > today_end, item.due_at),
+        key=lambda item: (
+            item.mistake.card_id not in priority,  # 先修缺口链上的卡片优先
+            item.due_at > today_end,
+            item.due_at,
+        ),
     )
     selected: list[DailyQuestion] = []
     seen: set[str] = set()

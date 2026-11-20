@@ -5,7 +5,8 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from ..domain.models import Independence, MistakeEntry
+from ..domain.models import ErrorType, Independence, MistakeEntry
+from ..domain.prerequisites import MistakeStat
 from ..timeutil import end_of_local_day, local_day
 from .repository import Repository
 
@@ -29,6 +30,20 @@ class WeeklyReport:
     daily_receipts: tuple[tuple[str, int], ...]
     top_errors: tuple[tuple[str, int], ...]
     trend: ErrorTrend
+
+
+def build_mistake_stats(mistakes: list[MistakeEntry]) -> dict[str, MistakeStat]:
+    """按卡片聚合错题总数与概念错数，供先修链诊断使用。"""
+    counters: dict[str, list[int]] = {}
+    for mistake in mistakes:
+        current = counters.setdefault(mistake.card_id, [0, 0])
+        current[0] += 1
+        if mistake.error_type is ErrorType.CONCEPT:
+            current[1] += 1
+    return {
+        card_id: MistakeStat(total=total, concept_wrong=concept)
+        for card_id, (total, concept) in counters.items()
+    }
 
 
 def build_error_trend(
