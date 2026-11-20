@@ -1,0 +1,150 @@
+- id: ug-numerical-001
+  name: 误差与有效数字
+  stage: undergraduate
+  course: 数值分析基础
+  chapter: 误差
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 数值计算得到的近似值需要同时看绝对误差和相对误差。
+  definition: 绝对误差 |x−x*|；相对误差 |x−x*|/|x|（x≠0）。
+  mistakes: [相对误差分母用近似值且未说明, 忽略舍入误差累积]
+  example: 真值 100、近似值 99 时，绝对误差为 1，相对误差为 1%。
+  exercises:
+  - id: ug-numerical-001-e1
+    kind: choice
+    stem: 绝对误差的定义是（ ）
+    options: ["|x−x*|", "(x−x*)/x", "x*/x", "|x|"]
+    answer: "|x−x*|"
+    solution_outline: 绝对误差是近似值与真值之差的绝对值。
+  - id: ug-numerical-001-e2
+    kind: fill
+    stem: 真值 100、近似值 99 的相对误差是（ ）
+    answer: "0.01"
+    solution_outline: "|100−99|/100=0.01。"
+  - id: ug-numerical-001-e3
+    kind: truefalse
+    stem: 浮点运算的舍入误差在任何情况下都可以忽略。
+    answer: false
+    solution_outline: 误差可能在迭代中累积或放大。
+    variants: ["真值 50、近似值 49.5 的相对误差是多少？"]
+
+- id: ug-numerical-002
+  name: 二分法
+  stage: undergraduate
+  course: 数值分析基础
+  chapter: 方程求根
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 连续函数在区间两端异号时，区间内必有根。
+  definition: 若 f(a)f(b)<0 且 f 连续，则二分法不断缩小区间，长度每步减半。
+  mistakes: [不检查端点异号, 忘记二分法只适用于连续函数]
+  example: 区间长度 1 二分 10 次后长度约为 1/1024。
+  exercises:
+  - id: ug-numerical-002-e1
+    kind: choice
+    stem: 二分法能保证收敛的前提是（ ）
+    options: ["函数连续且端点异号", "函数可导", "函数单调", "区间长度大于 1"]
+    answer: "函数连续且端点异号"
+    solution_outline: 由介值定理保证区间内存在根。
+  - id: ug-numerical-002-e2
+    kind: fill
+    stem: 区间每二分一次，长度变为原来的（ ）
+    answer: "1/2"
+    solution_outline: 二分法每次取中点，区间长度减半。
+  - id: ug-numerical-002-e3
+    kind: truefalse
+    stem: 二分法每一步都需要计算函数值。
+    answer: true
+    solution_outline: 需要判断中点函数值的符号。
+    variants: ["区间 [0,1] 二分 3 次后长度是多少？"]
+
+- id: ug-numerical-003
+  name: 牛顿迭代法
+  stage: undergraduate
+  course: 数值分析基础
+  chapter: 方程求根
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 用切线逼近曲线，切线与 x 轴的交点作为下一个近似。
+  definition: x_{n+1}=x_n−f(x_n)/f′(x_n)，在单根附近通常二次收敛。
+  mistakes: [导数为 0 时仍迭代, 忽略初值选择]
+  example: 求 √2 可用牛顿法解 f(x)=x²−2=0。
+  exercises:
+  - id: ug-numerical-003-e1
+    kind: choice
+    stem: 牛顿迭代公式是（ ）
+    options: ["x_{n+1}=x_n−f/f′", "x_{n+1}=x_n+f/f′", "x_{n+1}=f/f′", "x_{n+1}=x_n/2"]
+    answer: "x_{n+1}=x_n−f/f′"
+    solution_outline: 由切线方程与 x 轴交点得到。
+  - id: ug-numerical-003-e2
+    kind: fill
+    stem: 牛顿法在单根附近通常具有（ ）次收敛速度
+    answer: "2"
+    solution_outline: 误差平方级下降，即二次收敛。
+  - id: ug-numerical-003-e3
+    kind: truefalse
+    stem: 牛顿法对任意初值都一定收敛。
+    answer: false
+    solution_outline: 初值不佳或导数接近 0 时可能发散。
+    variants: ["写出用牛顿法求 √3 的迭代式。"]
+
+- id: ug-numerical-004
+  name: 插值
+  stage: undergraduate
+  course: 数值分析基础
+  chapter: 插值
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 用已知点构造多项式，近似未知点的函数值。
+  definition: n+1 个互异节点确定唯一的次数不超过 n 的插值多项式。
+  mistakes: [认为节点越多误差一定越小, 忽略龙格现象]
+  example: 两个点确定一条直线，即一次插值多项式。
+  exercises:
+  - id: ug-numerical-004-e1
+    kind: choice
+    stem: n+1 个互异节点可确定次数不超过（ ）的插值多项式
+    options: ["n", "n+1", "2n", "1"]
+    answer: "n"
+    solution_outline: 插值多项式次数不超过节点数减一。
+  - id: ug-numerical-004-e2
+    kind: fill
+    stem: 两个节点确定的是（ ）次插值多项式
+    answer: "1"
+    solution_outline: 两点确定一条直线。
+  - id: ug-numerical-004-e3
+    kind: match
+    stem: 把方法与特点配对（写成 A=1;B=2 的形式）
+    options: ["A 拉格朗日插值", "B 牛顿插值", "1 基函数形式", "2 差商递推"]
+    answer: "A=1;B=2"
+    solution_outline: 拉格朗日用基函数，牛顿用差商。
+    variants: ["三个互异节点确定几次插值多项式？"]
+
+- id: ug-numerical-005
+  name: 数值积分
+  stage: undergraduate
+  course: 数值分析基础
+  chapter: 数值积分
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 用简单几何图形面积近似曲边梯形面积。
+  definition: 梯形公式 ∫_a^b f dx≈(b−a)[f(a)+f(b)]/2；辛普森公式用抛物线近似。
+  mistakes: [步长与节点数混淆, 忘记乘区间长度]
+  example: ∫_0^1 x dx 用梯形公式得 (1)(0+1)/2=1/2，正好精确。
+  exercises:
+  - id: ug-numerical-005-e1
+    kind: choice
+    stem: 梯形公式是（ ）
+    options: ["(b−a)[f(a)+f(b)]/2", "(b−a)f(a)", "(a+b)/2", "f(a)+f(b)"]
+    answer: "(b−a)[f(a)+f(b)]/2"
+    solution_outline: 梯形面积为上下底平均乘高。
+  - id: ug-numerical-005-e2
+    kind: fill
+    stem: ∫_0^1 x dx 用梯形公式计算的结果是（ ）
+    answer: "1/2"
+    solution_outline: (1−0)(0+1)/2=1/2。
+  - id: ug-numerical-005-e3
+    kind: truefalse
+    stem: 辛普森公式对二次多项式是精确的。
+    answer: true
+    solution_outline: 辛普森公式用抛物线插值，二次多项式可精确积分。
+    variants: ["用梯形公式近似 ∫_0^1 x² dx。"]

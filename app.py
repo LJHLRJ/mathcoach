@@ -6,7 +6,7 @@ import streamlit as st
 
 from mathcoach.config import content_strict
 from mathcoach.content.loader import ContentError, load_content
-from mathcoach.domain.models import Consent, Phase
+from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
 from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.repository import build_repository, load_consent
 from mathcoach.memory.scheduler import build_plan
@@ -84,11 +84,64 @@ def _render_review_plan(repository) -> None:
                 st.markdown(f"- {item.mistake.stem}（{item.mistake.error_type.value}）")
 
 
+STAGE_LABELS = {"highschool": "高中", "undergraduate": "本科", "graduate": "研究生"}
+
+
+def _render_card_selector() -> None:
+    labels = {
+        card.id: f"{STAGE_LABELS[card.stage.value]} · {card.course} · {card.name}"
+        for card in cards
+    }
+    card_ids = [card.id for card in cards]
+    current_id = st.session_state.engine.card.id
+    index = card_ids.index(current_id) if current_id in card_ids else 0
+    selected = st.selectbox(
+        "选择卡片",
+        card_ids,
+        index=index,
+        format_func=lambda card_id: labels[card_id],
+        key="card_selector",
+    )
+    if selected != current_id:
+        selected_card = next(card for card in cards if card.id == selected)
+        st.session_state.engine = SessionEngine(
+            card=selected_card,
+            provider=st.session_state.provider,
+            repository=st.session_state.repository,
+            consent=st.session_state.consent,
+        )
+        st.rerun()
+
+
+def _render_answer_input(exercise: Exercise) -> str:
+    attempt = len(engine.state.attempts)
+    suffix = f"{exercise.id}_{attempt}"
+    if exercise.kind in (ExerciseKind.CHOICE, ExerciseKind.FIND_ERROR):
+        if not exercise.options:
+            return st.text_input("输入答案", key=f"text_{suffix}")
+        return st.radio("选择答案", exercise.options, key=f"choice_{suffix}")
+    if exercise.kind is ExerciseKind.TRUEFALSE:
+        return st.radio("判断", ["对", "错"], key=f"bool_{suffix}")
+    if exercise.kind is ExerciseKind.MULTI:
+        selected = st.multiselect(
+            "选择所有正确选项", exercise.options, key=f"multi_{suffix}"
+        )
+        return ",".join(selected)
+    labels = {
+        ExerciseKind.FILL: "输入答案",
+        ExerciseKind.EXPR: "输入表达式（如 x**2 + 1）",
+        ExerciseKind.PROOF_ORDER: "输入步骤顺序（用逗号分隔，如 1,2,3）",
+        ExerciseKind.MATCH: "输入配对（如 A=1;B=2）",
+    }
+    return st.text_input(labels.get(exercise.kind, "输入答案"), key=f"text_{suffix}")
+
+
 def _render_sidebar() -> None:
     consent: Consent = st.session_state.consent
     repository = st.session_state.repository
     with st.sidebar:
         st.header("学习设置")
+        _render_card_selector()
         memory = st.toggle(
             "保存学习收据（本机）", value=consent.memory, key="consent_memory"
         )
@@ -159,11 +212,7 @@ elif view.phase is Phase.EXPLAIN:
         st.rerun()
 
 elif view.phase is Phase.QUIZ:
-    answer = st.radio(
-        "选择答案",
-        view.options,
-        key=f"answer_{engine.state.exercise_id}_{len(engine.state.attempts)}",
-    )
+    answer = _render_answer_input(engine.current_exercise)
     if st.button("提交答案", key="submit_answer"):
         engine.submit_answer(answer)
         st.rerun()

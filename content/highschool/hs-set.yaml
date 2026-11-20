@@ -1,0 +1,152 @@
+- id: hs-set-001
+  name: 集合与元素
+  stage: highschool
+  course: 集合与逻辑
+  chapter: 集合
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 集合是一堆确定对象的整体，元素就是其中的一个对象。
+  definition: 把一些确定的对象看成一个整体就构成集合；对象称为元素，元素与集合之间只有“属于”或“不属于”两种关系。
+  mistakes: [把“接近 1 的数”当成集合, 忽略集合元素的互异性]
+  example: A={1,2,3}，则 1∈A，4∉A。
+  exercises:
+  - id: hs-set-001-e1
+    kind: fill
+    stem: 集合 A={x∈N | x<3} 的元素为（用逗号分隔）
+    answer: "0,1,2"
+    solution_outline: 自然数中满足 x<3 的是 0、1、2。
+  - id: hs-set-001-e2
+    kind: choice
+    stem: 下列对象中，属于集合 {1,2,3} 的是（ ）
+    options: ["0", "1", "4", "5"]
+    answer: "1"
+    solution_outline: 逐个比较，只有 1 在集合中。
+  - id: hs-set-001-e3
+    kind: truefalse
+    stem: 空集是任何集合的子集。
+    answer: true
+    solution_outline: 空集不含元素，因此不违反子集定义。
+    variants: ["集合 {a,b} 的子集个数是多少？"]
+
+- id: hs-set-002
+  name: 集合的运算
+  stage: highschool
+  course: 集合与逻辑
+  chapter: 集合
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 交集找“共同部分”，并集把两边合起来。
+  definition: A∩B={x | x∈A 且 x∈B}；A∪B={x | x∈A 或 x∈B}；A\B 表示属于 A 但不属于 B 的元素。
+  mistakes: [把并集当成交集, 求补集时忽略全集]
+  example: 若 A={1,2}，B={2,3}，则 A∩B={2}，A∪B={1,2,3}。
+  exercises:
+  - id: hs-set-002-e1
+    kind: choice
+    stem: 已知 A={1,2}，B={2,3}，则 A∩B=（ ）
+    options: ["{1}", "{2}", "{3}", "{1,2,3}"]
+    answer: "{2}"
+    solution_outline: 同时属于 A 和 B 的元素只有 2。
+  - id: hs-set-002-e2
+    kind: multi
+    stem: 已知 A={1,2}，B={2,3}，则 A∪B 中的元素有（ ）
+    options: ["1", "2", "3", "4"]
+    answer: ["1", "2", "3"]
+    solution_outline: 并集包含两边的全部元素。
+  - id: hs-set-002-e3
+    kind: fill
+    stem: 已知 A={1,2}，B={2,3}，则 A\B=（ ）
+    answer: "{1}"
+    solution_outline: 从 A 中去掉也属于 B 的 2，剩下 1。
+    variants: ["若 A={1,2,3}，B={3,4}，求 A∩B。"]
+
+- id: hs-set-003
+  name: 充分必要条件
+  stage: highschool
+  course: 集合与逻辑
+  chapter: 常用逻辑用语
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 充分条件保证结论发生，必要条件是被结论逼出来的条件。
+  definition: 若 p⇒q，则 p 是 q 的充分条件，q 是 p 的必要条件；若 p⇔q，则 p 与 q 互为充要条件。
+  mistakes: [把充分条件和必要条件说反, 用特例代替一般证明]
+  example: x>0 是 x²>0 的充分不必要条件。
+  exercises:
+  - id: hs-set-003-e1
+    kind: choice
+    stem: “x>0”是“x²>0”的（ ）
+    options: ["充分不必要条件", "必要不充分条件", "充要条件", "既不充分也不必要条件"]
+    answer: "充分不必要条件"
+    solution_outline: x>0 一定能推出 x²>0，但 x²>0 还可能 x<0。
+  - id: hs-set-003-e2
+    kind: truefalse
+    stem: 若 p 是 q 的充分条件，则 q 是 p 的必要条件。
+    answer: true
+    solution_outline: 这正是充分条件与必要条件的对应定义。
+  - id: hs-set-003-e3
+    kind: proof_order
+    stem: 把“若 p 则 q”的充分性证明排成正确顺序（步骤编号用逗号分隔）
+    answer: "1,2,3"
+    solution_outline: 先假设 p 成立，再依据定义或已知定理推出 q，最后下结论。
+    variants: ["举一个 p 是 q 的必要但不充分的例子。"]
+
+- id: hs-set-004
+  name: 量词与否定
+  stage: highschool
+  course: 集合与逻辑
+  chapter: 常用逻辑用语
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 全称命题的否定是“找到一个反例”，存在命题的否定是“全都不是”。
+  definition: ¬(∀x∈M, p(x)) 等价于 ∃x∈M, ¬p(x)；¬(∃x∈M, p(x)) 等价于 ∀x∈M, ¬p(x)。
+  mistakes: [只否定结论不换量词, 把“至少一个”的否定写成“至多一个”]
+  example: “所有实数都满足 x²≥0”的否定是“存在实数 x 使 x²<0”。
+  exercises:
+  - id: hs-set-004-e1
+    kind: choice
+    stem: 命题“∀x>0，x²>0”的否定是（ ）
+    options: ["∀x>0，x²≤0", "∃x>0，x²≤0", "∃x≤0，x²≤0", "∀x≤0，x²>0"]
+    answer: "∃x>0，x²≤0"
+    solution_outline: 全称量词换存在量词，同时否定结论。
+  - id: hs-set-004-e2
+    kind: fill
+    stem: “至少有一个”的否定是（ ）
+    answer: "一个都没有"
+    solution_outline: 至少一个的反面是数量为零。
+  - id: hs-set-004-e3
+    kind: find_error
+    stem: 否定“∀x∈R，x²≥0”时，下列哪一步错了（ ）
+    options: ["第 1 步：把 ∀ 改为 ∃", "第 2 步：把 x²≥0 改为 x²>0", "第 3 步：写出 ∃x∈R，x²>0"]
+    answer: "第 2 步：把 x²≥0 改为 x²>0"
+    solution_outline: 结论的否定应是 x²<0，而不是 x²>0。
+    variants: ["写出“存在偶数不是整数”的否定。"]
+
+- id: hs-set-005
+  name: 集合计数与子集
+  stage: highschool
+  course: 集合与逻辑
+  chapter: 集合
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 子集个数按每个元素“选或不选”来数。
+  definition: 含 n 个元素的集合有 2^n 个子集、2^n−1 个真子集；容斥原理：|A∪B|=|A|+|B|−|A∩B|。
+  mistakes: [把真子集个数写成 2^n, 忘记空集也算子集]
+  example: "{a,b} 的子集有 ∅、{a}、{b}、{a,b} 共 4 个。"
+  exercises:
+  - id: hs-set-005-e1
+    kind: choice
+    stem: 若 |A|=3，|B|=4，则 |A∪B| 的最大值为（ ）
+    options: ["3", "4", "7", "12"]
+    answer: "7"
+    solution_outline: 两集合不相交时并集元素最多，为 3+4=7。
+  - id: hs-set-005-e2
+    kind: fill
+    stem: 含 3 个元素的集合共有（ ）个子集
+    answer: "8"
+    solution_outline: 每个元素选或不选，共 2³=8 个。
+  - id: hs-set-005-e3
+    kind: match
+    stem: 把左侧概念与右侧数量配对（写成 A=1;B=2 的形式）
+    options: ["A 3 元集合的子集数", "B 3 元集合的真子集数", "1 8", "2 7"]
+    answer: "A=1;B=2"
+    solution_outline: 子集数为 2³=8，真子集数为 8−1=7。
+    variants: ["含 4 个元素的集合有多少个非空真子集？"]

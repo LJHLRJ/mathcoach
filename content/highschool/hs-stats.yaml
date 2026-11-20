@@ -1,0 +1,152 @@
+- id: hs-stats-001
+  name: 随机事件与概率
+  stage: highschool
+  course: 概率统计
+  chapter: 概率初步
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 概率衡量事件发生的可能性，取值范围被限制在 0 到 1。
+  definition: 任何事件 A 的概率满足 0≤P(A)≤1；必然事件概率为 1，不可能事件概率为 0。
+  mistakes: [认为概率可以大于 1, 把频率直接当成概率]
+  example: 掷一枚均匀硬币，正面朝上的概率为 1/2。
+  exercises:
+  - id: hs-stats-001-e1
+    kind: choice
+    stem: 任意事件 A 的概率范围是（ ）
+    options: ["0≤P(A)≤1", "P(A)>1", "−1≤P(A)≤1", "P(A)<0"]
+    answer: "0≤P(A)≤1"
+    solution_outline: 概率是可能性大小的度量，介于 0 与 1 之间。
+  - id: hs-stats-001-e2
+    kind: truefalse
+    stem: 必然事件的概率为 1。
+    answer: true
+    solution_outline: 必然事件一定发生。
+  - id: hs-stats-001-e3
+    kind: fill
+    stem: 不可能事件的概率是（ ）
+    answer: "0"
+    solution_outline: 不可能事件永不发生。
+    variants: ["写出概率为 0.5 的一个随机事件。"]
+
+- id: hs-stats-002
+  name: 古典概型
+  stage: highschool
+  course: 概率统计
+  chapter: 古典概型
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 古典概型要求样本点有限且等可能。
+  definition: 若样本空间有 n 个等可能样本点，事件 A 含 m 个样本点，则 P(A)=m/n。
+  mistakes: [不检查等可能性, 样本空间数错]
+  example: 掷骰子出现偶数的概率为 3/6=1/2。
+  exercises:
+  - id: hs-stats-002-e1
+    kind: choice
+    stem: 掷一枚均匀骰子，出现偶数的概率是（ ）
+    options: ["1/6", "1/3", "1/2", "2/3"]
+    answer: "1/2"
+    solution_outline: 偶数有 2、4、6 三个结果，共 6 个等可能结果。
+  - id: hs-stats-002-e2
+    kind: fill
+    stem: 连续抛两枚均匀硬币，两次都是正面的概率是（ ）
+    answer: "1/4"
+    solution_outline: 样本空间为 4 个等可能结果，只有 1 个符合。
+  - id: hs-stats-002-e3
+    kind: multi
+    stem: 掷一枚均匀骰子，概率为 1/6 的事件有（ ）
+    options: ["点数为1", "点数为2", "点数为偶数", "点数大于4"]
+    answer: ["点数为1", "点数为2"]
+    solution_outline: 单个点数概率为 1/6，偶数为 1/2，大于 4 为 1/3。
+    variants: ["掷骰子出现点数大于 4 的概率是多少？"]
+
+- id: hs-stats-003
+  name: 互斥与独立
+  stage: highschool
+  course: 概率统计
+  chapter: 概率的基本性质
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 互斥是“不能同时发生”，独立是“一个发生不影响另一个”。
+  definition: 互斥事件满足 P(A∪B)=P(A)+P(B)；独立事件满足 P(A∩B)=P(A)P(B)。
+  mistakes: [把互斥当成独立, 加法公式用于非互斥事件]
+  example: 掷骰子出现 1 与出现 2 互斥；两次抛硬币的结果相互独立。
+  exercises:
+  - id: hs-stats-003-e1
+    kind: choice
+    stem: 若 A 与 B 互斥，则（ ）
+    options: ["P(A∪B)=P(A)+P(B)", "P(A∩B)=P(A)P(B)", "P(A)=P(B)", "A 与 B 独立"]
+    answer: "P(A∪B)=P(A)+P(B)"
+    solution_outline: 互斥事件没有交集，概率可直接相加。
+  - id: hs-stats-003-e2
+    kind: fill
+    stem: 若 A、B 独立且 P(A)=P(B)=1/2，则 P(A∩B)=（ ）
+    answer: "1/4"
+    solution_outline: 独立事件交事件概率为乘积 1/4。
+  - id: hs-stats-003-e3
+    kind: truefalse
+    stem: 两个互斥事件一定相互独立。
+    answer: false
+    solution_outline: 互斥事件一个发生会排除另一个，通常不独立。
+    variants: ["若 P(A)=0.3，P(B)=0.4，且 A、B 互斥，求 P(A∪B)。"]
+
+- id: hs-stats-004
+  name: 统计量
+  stage: highschool
+  course: 概率统计
+  chapter: 统计
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 平均数看整体水平，中位数看中间位置，众数看出现最多。
+  definition: 平均数为数据总和除以个数；中位数是排序后中间的数；众数是出现次数最多的数。
+  mistakes: [求中位数忘记排序, 数据个数为偶数时只取一个中间数]
+  example: 1,2,3,4,5 的平均数为 3，中位数为 3。
+  exercises:
+  - id: hs-stats-004-e1
+    kind: choice
+    stem: 数据 1,2,3,4,5 的平均数是（ ）
+    options: ["2", "3", "4", "5"]
+    answer: "3"
+    solution_outline: (1+2+3+4+5)/5=3。
+  - id: hs-stats-004-e2
+    kind: fill
+    stem: 数据 1,3,5,7 的中位数是（ ）
+    answer: "4"
+    solution_outline: 中间两个数为 3、5，取平均得 4。
+  - id: hs-stats-004-e3
+    kind: match
+    stem: 把统计量与含义配对（写成 A=1;B=2 的形式）
+    options: ["A 平均数", "B 中位数", "1 总和除以个数", "2 排序后中间位置"]
+    answer: "A=1;B=2"
+    solution_outline: 平均数反映整体水平，中位数反映中间位置。
+    variants: ["求数据 2,4,4,6,10 的众数。"]
+
+- id: hs-stats-005
+  name: 分布与期望
+  stage: highschool
+  course: 概率统计
+  chapter: 随机变量
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 期望是随机变量取值的加权平均。
+  definition: E(X)=Σx_i p_i；二项分布 X~B(n,p) 的期望为 np，方差为 np(1−p)。
+  mistakes: [期望与单次概率混淆, 二项分布方差漏掉 (1−p)]
+  example: X~B(4,0.5) 时，E(X)=4×0.5=2。
+  exercises:
+  - id: hs-stats-005-e1
+    kind: choice
+    stem: 若 X~B(n,p)，则 E(X)=（ ）
+    options: ["np", "n/p", "p", "np(1−p)"]
+    answer: "np"
+    solution_outline: 二项分布的期望为 np。
+  - id: hs-stats-005-e2
+    kind: fill
+    stem: 若 X~B(4,0.5)，则 E(X)=（ ）
+    answer: "2"
+    solution_outline: E(X)=np=4×0.5=2。
+  - id: hs-stats-005-e3
+    kind: find_error
+    stem: 求数据 1,2,3,4 的平均数，哪一步错了（ ）
+    options: ["第 1 步：总和为 10", "第 2 步：除以个数 4", "第 3 步：平均数为 2"]
+    answer: "第 3 步：平均数为 2"
+    solution_outline: 10÷4=2.5，不是 2。
+    variants: ["求 X~B(10,0.2) 的期望与方差。"]

@@ -1,0 +1,181 @@
+- id: grad-numerical-001
+  name: 稳定性与条件数
+  stage: graduate
+  course: 数值分析进阶
+  chapter: 稳定性
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 条件数衡量输入小扰动会被解放大多少倍。
+  definition: cond(A)=||A||·||A⁻¹||；条件数越大，问题越病态。
+  mistakes: [把条件数与行列式大小等同, 忽略范数选择]
+  example: 单位矩阵的条件数为 1。
+  exercises:
+  - id: grad-numerical-001-e1
+    kind: choice
+    stem: 矩阵条件数的定义是（ ）
+    options: ["||A||·||A⁻¹||", "||A||+||A⁻¹||", "det(A)", "||A||/||A⁻¹||"]
+    answer: "||A||·||A⁻¹||"
+    solution_outline: 条件数衡量相对误差放大倍数。
+  - id: grad-numerical-001-e2
+    kind: fill
+    stem: 单位矩阵的条件数是（ ）
+    answer: "1"
+    solution_outline: I 与 I⁻¹ 的范数都为 1。
+  - id: grad-numerical-001-e3
+    kind: truefalse
+    stem: 条件数越大，线性方程组对扰动越敏感。
+    answer: true
+    solution_outline: 大条件数意味着病态。
+    variants: ["判断对角矩阵 diag(1,1000) 是否病态。"]
+
+- id: grad-numerical-002
+  name: 线性方程组迭代法
+  stage: graduate
+  course: 数值分析进阶
+  chapter: 迭代法
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 迭代法用简单矩阵分裂逐步逼近解。
+  definition: Jacobi 与 Gauss-Seidel 迭代收敛的充分条件之一是迭代矩阵谱半径小于 1。
+  mistakes: [把对角占优当成必要条件, 混淆两种迭代的更新顺序]
+  example: 严格对角占优矩阵上 Jacobi 迭代收敛。
+  exercises:
+  - id: grad-numerical-002-e1
+    kind: choice
+    stem: 迭代法 x_{k+1}=Bx_k+c 收敛的充要条件是（ ）
+    options: ["谱半径 ρ(B)<1", "||B||>1", "det B=0", "B 对称"]
+    answer: "谱半径 ρ(B)<1"
+    solution_outline: 迭代矩阵谱半径小于 1。
+  - id: grad-numerical-002-e2
+    kind: fill
+    stem: 严格对角占优矩阵上 Jacobi 迭代一定（ ）
+    answer: "收敛"
+    solution_outline: 对角占优保证谱半径小于 1。
+  - id: grad-numerical-002-e3
+    kind: find_error
+    stem: 判断 Jacobi 迭代是否收敛，哪一步错了（ ）
+    options: ["第 1 步：写出迭代矩阵 B", "第 2 步：计算谱半径 ρ(B)", "第 3 步：只要 ρ(B)>0 就收敛"]
+    answer: "第 3 步：只要 ρ(B)>0 就收敛"
+    solution_outline: 需要 ρ(B)<1，而不是大于 0。
+    variants: ["说明 Gauss-Seidel 迭代与 Jacobi 迭代的更新差异。"]
+
+- id: grad-numerical-003
+  name: 特征值算法
+  stage: graduate
+  course: 数值分析进阶
+  chapter: 特征值
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 幂迭代反复乘矩阵，方向会向主特征向量靠拢。
+  definition: 幂法用于求模最大的特征值；瑞利商给出特征值的近似。
+  mistakes: [主特征值不唯一时仍直接使用幂法, 忽略归一化]
+  example: 对角矩阵主特征值为对角元中绝对值最大者。
+  exercises:
+  - id: grad-numerical-003-e1
+    kind: choice
+    stem: 幂迭代主要用于求（ ）
+    options: ["模最大的特征值", "最小的特征值", "所有特征值", "行列式"]
+    answer: "模最大的特征值"
+    solution_outline: 幂法收敛到主特征值。
+  - id: grad-numerical-003-e2
+    kind: fill
+    stem: 瑞利商 R(x)=x^T A x /（ ）
+    answer: "x^T x"
+    solution_outline: 瑞利商的定义。
+  - id: grad-numerical-003-e3
+    kind: truefalse
+    stem: 幂迭代每一步通常需要归一化向量以避免溢出。
+    answer: true
+    solution_outline: 不归一化会导致范数指数增长。
+    variants: ["说明反幂法适合求什么特征值。"]
+
+- id: grad-numerical-004
+  name: 非线性方程求根
+  stage: graduate
+  course: 数值分析进阶
+  chapter: 非线性方程
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 牛顿法用切线，割线法用割线近似导数。
+  definition: 牛顿法二次收敛；割线法超线性收敛，阶约为 1.618。
+  mistakes: [割线法需要两个初值却只给一个, 忽略导数接近零]
+  example: 求 √2 可用牛顿法解 x²−2=0。
+  exercises:
+  - id: grad-numerical-004-e1
+    kind: choice
+    stem: 割线法的收敛阶约为（ ）
+    options: ["1.618", "2", "1", "3"]
+    answer: "1.618"
+    solution_outline: 割线法的收敛阶为黄金比例。
+  - id: grad-numerical-004-e2
+    kind: fill
+    stem: 牛顿法在单根附近具有（ ）次收敛速度
+    answer: "2"
+    solution_outline: 误差平方级下降。
+  - id: grad-numerical-004-e3
+    kind: truefalse
+    stem: 割线法每一步都需要计算导数。
+    answer: false
+    solution_outline: 割线法用差商代替导数。
+    variants: ["比较牛顿法与二分法的收敛速度。"]
+
+- id: grad-numerical-005
+  name: 数值微分与数值积分
+  stage: graduate
+  course: 数值分析进阶
+  chapter: 数值微分与积分
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 差分商近似导数，求积公式近似积分。
+  definition: 中心差分 f′(x)≈[f(x+h)−f(x−h)]/(2h)，误差阶 O(h²)。
+  mistakes: [中心差分分子符号写反, 步长过小导致舍入误差放大]
+  example: sin x 在 0 附近的中心差分近似 1。
+  exercises:
+  - id: grad-numerical-005-e1
+    kind: choice
+    stem: 中心差分公式是（ ）
+    options: ["[f(x+h)−f(x−h)]/(2h)", "[f(x+h)−f(x)]/h", "[f(x+h)+f(x−h)]/(2h)", "f(x)/h"]
+    answer: "[f(x+h)−f(x−h)]/(2h)"
+    solution_outline: 中心差分对称消去一阶误差项。
+  - id: grad-numerical-005-e2
+    kind: fill
+    stem: 中心差分的截断误差阶是 O(h 的几次方)（填数字）
+    answer: "2"
+    solution_outline: 对称差分具有二阶精度。
+  - id: grad-numerical-005-e3
+    kind: multi
+    stem: 提高数值积分精度的常见方法有（ ）
+    options: ["复合求积", "自适应步长", "增大舍入误差", "降低节点数"]
+    answer: ["复合求积", "自适应步长"]
+    solution_outline: 复合与自适应都能提高精度。
+    variants: ["写出前向差分公式及其误差阶。"]
+
+- id: grad-numerical-006
+  name: 常微分方程数值解
+  stage: graduate
+  course: 数值分析进阶
+  chapter: 微分方程数值解
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 用离散步长一步步近似微分方程的解。
+  definition: 显式 Euler 法 y_{n+1}=y_n+h f(t_n,y_n)，局部截断误差为 O(h²)。
+  mistakes: [步长过大导致不稳定, 混淆局部与全局误差阶]
+  example: y'=y 用 Euler 法逐步逼近 e^t。
+  exercises:
+  - id: grad-numerical-006-e1
+    kind: choice
+    stem: 显式 Euler 法的迭代式是（ ）
+    options: ["y_{n+1}=y_n+h f(t_n,y_n)", "y_{n+1}=y_n−h f", "y_{n+1}=h f", "y_{n+1}=y_n/f"]
+    answer: "y_{n+1}=y_n+h f(t_n,y_n)"
+    solution_outline: 用前向差分近似导数。
+  - id: grad-numerical-006-e2
+    kind: fill
+    stem: 显式 Euler 法的全局误差阶是 O(h 的几次方)（填数字）
+    answer: "1"
+    solution_outline: 全局误差为一阶。
+  - id: grad-numerical-006-e3
+    kind: truefalse
+    stem: 步长越小，Euler 法的截断误差通常越小。
+    answer: true
+    solution_outline: 截断误差随步长减小而下降。
+    variants: ["说明隐式 Euler 法相对显式 Euler 法的优点。"]

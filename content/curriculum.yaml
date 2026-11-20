@@ -1,5 +1,137 @@
 - stage: highschool
+  course: 集合与逻辑
+  module: 集合与逻辑
+  chapter: 集合与常用逻辑用语
+  card_ids: [hs-set-001, hs-set-002, hs-set-003, hs-set-004, hs-set-005]
+
+- stage: highschool
   course: 函数与导数
   module: 函数与导数
-  chapter: 函数概念
-  card_ids: [hs-function-intro-001]
+  chapter: 函数概念与导数
+  card_ids: [hs-function-intro-001, hs-func-002, hs-func-003, hs-func-004, hs-func-005, hs-func-006]
+
+- stage: highschool
+  course: 三角函数
+  module: 三角函数
+  chapter: 三角恒等变换与解三角形
+  card_ids: [hs-trig-001, hs-trig-002, hs-trig-003, hs-trig-004, hs-trig-005]
+
+- stage: highschool
+  course: 数列
+  module: 数列
+  chapter: 等差与等比数列
+  card_ids: [hs-seq-001, hs-seq-002, hs-seq-003, hs-seq-004, hs-seq-005]
+
+- stage: highschool
+  course: 不等式
+  module: 不等式
+  chapter: 一元二次不等式与基本不等式
+  card_ids: [hs-ineq-001, hs-ineq-002, hs-ineq-003, hs-ineq-004, hs-ineq-005]
+
+- stage: highschool
+  course: 立体几何
+  module: 立体几何
+  chapter: 空间位置关系与度量
+  card_ids: [hs-solid-001, hs-solid-002, hs-solid-003, hs-solid-004, hs-solid-005]
+
+- stage: highschool
+  course: 解析几何
+  module: 解析几何
+  chapter: 直线、圆与圆锥曲线
+  card_ids: [hs-analytic-001, hs-analytic-002, hs-analytic-003, hs-analytic-004, hs-analytic-005]
+
+- stage: highschool
+  course: 概率统计
+  module: 概率统计
+  chapter: 概率与统计初步
+  card_ids: [hs-stats-001, hs-stats-002, hs-stats-003, hs-stats-004, hs-stats-005]
+
+- stage: highschool
+  course: 复数
+  module: 复数
+  chapter: 复数的概念与运算
+  card_ids: [hs-complex-001, hs-complex-002, hs-complex-003, hs-complex-004, hs-complex-005]
+
+- stage: highschool
+  course: 平面向量
+  module: 平面向量
+  chapter: 向量运算与数量积
+  card_ids: [hs-vector-001, hs-vector-002, hs-vector-003, hs-vector-004, hs-vector-005]
+
+- stage: highschool
+  course: 计数原理
+  module: 计数原理
+  chapter: 排列组合与二项式
+  card_ids: [hs-count-001, hs-count-002, hs-count-003, hs-count-004, hs-count-005]
+
+- stage: undergraduate
+  course: 高等数学
+  module: 微积分
+  chapter: 极限、导数、积分与级数
+  card_ids: [ug-calculus-001, ug-calculus-002, ug-calculus-003, ug-calculus-004, ug-calculus-005]
+
+- stage: undergraduate
+  course: 线性代数
+  module: 线性代数
+  chapter: 矩阵、行列式与特征值
+  card_ids: [ug-linear-001, ug-linear-002, ug-linear-003, ug-linear-004, ug-linear-005]
+
+- stage: undergraduate
+  course: 概率论与数理统计
+  module: 概率论与数理统计
+  chapter: 概率、随机变量与估计
+  card_ids: [ug-prob-001, ug-prob-002, ug-prob-003, ug-prob-004, ug-prob-005]
+
+- stage: undergraduate
+  course: 复变函数
+  module: 复变函数
+  chapter: 解析函数、积分与留数
+  card_ids: [ug-complex-001, ug-complex-002, ug-complex-003, ug-complex-004, ug-complex-005]
+
+- stage: undergraduate
+  course: 常微分方程
+  module: 常微分方程
+  chapter: 一阶与二阶线性方程
+  card_ids: [ug-ode-001, ug-ode-002, ug-ode-003, ug-ode-004, ug-ode-005]
+
+- stage: undergraduate
+  course: 数值分析基础
+  module: 数值分析基础
+  chapter: 误差、迭代、插值与积分
+  card_ids: [ug-numerical-001, ug-numerical-002, ug-numerical-003, ug-numerical-004, ug-numerical-005]
+
+- stage: graduate
+  course: 矩阵论
+  module: 矩阵论
+  chapter: 线性空间、特征值与矩阵分解
+  card_ids: [grad-matrix-001, grad-matrix-002, grad-matrix-003, grad-matrix-004, grad-matrix-005, grad-matrix-006]
+
+- stage: graduate
+  course: 泛函分析
+  module: 泛函分析
+  chapter: 空间、算子与基本定理
+  card_ids: [grad-functional-001, grad-functional-002, grad-functional-003, grad-functional-004, grad-functional-005, grad-functional-006]
+
+- stage: graduate
+  course: 数值分析进阶
+  module: 数值分析进阶
+  chapter: 稳定性、迭代与微分方程数值解
+  card_ids: [grad-numerical-001, grad-numerical-002, grad-numerical-003, grad-numerical-004, grad-numerical-005, grad-numerical-006]
+
+- stage: graduate
+  course: 数理方程
+  module: 数理方程
+  chapter: 三类典型方程与求解方法
+  card_ids: [grad-pde-001, grad-pde-002, grad-pde-003, grad-pde-004, grad-pde-005, grad-pde-006]
+
+- stage: graduate
+  course: 随机过程
+  module: 随机过程
+  chapter: 马尔可夫链、泊松过程与布朗运动
+  card_ids: [grad-stochastic-001, grad-stochastic-002, grad-stochastic-003, grad-stochastic-004, grad-stochastic-005, grad-stochastic-006]
+
+- stage: graduate
+  course: 最优化方法
+  module: 最优化方法
+  chapter: 凸优化、梯度法与 KKT
+  card_ids: [grad-optim-001, grad-optim-002, grad-optim-003, grad-optim-004, grad-optim-005, grad-optim-006]

@@ -1,0 +1,150 @@
+- id: ug-calculus-001
+  name: 极限
+  stage: undergraduate
+  course: 高等数学
+  chapter: 极限
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 极限描述“无限接近”时函数值的趋势。
+  definition: 若 x 无限接近 x0 时 f(x) 无限接近 L，则称 f 在 x0 处的极限为 L；极限存在不要求函数在该点有定义。
+  mistakes: [把极限值当成函数值, 忽略左右极限是否一致]
+  example: lim x→0 sin x/x=1，尽管 sin x/x 在 0 处无定义。
+  exercises:
+  - id: ug-calculus-001-e1
+    kind: choice
+    stem: lim x→0 sin x/x 等于（ ）
+    options: ["0", "1", "∞", "不存在"]
+    answer: "1"
+    solution_outline: 这是第一个重要极限。
+  - id: ug-calculus-001-e2
+    kind: fill
+    stem: lim n→∞ (1+1/n)^n=（ ）
+    answer: "e"
+    solution_outline: 这是自然常数 e 的定义式。
+  - id: ug-calculus-001-e3
+    kind: truefalse
+    stem: 函数在某点的极限存在，则函数在该点一定连续。
+    answer: false
+    solution_outline: 还需要极限值等于函数值。
+    variants: ["求 lim x→1 (x²−1)/(x−1)。"]
+
+- id: ug-calculus-002
+  name: 导数与微分
+  stage: undergraduate
+  course: 高等数学
+  chapter: 导数
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 导数是函数变化的瞬时速率。
+  definition: f′(x)=lim h→0 [f(x+h)−f(x)]/h；可导必连续，连续不一定可导。
+  mistakes: [认为连续一定可导, 求导时漏掉链式法则]
+  example: (e^x)′=e^x，(ln x)′=1/x。
+  exercises:
+  - id: ug-calculus-002-e1
+    kind: choice
+    stem: (e^x)′ 等于（ ）
+    options: ["e^x", "x e^x", "e^x/x", "1"]
+    answer: "e^x"
+    solution_outline: 指数函数以 e 为底时导数等于自身。
+  - id: ug-calculus-002-e2
+    kind: fill
+    stem: (ln x)′ 在 x=1 处的值为（ ）
+    answer: "1"
+    solution_outline: (ln x)′=1/x，代入 x=1 得 1。
+  - id: ug-calculus-002-e3
+    kind: expr
+    stem: 求 sin(x) 的导数
+    answer: "cos(x)"
+    solution_outline: 基本求导公式。
+    variants: ["求 f(x)=x²e^x 的导数。"]
+
+- id: ug-calculus-003
+  name: 不定积分
+  stage: undergraduate
+  course: 高等数学
+  chapter: 积分
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 积分是求导的逆运算。
+  definition: 若 F′(x)=f(x)，则 ∫f(x)dx=F(x)+C。
+  mistakes: [忘记积分常数 C, 把积分与导数公式混淆]
+  example: ∫x dx=x²/2+C。
+  exercises:
+  - id: ug-calculus-003-e1
+    kind: choice
+    stem: ∫x dx 等于（ ）
+    options: ["x²/2+C", "x²+C", "2x+C", "x+C"]
+    answer: "x²/2+C"
+    solution_outline: 幂函数积分公式。
+  - id: ug-calculus-003-e2
+    kind: fill
+    stem: ∫_0^1 x dx=（ ）
+    answer: "1/2"
+    solution_outline: 原函数 x²/2，代入上下限得 1/2。
+  - id: ug-calculus-003-e3
+    kind: expr
+    stem: 求 ∫2*x dx 的一个原函数（不含常数 C）
+    answer: "x**2"
+    solution_outline: 2x 的原函数为 x²。
+    variants: ["求 ∫e^x dx。"]
+
+- id: ug-calculus-004
+  name: 级数
+  stage: undergraduate
+  course: 高等数学
+  chapter: 级数
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 级数看部分和是否有极限。
+  definition: 几何级数 Σq^n 当 |q|<1 时收敛；调和级数 Σ1/n 发散。
+  mistakes: [认为通项趋于 0 级数就收敛, 忽略公比条件]
+  example: Σ_{n=1}^∞ (1/2)^n=1。
+  exercises:
+  - id: ug-calculus-004-e1
+    kind: choice
+    stem: 几何级数 Σq^n 收敛的条件是（ ）
+    options: ["|q|<1", "q>1", "q=1", "q>0"]
+    answer: "|q|<1"
+    solution_outline: 公比绝对值小于 1 时部分和收敛。
+  - id: ug-calculus-004-e2
+    kind: fill
+    stem: Σ_{n=1}^∞ (1/2)^n=（ ）
+    answer: "1"
+    solution_outline: 首项 1/2、公比 1/2，和为 1。
+  - id: ug-calculus-004-e3
+    kind: truefalse
+    stem: 调和级数 Σ1/n 收敛。
+    answer: false
+    solution_outline: 调和级数发散，尽管通项趋于 0。
+    variants: ["判断 Σ(1/3)^n 是否收敛。"]
+
+- id: ug-calculus-005
+  name: 多元函数微分
+  stage: undergraduate
+  course: 高等数学
+  chapter: 多元函数
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 偏导数就是固定其他变量，只对一个变量求导。
+  definition: ∂f/∂x 表示固定 y 后对 x 求导；梯度为 (f_x,f_y)。
+  mistakes: [偏导时把另一个变量也求导, 梯度方向与等高线混淆]
+  example: f=x²y 时，f_x=2xy，f_y=x²，梯度为 (2xy,x²)。
+  exercises:
+  - id: ug-calculus-005-e1
+    kind: choice
+    stem: f(x,y)=x²y 对 x 的偏导数是（ ）
+    options: ["2xy", "x²", "2x", "2y"]
+    answer: "2xy"
+    solution_outline: 把 y 当常数，对 x² 求导得 2xy。
+  - id: ug-calculus-005-e2
+    kind: fill
+    stem: f(x,y)=x²+y² 在 (1,1) 处的梯度是（ ）
+    answer: "(2,2)"
+    solution_outline: 梯度为 (2x,2y)，代入 (1,1)。
+  - id: ug-calculus-005-e3
+    kind: find_error
+    stem: 求 f(x,y)=xy 的偏导数，哪一步错了（ ）
+    options: ["第 1 步：f_x 把 y 当常数", "第 2 步：f_x=y", "第 3 步：f_y=x²"]
+    answer: "第 3 步：f_y=x²"
+    solution_outline: f_y 应把 x 当常数，结果为 x。
+    variants: ["求 f(x,y)=x²+y³ 的梯度。"]

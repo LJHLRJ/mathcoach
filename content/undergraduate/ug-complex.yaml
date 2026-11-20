@@ -1,0 +1,150 @@
+- id: ug-complex-001
+  name: 复数与复平面
+  stage: undergraduate
+  course: 复变函数
+  chapter: 复数
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 复数可以写成极坐标形式，乘法表现为模相乘、角相加。
+  definition: z=r(cosθ+i sinθ)=re^{iθ}，其中 r=|z|，θ=Arg z。
+  mistakes: [辐角主值范围写错, 乘法时辐角相减]
+  example: 1+i 的模为 √2，辐角为 π/4。
+  exercises:
+  - id: ug-complex-001-e1
+    kind: choice
+    stem: 复数 1+i 的辐角主值是（ ）
+    options: ["π/4", "π/2", "3π/4", "−π/4"]
+    answer: "π/4"
+    solution_outline: 点 (1,1) 在第一象限，角度为 π/4。
+  - id: ug-complex-001-e2
+    kind: fill
+    stem: "|1+i|=（ ）"
+    answer: "√2"
+    solution_outline: √(1²+1²)=√2。
+  - id: ug-complex-001-e3
+    kind: truefalse
+    stem: 复数相乘时，模相乘、辐角相加。
+    answer: true
+    solution_outline: 由指数形式 re^{iθ} 的乘法直接得到。
+    variants: ["求 1−i 的模与辐角主值。"]
+
+- id: ug-complex-002
+  name: 解析函数
+  stage: undergraduate
+  course: 复变函数
+  chapter: 解析函数
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 解析函数在局部可以展开成幂级数，满足柯西-黎曼方程。
+  definition: f=u+iv 在区域内解析的必要条件是 u_x=v_y，u_y=−v_x（C-R 方程）。
+  mistakes: [只验证 C-R 不验证可微, 把解析与实可微混为一谈]
+  example: f(z)=z² 的实部 x²−y²、虚部 2xy 满足 C-R 方程。
+  exercises:
+  - id: ug-complex-002-e1
+    kind: choice
+    stem: 柯西-黎曼方程是（ ）
+    options: ["u_x=v_y，u_y=−v_x", "u_x=v_x，u_y=v_y", "u_x=−v_y，u_y=v_x", "u_x=u_y，v_x=v_y"]
+    answer: "u_x=v_y，u_y=−v_x"
+    solution_outline: 解析函数的实部与虚部偏导满足 C-R 方程。
+  - id: ug-complex-002-e2
+    kind: truefalse
+    stem: f(z)=|z|² 在复平面上处处解析。
+    answer: false
+    solution_outline: 它只在 z=0 处满足 C-R 方程，不构成解析区域。
+  - id: ug-complex-002-e3
+    kind: fill
+    stem: z² 的实部是（ ）
+    answer: "x²-y²"
+    solution_outline: (x+iy)²=x²−y²+2ixy。
+    variants: ["写出 f(z)=z³ 的虚部。"]
+
+- id: ug-complex-003
+  name: 初等复变函数
+  stage: undergraduate
+  course: 复变函数
+  chapter: 初等函数
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 欧拉公式把指数函数与三角函数连接起来。
+  definition: e^{iθ}=cosθ+i sinθ；e^z 是周期为 2πi 的整函数，且永不为零。
+  mistakes: [认为 e^z 可以取 0, 忽略指数函数的周期性]
+  example: e^{iπ}=−1，e^{iπ/2}=i。
+  exercises:
+  - id: ug-complex-003-e1
+    kind: choice
+    stem: e^{iπ}=（ ）
+    options: ["−1", "1", "i", "−i"]
+    answer: "−1"
+    solution_outline: 欧拉公式代入 θ=π。
+  - id: ug-complex-003-e2
+    kind: fill
+    stem: e^{iπ/2}=（ ）
+    answer: "i"
+    solution_outline: cos(π/2)+i sin(π/2)=i。
+  - id: ug-complex-003-e3
+    kind: truefalse
+    stem: 对任意复数 z，e^z 都不等于 0。
+    answer: true
+    solution_outline: e^z=e^x(cos y+i sin y)，模 e^x 恒正。
+    variants: ["计算 e^{iπ/3} 的实部与虚部。"]
+
+- id: ug-complex-004
+  name: 复积分
+  stage: undergraduate
+  course: 复变函数
+  chapter: 复积分
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 解析函数的积分与路径无关。
+  definition: 若 f 在单连通区域解析，则沿任意闭曲线积分为 0；∮ dz/z=2πi（绕原点一圈）。
+  mistakes: [对非解析函数直接使用柯西定理, 忽略绕数]
+  example: 沿单位圆逆时针积分 ∮dz/z=2πi。
+  exercises:
+  - id: ug-complex-004-e1
+    kind: choice
+    stem: 若 f 在单连通区域解析，则沿区域内任意闭曲线积分（ ）
+    options: ["等于 0", "等于 1", "等于 2πi", "不存在"]
+    answer: "等于 0"
+    solution_outline: 柯西积分定理。
+  - id: ug-complex-004-e2
+    kind: fill
+    stem: 沿单位圆逆时针积分 ∮ dz/z=（ ）
+    answer: "2πi"
+    solution_outline: 极点 z=0 在曲线内部，留数为 1。
+  - id: ug-complex-004-e3
+    kind: find_error
+    stem: 计算 ∮ dz/(z−1)（曲线为 |z|=1），哪一步错了（ ）
+    options: ["第 1 步：奇点在 z=1", "第 2 步：曲线 |z|=1 不包围 z=1", "第 3 步：所以积分等于 2πi"]
+    answer: "第 3 步：所以积分等于 2πi"
+    solution_outline: 奇点在曲线外，积分为 0。
+    variants: ["计算 ∮ dz/z²（单位圆逆时针）。"]
+
+- id: ug-complex-005
+  name: 留数
+  stage: undergraduate
+  course: 复变函数
+  chapter: 留数
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 留数抓住奇点附近的 1/(z−z0) 系数。
+  definition: Res(f,z0)=1/(2πi)∮ f dz；简单极点处 Res(f,z0)=lim (z−z0)f(z)。
+  mistakes: [留数公式漏极限, 忽略极点阶数]
+  example: Res(1/z,0)=1。
+  exercises:
+  - id: ug-complex-005-e1
+    kind: choice
+    stem: Res(1/z,0)=（ ）
+    options: ["1", "0", "2πi", "−1"]
+    answer: "1"
+    solution_outline: 1/z 在 0 处留数为系数 1。
+  - id: ug-complex-005-e2
+    kind: fill
+    stem: Res(1/(z−1),1)=（ ）
+    answer: "1"
+    solution_outline: 简单极点，留数为分子在极点的值 1。
+  - id: ug-complex-005-e3
+    kind: truefalse
+    stem: 留数定理把闭曲线积分转化为曲线内奇点留数之和。
+    answer: true
+    solution_outline: ∮f dz=2πiΣRes(f,z_k)。
+    variants: ["求 Res(1/(z−2),2)。"]

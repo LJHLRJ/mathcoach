@@ -1,0 +1,150 @@
+- id: ug-ode-001
+  name: 微分方程基本概念
+  stage: undergraduate
+  course: 常微分方程
+  chapter: 基本概念
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 微分方程的阶由最高阶导数决定。
+  definition: 方程中出现的最高阶导数的阶数称为微分方程的阶；n 阶方程的通解含 n 个任意常数。
+  mistakes: [把最高次幂当成阶, 通解常数个数数错]
+  example: y''+y=0 是二阶方程，通解含两个任意常数。
+  exercises:
+  - id: ug-ode-001-e1
+    kind: choice
+    stem: 方程 y''+y=0 的阶是（ ）
+    options: ["1", "2", "3", "0"]
+    answer: "2"
+    solution_outline: 最高阶导数是二阶导数。
+  - id: ug-ode-001-e2
+    kind: fill
+    stem: 方程 y'''+y=0 的阶是（ ）
+    answer: "3"
+    solution_outline: 最高阶导数为三阶。
+  - id: ug-ode-001-e3
+    kind: truefalse
+    stem: n 阶微分方程的通解通常含 n 个任意常数。
+    answer: true
+    solution_outline: 每积分一次引入一个任意常数。
+    variants: ["判断方程 (y')²+y=0 的阶。"]
+
+- id: ug-ode-002
+  name: 一阶可分离变量方程
+  stage: undergraduate
+  course: 常微分方程
+  chapter: 一阶方程
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 把含 y 的项和含 x 的项分别放到两边再积分。
+  definition: 形如 y'=f(x)g(y) 的方程称为可分离变量方程，分离后两边积分。
+  mistakes: [分离时忘记除以 g(y), 积分后漏写常数]
+  example: y'=y 的解为 y=Ce^x。
+  exercises:
+  - id: ug-ode-002-e1
+    kind: choice
+    stem: 下列方程属于可分离变量方程的是（ ）
+    options: ["y'=xy", "y'+y=x+y²", "y''+y=0", "y'=x+y"]
+    answer: "y'=xy"
+    solution_outline: y'=xy 可写成 y'/y=x。
+  - id: ug-ode-002-e2
+    kind: fill
+    stem: y'=y 的通解是（ ）
+    answer: "y=Ce^x"
+    solution_outline: 分离变量积分得 ln|y|=x+C。
+  - id: ug-ode-002-e3
+    kind: truefalse
+    stem: y'=2x 的通解是 y=x²+C。
+    answer: true
+    solution_outline: 两边积分得到 x²+C。
+    variants: ["求 y'=2xy 的通解。"]
+
+- id: ug-ode-003
+  name: 一阶线性方程
+  stage: undergraduate
+  course: 常微分方程
+  chapter: 一阶方程
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 用积分因子把左边凑成全微分。
+  definition: y'+P(x)y=Q(x) 的积分因子为 μ=e^{∫P dx}，解为 y=μ⁻¹∫μQ dx+Cμ⁻¹。
+  mistakes: [积分因子指数符号写反, 忘记乘以 Q]
+  example: y'+y=0 的解为 y=Ce^{−x}。
+  exercises:
+  - id: ug-ode-003-e1
+    kind: choice
+    stem: 方程 y'+P(x)y=Q(x) 的积分因子是（ ）
+    options: ["e^{∫P dx}", "e^{∫Q dx}", "P(x)", "Q(x)"]
+    answer: "e^{∫P dx}"
+    solution_outline: 乘以积分因子后左边成为 (μy)'。
+  - id: ug-ode-003-e2
+    kind: fill
+    stem: y'+y=0 的通解是（ ）
+    answer: "y=Ce^{-x}"
+    solution_outline: 特征根为 −1，通解为 Ce^{−x}。
+  - id: ug-ode-003-e3
+    kind: find_error
+    stem: 求 y'+y=0 的通解，哪一步错了（ ）
+    options: ["第 1 步：特征方程 r+1=0", "第 2 步：r=−1", "第 3 步：通解 y=Ce^x"]
+    answer: "第 3 步：通解 y=Ce^x"
+    solution_outline: 特征根为 −1，通解应为 Ce^{−x}。
+    variants: ["求 y'+2y=0 的通解。"]
+
+- id: ug-ode-004
+  name: 二阶常系数线性方程
+  stage: undergraduate
+  course: 常微分方程
+  chapter: 二阶方程
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 把指数解代入方程，得到特征方程。
+  definition: y''+py'+qy=0 的特征方程为 r²+pr+q=0，根据根的情况写出通解。
+  mistakes: [特征方程符号写错, 重根时漏掉 x 因子]
+  example: y''−y=0 的特征根为 r=±1，通解为 C1e^x+C2e^{−x}。
+  exercises:
+  - id: ug-ode-004-e1
+    kind: choice
+    stem: y''+y=0 的特征方程是（ ）
+    options: ["r²+1=0", "r+1=0", "r²−1=0", "r²+r=0"]
+    answer: "r²+1=0"
+    solution_outline: 代入 y=e^{rx} 得 r²+1=0。
+  - id: ug-ode-004-e2
+    kind: fill
+    stem: y''−y=0 的特征根是（ ）
+    answer: "±1"
+    solution_outline: r²−1=0 的根为 1 和 −1。
+  - id: ug-ode-004-e3
+    kind: proof_order
+    stem: 求二阶常系数齐次方程通解的步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 写特征方程、求特征根、按根的情况写基本解、组合成通解。
+    variants: ["求 y''−3y'+2y=0 的特征根。"]
+
+- id: ug-ode-005
+  name: 微分方程应用
+  stage: undergraduate
+  course: 常微分方程
+  chapter: 应用
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 指数增长与衰减模型都来自“变化率与当前量成正比”。
+  definition: N'=kN 的解为 N=N0e^{kt}；k>0 增长，k<0 衰减。
+  mistakes: [把增长率 k 与半衰期混用, 初始条件代入错误]
+  example: 人口指数增长模型中，人口翻倍时间由 ln2/k 给出。
+  exercises:
+  - id: ug-ode-005-e1
+    kind: choice
+    stem: 方程 N'=kN（k>0）描述的是（ ）
+    options: ["指数增长", "指数衰减", "线性增长", "周期振荡"]
+    answer: "指数增长"
+    solution_outline: 解为 N0e^{kt}，随时间指数增长。
+  - id: ug-ode-005-e2
+    kind: fill
+    stem: N'=−2N，N(0)=5，则 N(t)=（ ）
+    answer: "5e^{-2t}"
+    solution_outline: 指数衰减模型代入初值。
+  - id: ug-ode-005-e3
+    kind: truefalse
+    stem: 指数衰减模型的半衰期与初值无关。
+    answer: true
+    solution_outline: 半衰期只由衰减率决定。
+    variants: ["若 N'=3N，N(0)=2，写出 N(t)。"]

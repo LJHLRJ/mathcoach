@@ -1,0 +1,303 @@
+- id: hs-vector-001
+  name: 平面向量的概念
+  stage: highschool
+  course: 平面向量
+  chapter: 向量的概念
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 向量既有大小又有方向，像一支带箭头的位移。
+  definition: 既有大小又有方向的量称为向量；长度为 0 的向量为零向量，方向任意。
+  mistakes: [把向量当成标量直接比较大小, 忽略零向量的特殊方向]
+  example: 位移、速度是向量；质量、温度是标量。
+  exercises:
+  - id: hs-vector-001-e1
+    kind: choice
+    stem: 关于零向量，下列说法正确的是（ ）
+    options: ["方向任意", "方向一定向右", "没有大小", "不能与任何向量相加"]
+    answer: "方向任意"
+    solution_outline: 零向量长度为 0，方向没有限制。
+  - id: hs-vector-001-e2
+    kind: truefalse
+    stem: 相等的向量一定大小相同且方向相同。
+    answer: true
+    solution_outline: 这正是向量相等的定义。
+  - id: hs-vector-001-e3
+    kind: fill
+    stem: 向量 (3,4) 的模是（ ）
+    answer: "5"
+    solution_outline: √(3²+4²)=5。
+    variants: ["判断“两个向量长度相等就相等”是否正确。"]
+
+- id: hs-vector-002
+  name: 向量的加减法
+  stage: highschool
+  course: 平面向量
+  chapter: 向量运算
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 坐标运算就是对应分量分别相加减。
+  definition: 若 a=(x1,y1)，b=(x2,y2)，则 a±b=(x1±x2,y1±y2)，ka=(kx1,ky1)。
+  mistakes: [加减法时分量的顺序写错, 数乘只乘一个分量]
+  example: (1,2)+(3,4)=(4,6)。
+  exercises:
+  - id: hs-vector-002-e1
+    kind: choice
+    stem: (1,2)+(3,4)=（ ）
+    options: ["(4,6)", "(3,6)", "(4,2)", "(2,2)"]
+    answer: "(4,6)"
+    solution_outline: 对应分量相加。
+  - id: hs-vector-002-e2
+    kind: fill
+    stem: 2·(1,2)=（ ）
+    answer: "(2,4)"
+    solution_outline: 数乘把每个分量都乘以 2。
+  - id: hs-vector-002-e3
+    kind: multi
+    stem: 若 a=(1,2)，b=(3,4)，则 a+b 的分量为（ ）
+    options: ["4", "6", "3", "2"]
+    answer: ["4", "6"]
+    solution_outline: 横坐标 1+3=4，纵坐标 2+4=6。
+    variants: ["计算 (3,−1)−(1,2)。"]
+
+- id: hs-vector-003
+  name: 数量积
+  stage: highschool
+  course: 平面向量
+  chapter: 数量积
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 数量积把两个向量变成一个数，衡量它们“同向的程度”。
+  definition: a·b=|a||b|cosθ；坐标形式 a·b=x1x2+y1y2。
+  mistakes: [把数量积当成向量, 忘记余弦值可为负]
+  example: (1,0)·(0,1)=0，说明两向量垂直。
+  exercises:
+  - id: hs-vector-003-e1
+    kind: choice
+    stem: (1,0)·(0,1)=（ ）
+    options: ["0", "1", "−1", "2"]
+    answer: "0"
+    solution_outline: 1×0+0×1=0。
+  - id: hs-vector-003-e2
+    kind: fill
+    stem: (1,2)·(3,4)=（ ）
+    answer: "11"
+    solution_outline: 1×3+2×4=11。
+  - id: hs-vector-003-e3
+    kind: truefalse
+    stem: 两个非零向量垂直的充要条件是数量积为 0。
+    answer: true
+    solution_outline: cos90°=0，数量积为 0。
+    variants: ["已知 a=(2,1)，b=(−1,2)，求 a·b。"]
+
+- id: hs-vector-004
+  name: 平行与垂直
+  stage: highschool
+  course: 平面向量
+  chapter: 向量位置关系
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 平行看坐标成比例，垂直看数量积为零。
+  definition: a∥b 当且仅当 x1y2−x2y1=0；a⊥b 当且仅当 x1x2+y1y2=0。
+  mistakes: [平行与垂直条件混用, 忽略零向量]
+  example: (1,2) 与 (2,4) 平行。
+  exercises:
+  - id: hs-vector-004-e1
+    kind: choice
+    stem: 向量 (x1,y1) 与 (x2,y2) 平行的条件是（ ）
+    options: ["x1y2−x2y1=0", "x1x2+y1y2=0", "x1=x2", "y1=y2"]
+    answer: "x1y2−x2y1=0"
+    solution_outline: 坐标成比例交叉相乘得到此式。
+  - id: hs-vector-004-e2
+    kind: fill
+    stem: 向量 (1,2) 与 (2,4) 的位置关系是（ ）
+    answer: "平行"
+    solution_outline: 1×4−2×2=0。
+  - id: hs-vector-004-e3
+    kind: find_error
+    stem: 判断 (1,2) 与 (2,−1) 是否垂直，哪一步错了（ ）
+    options: ["第 1 步：计算数量积 1×2+2×(−1)", "第 2 步：结果为 0", "第 3 步：数量积为 0 所以平行"]
+    answer: "第 3 步：数量积为 0 所以平行"
+    solution_outline: 数量积为 0 说明垂直，不是平行。
+    variants: ["判断 (3,1) 与 (1,−3) 是否垂直。"]
+
+- id: hs-vector-005
+  name: 向量的应用
+  stage: highschool
+  course: 平面向量
+  chapter: 向量应用
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 向量的夹角和长度可以解决几何度量问题。
+  definition: cosθ=a·b/(|a||b|)；|a|²=a·a。
+  mistakes: [夹角公式漏掉模长, 把钝角余弦当成正值]
+  example: (1,0) 与 (0,1) 的夹角为 90°。
+  exercises:
+  - id: hs-vector-005-e1
+    kind: choice
+    stem: 向量 (1,0) 与 (0,1) 的夹角是（ ）
+    options: ["0°", "45°", "90°", "180°"]
+    answer: "90°"
+    solution_outline: 数量积为 0，所以夹角为 90°。
+  - id: hs-vector-005-e2
+    kind: fill
+    stem: 若 |a|=3，|b|=4 且 a⊥b，则 a·b=（ ）
+    answer: "0"
+    solution_outline: 垂直向量数量积为 0。
+  - id: hs-vector-005-e3
+    kind: proof_order
+    stem: 用数量积求两向量夹角的步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 求数量积、求模长、代入余弦公式、由余弦值确定角。
+    variants: ["求 a=(1,1)，b=(1,0) 的夹角。"]
+
+- id: hs-count-001
+  name: 分类加法计数原理
+  stage: highschool
+  course: 计数原理
+  chapter: 计数原理
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 几类互不重叠的办法，把每类办法数相加。
+  definition: 完成一件事有 n 类互斥方案，第 i 类有 m_i 种方法，则总方法数为 m_1+…+m_n。
+  mistakes: [分类有重叠仍直接相加, 把分类与分步混淆]
+  example: 从 3 本数学书或 4 本物理书中选一本，有 3+4=7 种选法。
+  exercises:
+  - id: hs-count-001-e1
+    kind: choice
+    stem: 从 3 本数学书或 4 本物理书中选一本，共有（ ）种选法
+    options: ["3", "4", "7", "12"]
+    answer: "7"
+    solution_outline: 两类互斥，方法数为 3+4=7。
+  - id: hs-count-001-e2
+    kind: fill
+    stem: 从 2 条红绳或 5 条蓝绳中选一条，共有（ ）种选法
+    answer: "7"
+    solution_outline: 分类相加 2+5=7。
+  - id: hs-count-001-e3
+    kind: truefalse
+    stem: 分类计数原理使用加法。
+    answer: true
+    solution_outline: 每类方法都能独立完成任务，故相加。
+    variants: ["从 6 本语文书或 2 本英语书中选一本，有多少种选法？"]
+
+- id: hs-count-002
+  name: 分步乘法计数原理
+  stage: highschool
+  course: 计数原理
+  chapter: 计数原理
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 一件事分几步完成，把每一步的选择数相乘。
+  definition: 完成一件事需要 n 个步骤，第 i 步有 m_i 种方法，则总方法数为 m_1×…×m_n。
+  mistakes: [分步不完整, 把分步当成分类相加]
+  example: 3 件上衣配 4 条裤子，共有 3×4=12 种搭配。
+  exercises:
+  - id: hs-count-002-e1
+    kind: choice
+    stem: 2 件上衣配 3 条裤子，共有（ ）种搭配
+    options: ["5", "6", "8", "9"]
+    answer: "6"
+    solution_outline: 分两步，方法数 2×3=6。
+  - id: hs-count-002-e2
+    kind: fill
+    stem: 3 件上衣配 4 条裤子，共有（ ）种搭配
+    answer: "12"
+    solution_outline: 分步相乘 3×4=12。
+  - id: hs-count-002-e3
+    kind: truefalse
+    stem: 分步计数原理使用乘法。
+    answer: true
+    solution_outline: 每一步依次选择，总数相乘。
+    variants: ["从甲地到乙地有 2 条路，乙地到丙地有 3 条路，共有多少种走法？"]
+
+- id: hs-count-003
+  name: 排列
+  stage: highschool
+  course: 计数原理
+  chapter: 排列
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 排列既选元素又排顺序。
+  definition: 从 n 个不同元素中取 m 个按顺序排列，方法数为 A(n,m)=n(n−1)…(n−m+1)。
+  mistakes: [排列与组合混淆, 忘记顺序的影响]
+  example: 从 5 人中选 2 人排队，有 A(5,2)=20 种。
+  exercises:
+  - id: hs-count-003-e1
+    kind: choice
+    stem: A(5,2)=（ ）
+    options: ["10", "20", "25", "5"]
+    answer: "20"
+    solution_outline: 5×4=20。
+  - id: hs-count-003-e2
+    kind: fill
+    stem: A(4,3)=（ ）
+    answer: "24"
+    solution_outline: 4×3×2=24。
+  - id: hs-count-003-e3
+    kind: find_error
+    stem: 计算 A(5,2)，哪一步错了（ ）
+    options: ["第 1 步：排列公式 A(5,2)=5×4", "第 2 步：结果为 20", "第 3 步：所以 A(5,2)=5+4=9"]
+    answer: "第 3 步：所以 A(5,2)=5+4=9"
+    solution_outline: 排列用乘法，不是加法。
+    variants: ["从 6 人中选 3 人排队，有多少种排法？"]
+
+- id: hs-count-004
+  name: 组合
+  stage: highschool
+  course: 计数原理
+  chapter: 组合
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 组合只选元素，不关心顺序。
+  definition: C(n,m)=A(n,m)/m!，且 C(n,m)=C(n,n−m)。
+  mistakes: [组合结果忘记除以 m!, 把组合当排列]
+  example: 从 5 人中选 2 人，有 C(5,2)=10 种。
+  exercises:
+  - id: hs-count-004-e1
+    kind: choice
+    stem: C(5,2)=（ ）
+    options: ["5", "10", "20", "25"]
+    answer: "10"
+    solution_outline: 5×4/2=10。
+  - id: hs-count-004-e2
+    kind: fill
+    stem: C(6,3)=（ ）
+    answer: "20"
+    solution_outline: 6×5×4/(3×2×1)=20。
+  - id: hs-count-004-e3
+    kind: truefalse
+    stem: C(n,m)=C(n,n−m)。
+    answer: true
+    solution_outline: 选出 m 个等价于留下 n−m 个。
+    variants: ["从 7 人中选 2 人，有多少种选法？"]
+
+- id: hs-count-005
+  name: 二项式定理
+  stage: highschool
+  course: 计数原理
+  chapter: 二项式定理
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 二项式展开的系数就是组合数。
+  definition: (a+b)^n=ΣC(n,k)a^{n−k}b^k，第 k+1 项系数为 C(n,k)。
+  mistakes: [项的系数与二项式系数混淆, 项数数错]
+  example: (x+1)³=x³+3x²+3x+1。
+  exercises:
+  - id: hs-count-005-e1
+    kind: choice
+    stem: (x+1)³ 中 x² 的系数是（ ）
+    options: ["1", "2", "3", "6"]
+    answer: "3"
+    solution_outline: 对应 C(3,1)=3。
+  - id: hs-count-005-e2
+    kind: fill
+    stem: (x+1)³ 中 x 的系数是（ ）
+    answer: "3"
+    solution_outline: 展开为 x³+3x²+3x+1。
+  - id: hs-count-005-e3
+    kind: match
+    stem: 把项与系数配对（写成 A=1;B=2 的形式）
+    options: ["A (x+1)³ 中 x² 项", "B (x+1)³ 中 x 项", "1 系数 3", "2 系数 3"]
+    answer: "A=1;B=2"
+    solution_outline: 两项系数都为 C(3,1)=C(3,2)=3。
+    variants: ["求 (x+1)^4 中 x² 的系数。"]

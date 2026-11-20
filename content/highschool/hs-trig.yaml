@@ -1,0 +1,151 @@
+- id: hs-trig-001
+  name: 弧度制
+  stage: highschool
+  course: 三角函数
+  chapter: 任意角与弧度制
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 弧度用“弧长等于半径”的角度作为 1 弧度。
+  definition: 长度等于半径的弧所对的圆心角为 1 弧度；180°=π 弧度，1 弧度约为 57.3°。
+  mistakes: [角度与弧度混用, 忘记 180°=π]
+  example: 30°=π/6，90°=π/2。
+  exercises:
+  - id: hs-trig-001-e1
+    kind: choice
+    stem: 180° 等于（ ）弧度
+    options: ["π", "2π", "π/2", "π/3"]
+    answer: "π"
+    solution_outline: 半圈对应的弧长是 πr，所以角度为 π 弧度。
+  - id: hs-trig-001-e2
+    kind: fill
+    stem: 30° 化为弧度是（ ）
+    answer: "π/6"
+    solution_outline: 30/180=1/6，所以是 π/6。
+  - id: hs-trig-001-e3
+    kind: truefalse
+    stem: 1 弧度约等于 57.3°。
+    answer: true
+    solution_outline: 180°/π≈57.3°。
+    variants: ["把 120° 化为弧度。"]
+
+- id: hs-trig-002
+  name: 同角三角函数关系
+  stage: highschool
+  course: 三角函数
+  chapter: 三角恒等变换
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 同一个角的正弦和余弦落在单位圆上，平方和恒为 1。
+  definition: sin²x+cos²x=1；tan x=sin x/cos x（cos x≠0）。
+  mistakes: [忽略象限对符号的影响, 把 sin²x 写成 sin x²]
+  example: 若 sin x=3/5 且 x 在第一象限，则 cos x=4/5。
+  exercises:
+  - id: hs-trig-002-e1
+    kind: choice
+    stem: 下列恒等式正确的是（ ）
+    options: ["sin²x+cos²x=1", "sin²x−cos²x=1", "sin x+cos x=1", "tan x=cos x/sin x"]
+    answer: "sin²x+cos²x=1"
+    solution_outline: 单位圆上点的坐标满足 x²+y²=1。
+  - id: hs-trig-002-e2
+    kind: fill
+    stem: 若 sin x=3/5 且 x 在第一象限，则 cos x=（ ）
+    answer: "4/5"
+    solution_outline: cos²x=1−9/25=16/25，第一象限取正。
+  - id: hs-trig-002-e3
+    kind: expr
+    stem: 化简 sin(x)**2 + cos(x)**2
+    answer: "1"
+    solution_outline: 使用同角平方关系。
+    variants: ["若 cos x=−4/5 且 x 在第二象限，求 sin x。"]
+
+- id: hs-trig-003
+  name: 诱导公式
+  stage: highschool
+  course: 三角函数
+  chapter: 三角恒等变换
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 诱导公式把大角、负角化到熟悉的锐角。
+  definition: sin(π−x)=sin x，cos(π−x)=−cos x；sin(π+x)=−sin x，cos(π+x)=−cos x。
+  mistakes: [只记符号不记函数名, 把 cos(π+x) 的符号写反]
+  example: sin(π−π/6)=sin(π/6)=1/2。
+  exercises:
+  - id: hs-trig-003-e1
+    kind: choice
+    stem: sin(π−x) 等于（ ）
+    options: ["sin x", "−sin x", "cos x", "−cos x"]
+    answer: "sin x"
+    solution_outline: 利用“补角正弦相等”。
+  - id: hs-trig-003-e2
+    kind: fill
+    stem: cos π=（ ）
+    answer: "-1"
+    solution_outline: 单位圆上 π 对应点 (−1,0)，横坐标为 −1。
+  - id: hs-trig-003-e3
+    kind: find_error
+    stem: 化简 sin(π+x)，哪一步错了（ ）
+    options: ["第 1 步：sin(π+x)=sin π cos x+cos π sin x", "第 2 步：=0·cos x+1·sin x", "第 3 步：=sin x"]
+    answer: "第 2 步：=0·cos x+1·sin x"
+    solution_outline: cos π=−1，因此应为 −sin x。
+    variants: ["化简 cos(π−x)。"]
+
+- id: hs-trig-004
+  name: 正弦型函数的图像
+  stage: highschool
+  course: 三角函数
+  chapter: 三角函数的图像与性质
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 系数决定振幅，x 前的系数决定周期。
+  definition: y=A sin(ωx+φ) 的振幅为 |A|，周期为 2π/|ω|。
+  mistakes: [把周期写成 2π/ω 却忽略绝对值, 把振幅当成最大值]
+  example: y=3sin(2x) 的振幅为 3，周期为 π。
+  exercises:
+  - id: hs-trig-004-e1
+    kind: choice
+    stem: 函数 y=sin(2x) 的最小正周期是（ ）
+    options: ["π", "2π", "π/2", "4π"]
+    answer: "π"
+    solution_outline: 周期 T=2π/|ω|=2π/2=π。
+  - id: hs-trig-004-e2
+    kind: fill
+    stem: 函数 y=3sin x 的振幅是（ ）
+    answer: "3"
+    solution_outline: 振幅为 |A|，此处 A=3。
+  - id: hs-trig-004-e3
+    kind: match
+    stem: 把函数与最小正周期配对（写成 A=1;B=2 的形式）
+    options: ["A y=sin x", "B y=sin 2x", "1 2π", "2 π"]
+    answer: "A=1;B=2"
+    solution_outline: sin x 的周期为 2π，sin 2x 的周期为 π。
+    variants: ["求 y=2sin(3x) 的振幅与周期。"]
+
+- id: hs-trig-005
+  name: 解三角形
+  stage: highschool
+  course: 三角函数
+  chapter: 解三角形
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 已知边角关系时，正弦定理管“对边对角”，余弦定理管“三边一角”。
+  definition: 正弦定理 a/sin A=b/sin B=c/sin C；余弦定理 c²=a²+b²−2ab cos C。
+  mistakes: [正弦定理中边角不对应, 余弦定理漏掉负号]
+  example: 若 a=3，b=4，C=90°，则 c=5。
+  exercises:
+  - id: hs-trig-005-e1
+    kind: choice
+    stem: 余弦定理的正确形式是（ ）
+    options: ["c²=a²+b²−2ab cos C", "c²=a²+b²+2ab cos C", "c²=a²−b²+2ab cos C", "c²=a²+b²−ab cos C"]
+    answer: "c²=a²+b²−2ab cos C"
+    solution_outline: 两边平方展开后得到余弦定理。
+  - id: hs-trig-005-e2
+    kind: fill
+    stem: 在三角形中 a=3，b=4，C=90°，则 c=（ ）
+    answer: "5"
+    solution_outline: c²=9+16−0=25，所以 c=5。
+  - id: hs-trig-005-e3
+    kind: proof_order
+    stem: 用正弦定理解三角形的步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 先找已知边角对应关系，再用正弦定理求边，最后用内角和求角。
+    variants: ["在三角形中 a=5，A=30°，B=45°，求 b。"]

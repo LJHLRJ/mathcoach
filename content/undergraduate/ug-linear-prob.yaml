@@ -1,0 +1,301 @@
+- id: ug-linear-001
+  name: 矩阵运算
+  stage: undergraduate
+  course: 线性代数
+  chapter: 矩阵
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 矩阵乘法不满足交换律，顺序很重要。
+  definition: (AB)_{ij}=Σ a_{ik}b_{kj}；一般 AB≠BA，但 (AB)^T=B^T A^T。
+  mistakes: [默认 AB=BA, 转置分配顺序写反]
+  example: 二阶单位矩阵与任意同阶矩阵相乘可交换。
+  exercises:
+  - id: ug-linear-001-e1
+    kind: choice
+    stem: 对同阶方阵 A、B，一般（ ）
+    options: ["AB≠BA", "AB=BA", "AB=0", "A+B=0"]
+    answer: "AB≠BA"
+    solution_outline: 矩阵乘法一般不可交换。
+  - id: ug-linear-001-e2
+    kind: fill
+    stem: 2 阶单位矩阵的迹为（ ）
+    answer: "2"
+    solution_outline: 单位矩阵对角线元素为 1、1，迹为 2。
+  - id: ug-linear-001-e3
+    kind: truefalse
+    stem: (AB)^T=B^T A^T。
+    answer: true
+    solution_outline: 转置乘积需要交换顺序。
+    variants: ["判断 (A+B)^T=A^T+B^T 是否成立。"]
+
+- id: ug-linear-002
+  name: 行列式
+  stage: undergraduate
+  course: 线性代数
+  chapter: 行列式
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 行列式衡量线性变换对面积或体积的伸缩。
+  definition: 二阶行列式 |a b; c d|=ad−bc；det(AB)=det A det B。
+  mistakes: [二阶行列式主对角线与副对角线写反, 认为 det(A+B)=detA+detB]
+  example: "|1 2; 3 4|=1×4−2×3=−2。"
+  exercises:
+  - id: ug-linear-002-e1
+    kind: choice
+    stem: 行列式 |1 2; 3 4| 等于（ ）
+    options: ["−2", "2", "10", "−10"]
+    answer: "−2"
+    solution_outline: 1×4−2×3=−2。
+  - id: ug-linear-002-e2
+    kind: fill
+    stem: 3 阶单位矩阵的行列式是（ ）
+    answer: "1"
+    solution_outline: 单位矩阵行列式为 1。
+  - id: ug-linear-002-e3
+    kind: truefalse
+    stem: det(AB)=det A·det B。
+    answer: true
+    solution_outline: 行列式对矩阵乘法可乘。
+    variants: ["计算 |2 1; 1 3|。"]
+
+- id: ug-linear-003
+  name: 向量组的秩
+  stage: undergraduate
+  course: 线性代数
+  chapter: 向量组
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 秩是向量组中“真正独立”的向量个数。
+  definition: 矩阵的秩等于其行阶梯形中非零行的个数，且 rank(A)≤min(m,n)。
+  mistakes: [把行数当成秩, 初等变换时改变秩]
+  example: 单位矩阵的秩等于阶数。
+  exercises:
+  - id: ug-linear-003-e1
+    kind: choice
+    stem: m×n 矩阵 A 的秩满足（ ）
+    options: ["rank(A)≤min(m,n)", "rank(A)=m", "rank(A)=n", "rank(A)>m+n"]
+    answer: "rank(A)≤min(m,n)"
+    solution_outline: 秩不超过行数和列数。
+  - id: ug-linear-003-e2
+    kind: fill
+    stem: 矩阵 [1 0; 0 1] 的秩是（ ）
+    answer: "2"
+    solution_outline: 两行线性无关。
+  - id: ug-linear-003-e3
+    kind: find_error
+    stem: 求矩阵 [1 2; 2 4] 的秩，哪一步错了（ ）
+    options: ["第 1 步：第二行减去第一行的 2 倍", "第 2 步：得到 [1 2; 0 0]", "第 3 步：非零行有 2 行，所以秩为 2"]
+    answer: "第 3 步：非零行有 2 行，所以秩为 2"
+    solution_outline: 非零行只有 1 行，秩为 1。
+    variants: ["求矩阵 [1 1; 1 1] 的秩。"]
+
+- id: ug-linear-004
+  name: 线性方程组
+  stage: undergraduate
+  course: 线性代数
+  chapter: 线性方程组
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 方程组解的情况由系数矩阵与增广矩阵的秩决定。
+  definition: 方阵方程组 Ax=b 有唯一解当且仅当 det A≠0；齐次方程组 Ax=0 必有零解。
+  mistakes: [忘记齐次方程组的零解, 用 det 判断非方阵]
+  example: det A≠0 时，A 可逆，解为 x=A⁻¹b。
+  exercises:
+  - id: ug-linear-004-e1
+    kind: choice
+    stem: 方阵方程组 Ax=b 有唯一解的充要条件是（ ）
+    options: ["det A≠0", "det A=0", "b=0", "A 对称"]
+    answer: "det A≠0"
+    solution_outline: det A≠0 时 A 可逆。
+  - id: ug-linear-004-e2
+    kind: fill
+    stem: 齐次线性方程组 Ax=0 一定有一个解是（ ）
+    answer: "零解"
+    solution_outline: x=0 总满足 Ax=0。
+  - id: ug-linear-004-e3
+    kind: truefalse
+    stem: 若 rank(A)<rank([A|b])，则方程组 Ax=b 无解。
+    answer: true
+    solution_outline: 增广矩阵秩更大表示出现矛盾方程。
+    variants: ["判断方程组 x+y=2，2x+2y=5 是否有解。"]
+
+- id: ug-linear-005
+  name: 特征值与特征向量
+  stage: undergraduate
+  course: 线性代数
+  chapter: 特征值
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 特征向量是被矩阵作用后方向不变的向量，特征值是伸缩倍数。
+  definition: 若 Ax=λx（x≠0），则 λ 为特征值，x 为特征向量；λ 由 |A−λI|=0 求出。
+  mistakes: [忘记特征向量非零, 把特征值当成矩阵元素]
+  example: diag(2,3) 的特征值为 2、3。
+  exercises:
+  - id: ug-linear-005-e1
+    kind: choice
+    stem: 矩阵 [[2,0],[0,3]] 的特征值是（ ）
+    options: ["2 和 3", "0 和 0", "1 和 1", "2 和 −3"]
+    answer: "2 和 3"
+    solution_outline: 对角矩阵的特征值就是对角元。
+  - id: ug-linear-005-e2
+    kind: fill
+    stem: 矩阵 [[2,1],[0,3]] 的迹是（ ）
+    answer: "5"
+    solution_outline: 迹等于主对角线元素之和 2+3=5。
+  - id: ug-linear-005-e3
+    kind: proof_order
+    stem: 求特征值与特征向量的步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 写特征方程、求特征值、代回求特征向量、检验。
+    variants: ["求矩阵 [[1,0],[0,4]] 的特征值。"]
+
+- id: ug-prob-001
+  name: 概率公理
+  stage: undergraduate
+  course: 概率论与数理统计
+  chapter: 概率公理
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 概率是满足可加性的测度。
+  definition: P(Ω)=1，P(∅)=0，可列互斥事件满足可列可加性。
+  mistakes: [对非互斥事件直接相加, 忘记补集公式]
+  example: 若 P(A)=0.3，则 P(A^c)=0.7。
+  exercises:
+  - id: ug-prob-001-e1
+    kind: choice
+    stem: 对样本空间 Ω，有（ ）
+    options: ["P(Ω)=1", "P(Ω)=0", "P(Ω)=∞", "P(Ω)=0.5"]
+    answer: "P(Ω)=1"
+    solution_outline: 概率公理规定全样本空间概率为 1。
+  - id: ug-prob-001-e2
+    kind: fill
+    stem: 若 P(A)=0.3，则 P(A^c)=（ ）
+    answer: "0.7"
+    solution_outline: 补集概率为 1−P(A)。
+  - id: ug-prob-001-e3
+    kind: truefalse
+    stem: 对任意事件 A、B，都有 P(A∪B)=P(A)+P(B)。
+    answer: false
+    solution_outline: 仅当 A、B 互斥时成立，否则要减去交集概率。
+    variants: ["若 P(A)=0.4，P(B)=0.5，且 A、B 互斥，求 P(A∪B)。"]
+
+- id: ug-prob-002
+  name: 条件概率
+  stage: undergraduate
+  course: 概率论与数理统计
+  chapter: 条件概率
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 条件概率是在已知 B 发生的前提下重新分配概率。
+  definition: P(A|B)=P(A∩B)/P(B)（P(B)>0）；A、B 独立时 P(A|B)=P(A)。
+  mistakes: [把 P(A|B) 与 P(B|A) 混为一谈, 分母用错]
+  example: 独立事件中，已知 B 发生不会改变 A 的概率。
+  exercises:
+  - id: ug-prob-002-e1
+    kind: choice
+    stem: 条件概率公式是（ ）
+    options: ["P(A|B)=P(A∩B)/P(B)", "P(A|B)=P(B)/P(A)", "P(A|B)=P(A)P(B)", "P(A|B)=P(A)+P(B)"]
+    answer: "P(A|B)=P(A∩B)/P(B)"
+    solution_outline: 条件概率将样本空间限制到 B。
+  - id: ug-prob-002-e2
+    kind: fill
+    stem: 若 A、B 独立，则 P(A|B)=（ ）
+    answer: "P(A)"
+    solution_outline: 独立性使 B 的发生不影响 A。
+  - id: ug-prob-002-e3
+    kind: truefalse
+    stem: 对任意事件 A、B，P(A|B)=P(B|A)。
+    answer: false
+    solution_outline: 两个条件概率分母不同，一般不相等。
+    variants: ["已知 P(A∩B)=0.2，P(B)=0.5，求 P(A|B)。"]
+
+- id: ug-prob-003
+  name: 随机变量与数字特征
+  stage: undergraduate
+  course: 概率论与数理统计
+  chapter: 随机变量
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 期望是加权平均，方差衡量波动。
+  definition: E(aX+b)=aE(X)+b；Var(aX+b)=a²Var(X)。
+  mistakes: [方差平移时误乘系数, 把期望的线性性用于乘积]
+  example: E(X)=3 时，E(2X+1)=7。
+  exercises:
+  - id: ug-prob-003-e1
+    kind: choice
+    stem: 正态分布的概率密度曲线关于（ ）对称
+    options: ["均值", "中位数", "原点", "方差"]
+    answer: "均值"
+    solution_outline: 正态分布关于均值对称。
+  - id: ug-prob-003-e2
+    kind: fill
+    stem: 若 E(X)=3，则 E(2X+1)=（ ）
+    answer: "7"
+    solution_outline: E(2X+1)=2E(X)+1=7。
+  - id: ug-prob-003-e3
+    kind: truefalse
+    stem: 对常数 b，Var(X+b)=Var(X)。
+    answer: true
+    solution_outline: 平移不改变波动程度。
+    variants: ["若 Var(X)=4，求 Var(3X)。"]
+
+- id: ug-prob-004
+  name: 常见分布
+  stage: undergraduate
+  course: 概率论与数理统计
+  chapter: 常见分布
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 二项分布数成功次数，泊松分布描述稀有事件计数。
+  definition: X~B(n,p) 时 E(X)=np，Var(X)=np(1−p)；X~P(λ) 时 E(X)=Var(X)=λ。
+  mistakes: [二项分布方差漏掉 (1−p), 混淆泊松分布的均值与方差]
+  example: X~B(10,0.2) 时，E(X)=2，Var(X)=1.6。
+  exercises:
+  - id: ug-prob-004-e1
+    kind: choice
+    stem: 泊松分布 P(λ) 的均值与方差满足（ ）
+    options: ["都等于 λ", "均值 λ，方差 λ²", "均值 0", "方差 0"]
+    answer: "都等于 λ"
+    solution_outline: 泊松分布的均值与方差均为参数 λ。
+  - id: ug-prob-004-e2
+    kind: fill
+    stem: 若 X~B(10,0.2)，则 Var(X)=（ ）
+    answer: "1.6"
+    solution_outline: np(1−p)=10×0.2×0.8=1.6。
+  - id: ug-prob-004-e3
+    kind: match
+    stem: 把分布与数字特征配对（写成 A=1;B=2 的形式）
+    options: ["A 二项分布 B(n,p)", "B 泊松分布 P(λ)", "1 均值 np", "2 均值 λ"]
+    answer: "A=1;B=2"
+    solution_outline: 二项分布均值为 np，泊松分布均值为 λ。
+    variants: ["若 X~B(5,0.4)，求 E(X) 与 Var(X)。"]
+
+- id: ug-prob-005
+  name: 参数估计
+  stage: undergraduate
+  course: 概率论与数理统计
+  chapter: 统计推断
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 用样本统计量估计总体参数，样本均值是最常用的估计。
+  definition: 样本均值是总体均值的无偏估计；置信水平描述重复抽样下区间覆盖参数的比例。
+  mistakes: [把置信水平解释为单个区间包含参数的概率, 认为无偏估计一定最优]
+  example: 样本 2,4,6 的均值为 4。
+  exercises:
+  - id: ug-prob-005-e1
+    kind: choice
+    stem: 总体均值的常用无偏估计是（ ）
+    options: ["样本均值", "样本最大值", "样本最小值", "样本个数"]
+    answer: "样本均值"
+    solution_outline: 样本均值的期望等于总体均值。
+  - id: ug-prob-005-e2
+    kind: fill
+    stem: 样本 2,4,6 的均值是（ ）
+    answer: "4"
+    solution_outline: (2+4+6)/3=4。
+  - id: ug-prob-005-e3
+    kind: truefalse
+    stem: 置信水平 95% 表示重复抽样构造的区间约有 95% 能覆盖总体参数。
+    answer: true
+    solution_outline: 这是置信水平的频率解释。
+    variants: ["样本 1,3,5,7 的均值是多少？"]

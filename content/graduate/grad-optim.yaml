@@ -1,0 +1,180 @@
+- id: grad-optim-001
+  name: 凸集与凸函数
+  stage: graduate
+  course: 最优化方法
+  chapter: 凸性
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 凸集的任意两点连线仍在集合内，凸函数图像在弦下方。
+  definition: 凸集满足 (1−t)x+ty∈C；凸函数满足 f((1−t)x+ty)≤(1−t)f(x)+tf(y)。
+  mistakes: [把凸函数图像方向记反, 忽略定义域凸性]
+  example: f(x)=x² 是凸函数。
+  exercises:
+  - id: grad-optim-001-e1
+    kind: choice
+    stem: 集合 C 为凸集的条件是（ ）
+    options: ["任意两点连线仍在 C 内", "任意两点距离小于 1", "C 有界", "C 包含原点"]
+    answer: "任意两点连线仍在 C 内"
+    solution_outline: 凸集的定义。
+  - id: grad-optim-001-e2
+    kind: fill
+    stem: 一元二阶可导函数 f 为凸函数的条件是 f''（ ）0
+    answer: "≥"
+    solution_outline: 二阶导数非负。
+  - id: grad-optim-001-e3
+    kind: truefalse
+    stem: 凸函数的局部极小值也是全局极小值。
+    answer: true
+    solution_outline: 凸性保证局部极小即全局极小。
+    variants: ["判断 f(x)=−x² 是否为凸函数。"]
+
+- id: grad-optim-002
+  name: 无约束优化
+  stage: graduate
+  course: 最优化方法
+  chapter: 无约束优化
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 无约束极值点处梯度为零，二阶条件判断极小或极大。
+  definition: 一阶必要条件 ∇f(x*)=0；二阶充分条件 Hessian 正定时为严格局部极小。
+  mistakes: [把驻点都当成极小点, 忽略 Hessian 条件]
+  example: f(x,y)=x²+y² 在原点梯度为零且 Hessian 正定。
+  exercises:
+  - id: grad-optim-002-e1
+    kind: choice
+    stem: 无约束可微优化的一阶必要条件是（ ）
+    options: ["∇f=0", "∇f>0", "f=0", "Hessian=0"]
+    answer: "∇f=0"
+    solution_outline: 极值点处梯度为零。
+  - id: grad-optim-002-e2
+    kind: fill
+    stem: 若 Hessian 在驻点处正定，则该点为严格局部（ ）
+    answer: "极小"
+    solution_outline: 二阶充分条件。
+  - id: grad-optim-002-e3
+    kind: truefalse
+    stem: 梯度为零的点一定是极小值点。
+    answer: false
+    solution_outline: 也可能是极大值点或鞍点。
+    variants: ["求 f(x)=x²−4x 的无约束极小点。"]
+
+- id: grad-optim-003
+  name: 梯度下降
+  stage: graduate
+  course: 最优化方法
+  chapter: 梯度法
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 沿负梯度方向走一小步，函数值下降最快。
+  definition: x_{k+1}=x_k−α_k∇f(x_k)，α_k 为步长或学习率。
+  mistakes: [步长过大导致发散, 沿正梯度方向更新]
+  example: f(x)=x² 时，梯度下降更新 x←x−2αx。
+  exercises:
+  - id: grad-optim-003-e1
+    kind: choice
+    stem: 梯度下降的更新式是（ ）
+    options: ["x_{k+1}=x_k−α∇f", "x_{k+1}=x_k+α∇f", "x_{k+1}=α∇f", "x_{k+1}=∇f/α"]
+    answer: "x_{k+1}=x_k−α∇f"
+    solution_outline: 沿负梯度方向下降。
+  - id: grad-optim-003-e2
+    kind: fill
+    stem: 梯度下降中的 α 通常称为（ ）
+    answer: "学习率"
+    solution_outline: α 控制步长。
+  - id: grad-optim-003-e3
+    kind: find_error
+    stem: 用梯度下降最小化 f(x)=x²，哪一步错了（ ）
+    options: ["第 1 步：梯度为 2x", "第 2 步：更新 x←x−2αx", "第 3 步：沿正梯度方向更新"]
+    answer: "第 3 步：沿正梯度方向更新"
+    solution_outline: 应沿负梯度方向更新。
+    variants: ["写出 f(x)=x²+2x 的梯度下降更新式。"]
+
+- id: grad-optim-004
+  name: 拉格朗日乘子
+  stage: graduate
+  course: 最优化方法
+  chapter: 约束优化
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 在约束曲面上，目标函数梯度与约束梯度平行。
+  definition: min f 受约束 g=0 时，构造 L=f+λg，令 ∇L=0。
+  mistakes: [忘记约束方程, 乘子符号写错]
+  example: 在 x+y=1 上最小化 x²+y²，最优解为 (1/2,1/2)。
+  exercises:
+  - id: grad-optim-004-e1
+    kind: choice
+    stem: 等式约束 g(x)=0 下，拉格朗日函数为（ ）
+    options: ["L=f+λg", "L=f−g", "L=λf", "L=fg"]
+    answer: "L=f+λg"
+    solution_outline: 引入乘子 λ 构造拉格朗日函数。
+  - id: grad-optim-004-e2
+    kind: fill
+    stem: 拉格朗日乘子法中，需要令 ∇L=（ ）
+    answer: "0"
+    solution_outline: 对 x 与 λ 分别求偏导并令其为零。
+  - id: grad-optim-004-e3
+    kind: proof_order
+    stem: 拉格朗日乘子法步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 写约束、构造 L、求偏导联立、代回检验。
+    variants: ["在 x+y=2 上最小化 x²+y²。"]
+
+- id: grad-optim-005
+  name: KKT 条件
+  stage: graduate
+  course: 最优化方法
+  chapter: 约束优化
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: KKT 把等式约束的乘子法推广到不等式约束，并加入互补松弛。
+  definition: KKT 条件包含原始可行性、对偶可行性、平稳性、互补松弛与二阶条件。
+  mistakes: [遗漏互补松弛, 对不等式约束的乘子符号写错]
+  example: 约束 x≥0 的乘子必须非负。
+  exercises:
+  - id: grad-optim-005-e1
+    kind: choice
+    stem: 不等式约束 g(x)≤0 对应的乘子应满足（ ）
+    options: ["λ≥0", "λ≤0", "λ=1", "λ 任意"]
+    answer: "λ≥0"
+    solution_outline: 对偶可行性要求不等式约束乘子非负。
+  - id: grad-optim-005-e2
+    kind: fill
+    stem: 互补松弛条件为 λ_i g_i(x)=（ ）
+    answer: "0"
+    solution_outline: 乘子与约束至少一个为零。
+  - id: grad-optim-005-e3
+    kind: truefalse
+    stem: 凸优化问题中 KKT 条件也是全局最优的充分条件。
+    answer: true
+    solution_outline: 凸性加 KKT 可保证全局最优。
+    variants: ["写出等式约束与不等式约束同时存在时的 KKT 条件。"]
+
+- id: grad-optim-006
+  name: 对偶理论
+  stage: graduate
+  course: 最优化方法
+  chapter: 对偶
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 对偶问题从下界逼近原问题，强对偶时两者最优值相等。
+  definition: 弱对偶给出 d*≤p*；凸问题满足 Slater 条件时强对偶成立。
+  mistakes: [把弱对偶方向写反, 忽略强对偶条件]
+  example: 线性规划在可行域非空时强对偶成立。
+  exercises:
+  - id: grad-optim-006-e1
+    kind: choice
+    stem: 弱对偶给出（ ）
+    options: ["d*≤p*", "d*≥p*", "d*=0", "p*=0"]
+    answer: "d*≤p*"
+    solution_outline: 对偶最优值是原问题最优值的下界。
+  - id: grad-optim-006-e2
+    kind: fill
+    stem: 凸优化问题在 Slater 条件下满足（ ）对偶
+    answer: "强"
+    solution_outline: Slater 条件保证强对偶。
+  - id: grad-optim-006-e3
+    kind: truefalse
+    stem: 线性规划问题通常具有强对偶性。
+    answer: true
+    solution_outline: 线性规划满足强对偶条件。
+    variants: ["解释对偶间隙为零的含义。"]

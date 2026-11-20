@@ -1,0 +1,363 @@
+- id: grad-pde-001
+  name: 偏微分方程分类
+  stage: graduate
+  course: 数理方程
+  chapter: 方程分类
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 二阶线性偏微分方程按判别式分为椭圆、抛物、双曲三类。
+  definition: 方程 Au_xx+2Bu_xy+Cu_yy+…=0，判别式 B²−AC<0 椭圆、=0 抛物、>0 双曲。
+  mistakes: [判别式符号记反, 把热方程当双曲型]
+  example: 波动方程 u_tt−a²u_xx=0 是双曲型。
+  exercises:
+  - id: grad-pde-001-e1
+    kind: choice
+    stem: 判别式 B²−AC>0 对应（ ）型方程
+    options: ["双曲", "椭圆", "抛物", "混合"]
+    answer: "双曲"
+    solution_outline: 判别式大于零为双曲型。
+  - id: grad-pde-001-e2
+    kind: fill
+    stem: 热传导方程属于（ ）型方程
+    answer: "抛物"
+    solution_outline: 热方程是典型抛物型方程。
+  - id: grad-pde-001-e3
+    kind: multi
+    stem: 下列方程中属于椭圆型的有（ ）
+    options: ["拉普拉斯方程", "泊松方程", "热传导方程", "波动方程"]
+    answer: ["拉普拉斯方程", "泊松方程"]
+    solution_outline: 拉普拉斯与泊松方程都是椭圆型。
+    variants: ["判断 u_tt−u_xx=0 的类型。"]
+
+- id: grad-pde-002
+  name: 波动方程
+  stage: graduate
+  course: 数理方程
+  chapter: 波动方程
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 波动方程描述振动以有限速度传播。
+  definition: u_tt=a²u_xx 的通解可用 d'Alembert 公式表示，a 为波速。
+  mistakes: [把波速与频率混淆, 忽略初始条件]
+  example: 弦振动方程是 u_tt=a²u_xx。
+  exercises:
+  - id: grad-pde-002-e1
+    kind: choice
+    stem: 波动方程 u_tt=a²u_xx 中 a 表示（ ）
+    options: ["波速", "振幅", "频率", "阻尼"]
+    answer: "波速"
+    solution_outline: a 是波的传播速度。
+  - id: grad-pde-002-e2
+    kind: fill
+    stem: 波动方程属于（ ）型方程
+    answer: "双曲"
+    solution_outline: 判别式为正。
+  - id: grad-pde-002-e3
+    kind: truefalse
+    stem: 一维波动方程的通解可以写成两个行波之和。
+    answer: true
+    solution_outline: d'Alembert 解为 f(x−at)+g(x+at)。
+    variants: ["写出 d'Alembert 通解的形式。"]
+
+- id: grad-pde-003
+  name: 热传导方程
+  stage: graduate
+  course: 数理方程
+  chapter: 热方程
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 热方程描述温度从高温向低温扩散并逐渐趋于稳定。
+  definition: u_t=a²u_xx；稳态时 u_t=0，退化为拉普拉斯方程。
+  mistakes: [把时间一阶项写成二阶, 忽略边界条件]
+  example: 一维热方程在稳态时 u_xx=0，解为线性函数。
+  exercises:
+  - id: grad-pde-003-e1
+    kind: choice
+    stem: 一维热传导方程是（ ）
+    options: ["u_t=a²u_xx", "u_tt=a²u_xx", "u_xx+u_yy=0", "u_t+u_x=0"]
+    answer: "u_t=a²u_xx"
+    solution_outline: 热方程对时间是一阶、对空间是二阶。
+  - id: grad-pde-003-e2
+    kind: fill
+    stem: 热方程达到稳态时，解满足（ ）方程
+    answer: "拉普拉斯"
+    solution_outline: u_t=0 后退化为拉普拉斯方程。
+  - id: grad-pde-003-e3
+    kind: find_error
+    stem: 判断热方程的稳定性，哪一步错了（ ）
+    options: ["第 1 步：热方程属于抛物型", "第 2 步：时间方向需要初值", "第 3 步：所以时间方向需要两个初值"]
+    answer: "第 3 步：所以时间方向需要两个初值"
+    solution_outline: 热方程对时间一阶，只需一个初始条件。
+    variants: ["写出二维热方程的形式。"]
+
+- id: grad-pde-004
+  name: 拉普拉斯方程
+  stage: graduate
+  course: 数理方程
+  chapter: 椭圆型方程
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 调和函数在区域内部没有极值，最大最小值出现在边界。
+  definition: Δu=0 的解称为调和函数；满足最大值原理和平均值性质。
+  mistakes: [忽略边界条件, 把泊松方程与拉普拉斯方程混淆]
+  example: u(x,y)=x²−y² 是调和函数。
+  exercises:
+  - id: grad-pde-004-e1
+    kind: choice
+    stem: 拉普拉斯方程是（ ）
+    options: ["Δu=0", "Δu=1", "u_t=Δu", "u_tt=Δu"]
+    answer: "Δu=0"
+    solution_outline: 拉普拉斯方程的定义。
+  - id: grad-pde-004-e2
+    kind: fill
+    stem: 调和函数的最大值一定在区域的（ ）上取得
+    answer: "边界"
+    solution_outline: 最大值原理。
+  - id: grad-pde-004-e3
+    kind: truefalse
+    stem: 调和函数满足平均值性质。
+    answer: true
+    solution_outline: 球面平均值等于球心值。
+    variants: ["验证 u=x²+y² 是否调和。"]
+
+- id: grad-pde-005
+  name: 分离变量法
+  stage: graduate
+  course: 数理方程
+  chapter: 分离变量
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 把多元函数拆成单变量函数的乘积，再叠加本征解。
+  definition: 设 u=X(x)T(t)，代入方程得到两个常微分方程，由边界条件确定本征值。
+  mistakes: [边界条件代入错误, 忘记叠加所有本征解]
+  example: 两端固定弦的振动可展开为正弦级数。
+  exercises:
+  - id: grad-pde-005-e1
+    kind: choice
+    stem: 分离变量法的核心假设是（ ）
+    options: ["u=X(x)T(t)", "u=X+T", "u=常数", "u=e^{x+t}"]
+    answer: "u=X(x)T(t)"
+    solution_outline: 将多元函数分解为单变量函数乘积。
+  - id: grad-pde-005-e2
+    kind: fill
+    stem: 两端固定弦的边界条件是 u(0,t)=u(L,t)=（ ）
+    answer: "0"
+    solution_outline: 固定端位移为零。
+  - id: grad-pde-005-e3
+    kind: proof_order
+    stem: 分离变量法步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 设乘积解、代入方程、分离变量、由边界条件求本征值并叠加。
+    variants: ["写出两端固定弦的本征函数系。"]
+
+- id: grad-pde-006
+  name: 傅里叶变换法
+  stage: graduate
+  course: 数理方程
+  chapter: 积分变换
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 傅里叶变换把微分运算变成乘法，适合处理无界区域。
+  definition: F[f](ξ)=∫f(x)e^{−iξx}dx；F[f′]=iξF[f]。
+  mistakes: [变换前后变量混淆, 忘记逆变换系数]
+  example: 高斯函数的傅里叶变换仍是高斯函数。
+  exercises:
+  - id: grad-pde-006-e1
+    kind: choice
+    stem: 傅里叶变换把求导运算变成（ ）
+    options: ["乘以 iξ", "加上 iξ", "除以 ξ", "平方"]
+    answer: "乘以 iξ"
+    solution_outline: F[f′]=iξF[f]。
+  - id: grad-pde-006-e2
+    kind: fill
+    stem: 高斯函数 e^{−x²} 的傅里叶变换仍然是（ ）函数
+    answer: "高斯"
+    solution_outline: 高斯函数在傅里叶变换下保持高斯形式。
+  - id: grad-pde-006-e3
+    kind: truefalse
+    stem: 傅里叶变换适合处理定义在整个实轴上的问题。
+    answer: true
+    solution_outline: 无界区域常用傅里叶变换。
+    variants: ["写出傅里叶逆变换公式。"]
+
+- id: grad-stochastic-001
+  name: 随机过程概念
+  stage: graduate
+  course: 随机过程
+  chapter: 基本概念
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 随机过程是一族随指标参数变化的随机变量。
+  definition: "{X_t, t∈T} 是概率空间上的随机变量族，T 为指标集，状态空间为 X_t 的取值集合。"
+  mistakes: [把随机过程当成单个随机变量, 混淆指标集与状态空间]
+  example: 每天同一时刻的气温构成一个随机过程。
+  exercises:
+  - id: grad-stochastic-001-e1
+    kind: choice
+    stem: 随机过程是（ ）
+    options: ["一族随机变量", "一个随机变量", "一个常数", "一个概率"]
+    answer: "一族随机变量"
+    solution_outline: 随机过程由指标集参数化的一族随机变量组成。
+  - id: grad-stochastic-001-e2
+    kind: fill
+    stem: 随机过程的指标集通常表示（ ）
+    answer: "时间"
+    solution_outline: 指标集常解释为时间。
+  - id: grad-stochastic-001-e3
+    kind: truefalse
+    stem: 随机过程的状态空间是 X_t 可能取值的集合。
+    answer: true
+    solution_outline: 状态空间的定义。
+    variants: ["举一个离散时间随机过程的例子。"]
+
+- id: grad-stochastic-002
+  name: 马尔可夫链
+  stage: graduate
+  course: 随机过程
+  chapter: 马尔可夫链
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 马尔可夫性表示“未来只依赖现在，不依赖过去”。
+  definition: P(X_{n+1}=j|X_n=i,X_{n−1},…)=P(X_{n+1}=j|X_n=i)；转移矩阵每行和为 1。
+  mistakes: [转移矩阵行和当成列和, 忽略状态空间]
+  example: 天气在晴、雨两状态间转移可建模为马尔可夫链。
+  exercises:
+  - id: grad-stochastic-002-e1
+    kind: choice
+    stem: 马尔可夫性的含义是（ ）
+    options: ["未来只依赖现在", "未来依赖全部过去", "状态独立", "转移概率为 0"]
+    answer: "未来只依赖现在"
+    solution_outline: 无后效性。
+  - id: grad-stochastic-002-e2
+    kind: fill
+    stem: 马尔可夫链转移矩阵每一行的和为（ ）
+    answer: "1"
+    solution_outline: 从某状态出发的概率总和为 1。
+  - id: grad-stochastic-002-e3
+    kind: find_error
+    stem: 判断转移矩阵 [[0.8,0.2],[0.3,0.7]] 是否合法，哪一步错了（ ）
+    options: ["第 1 步：检查元素非负", "第 2 步：计算每行和", "第 3 步：第一行和为 1，所以第二行不必检查"]
+    answer: "第 3 步：第一行和为 1，所以第二行不必检查"
+    solution_outline: 每一行都必须满足和为 1。
+    variants: ["写出两步转移概率与一步转移矩阵的关系。"]
+
+- id: grad-stochastic-003
+  name: 泊松过程
+  stage: graduate
+  course: 随机过程
+  chapter: 泊松过程
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 泊松过程描述稀有事件在时间上的随机到达。
+  definition: 计数过程 N_t 具有独立增量与平稳增量，N_t~P(λt)，E(N_t)=λt。
+  mistakes: [把到达间隔当成指数分布与泊松分布混淆, 忽略独立增量]
+  example: 呼叫中心来电数常用泊松过程建模。
+  exercises:
+  - id: grad-stochastic-003-e1
+    kind: choice
+    stem: 泊松过程在长度 t 的时间区间内的事件数服从（ ）
+    options: ["泊松分布", "正态分布", "均匀分布", "二项分布"]
+    answer: "泊松分布"
+    solution_outline: N_t~P(λt)。
+  - id: grad-stochastic-003-e2
+    kind: fill
+    stem: 强度为 λ 的泊松过程满足 E(N_t)=（ ）
+    answer: "λt"
+    solution_outline: 泊松分布均值为 λt。
+  - id: grad-stochastic-003-e3
+    kind: truefalse
+    stem: 泊松过程具有独立增量性。
+    answer: true
+    solution_outline: 不相交时间区间上的增量独立。
+    variants: ["求强度 2 的泊松过程在 3 个单位时间内的平均事件数。"]
+
+- id: grad-stochastic-004
+  name: 布朗运动
+  stage: graduate
+  course: 随机过程
+  chapter: 布朗运动
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 布朗运动是连续时间、连续路径的随机游走极限。
+  definition: 标准布朗运动 B_t 满足 B_0=0、独立增量、增量 B_t−B_s~N(0,t−s)，路径连续。
+  mistakes: [误以为布朗运动路径可导, 忘记增量方差为时间差]
+  example: B_t 的方差为 t。
+  exercises:
+  - id: grad-stochastic-004-e1
+    kind: choice
+    stem: 标准布朗运动 B_t 的方差是（ ）
+    options: ["t", "t²", "1", "0"]
+    answer: "t"
+    solution_outline: 增量服从 N(0,t)。
+  - id: grad-stochastic-004-e2
+    kind: fill
+    stem: 布朗运动路径几乎必然（连续/可导）？填“连续”或“可导”
+    answer: "连续"
+    solution_outline: 布朗运动路径连续但处处不可导。
+  - id: grad-stochastic-004-e3
+    kind: truefalse
+    stem: 布朗运动具有独立增量。
+    answer: true
+    solution_outline: 不相交区间增量相互独立。
+    variants: ["求 B_t 与 B_s 的协方差（s<t）。"]
+
+- id: grad-stochastic-005
+  name: 鞅
+  stage: graduate
+  course: 随机过程
+  chapter: 鞅
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 鞅是“公平游戏”，给定现在信息，未来的条件期望等于现在。
+  definition: E[|X_n|]<∞，且 E[X_{n+1}|F_n]=X_n。
+  mistakes: [把下鞅也当成鞅, 忽略可积性]
+  example: 公平赌博中赌徒的资产是鞅。
+  exercises:
+  - id: grad-stochastic-005-e1
+    kind: choice
+    stem: 鞅的定义要求（ ）
+    options: ["E[X_{n+1}|F_n]=X_n", "E[X_{n+1}|F_n]>X_n", "E[X_{n+1}]=0", "X_n 单调"]
+    answer: "E[X_{n+1}|F_n]=X_n"
+    solution_outline: 公平游戏的条件期望性质。
+  - id: grad-stochastic-005-e2
+    kind: fill
+    stem: 布朗运动 B_t 关于其自然滤子是（ ）（填“鞅”或“下鞅”）
+    answer: "鞅"
+    solution_outline: E[B_t|F_s]=B_s。
+  - id: grad-stochastic-005-e3
+    kind: truefalse
+    stem: 鞅的期望不随时间改变。
+    answer: true
+    solution_outline: 由条件期望取期望得 E[X_n]=E[X_0]。
+    variants: ["验证 B_t²−t 是否为鞅。"]
+
+- id: grad-stochastic-006
+  name: 伊藤积分
+  stage: graduate
+  course: 随机过程
+  chapter: 随机分析
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 伊藤积分定义对布朗运动的随机积分，不能按普通黎曼积分处理。
+  definition: 伊藤等距 E[(∫H dB)²]=E[∫H²dt]；伊藤公式包含二阶项。
+  mistakes: [忽略二阶项, 把 dB² 当作 0]
+  example: 在伊藤微积分中 (dB_t)²=dt。
+  exercises:
+  - id: grad-stochastic-006-e1
+    kind: choice
+    stem: 伊藤等距公式是（ ）
+    options: ["E[(∫H dB)²]=E[∫H²dt]", "E[∫H dB]=E[∫H dt]", "∫H dB=∫H dt", "dB²=0"]
+    answer: "E[(∫H dB)²]=E[∫H²dt]"
+    solution_outline: 伊藤积分的等距性质。
+  - id: grad-stochastic-006-e2
+    kind: fill
+    stem: 伊藤微积分中 (dB_t)²=（ ）
+    answer: "dt"
+    solution_outline: 布朗运动的二次变差。
+  - id: grad-stochastic-006-e3
+    kind: find_error
+    stem: 应用伊藤公式，哪一步错了（ ）
+    options: ["第 1 步：写 df=f_t dt+f_x dB+0.5f_xx dt", "第 2 步：合并 dt 项", "第 3 步：忽略二阶项 0.5f_xx dt"]
+    answer: "第 3 步：忽略二阶项 0.5f_xx dt"
+    solution_outline: 伊藤公式必须保留二阶项。
+    variants: ["写出 d(B_t²) 的伊藤展开。"]

@@ -1,0 +1,150 @@
+- id: hs-analytic-001
+  name: 直线方程
+  stage: highschool
+  course: 解析几何
+  chapter: 直线
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 直线的斜截式把“倾斜程度”和“截距”直接写出来。
+  definition: 直线 y=kx+b 的斜率为 k，y 轴截距为 b；过点 (x0,y0) 且斜率为 k 的直线为 y−y0=k(x−x0)。
+  mistakes: [竖直线斜率不存在却套斜截式, 截距与距离混淆]
+  example: y=3x 是过原点、斜率为 3 的直线。
+  exercises:
+  - id: hs-analytic-001-e1
+    kind: choice
+    stem: 直线 y=2x+1 的斜率为（ ）
+    options: ["1", "2", "−2", "1/2"]
+    answer: "2"
+    solution_outline: 斜截式 y=kx+b 中 k=2。
+  - id: hs-analytic-001-e2
+    kind: fill
+    stem: 过原点且斜率为 3 的直线方程是（ ）
+    answer: "y=3x"
+    solution_outline: 代入 y−0=3(x−0)。
+  - id: hs-analytic-001-e3
+    kind: truefalse
+    stem: 直线 x=1 的斜率为 0。
+    answer: false
+    solution_outline: 竖直线斜率不存在。
+    variants: ["求过点 (1,2) 且斜率为 −1 的直线方程。"]
+
+- id: hs-analytic-002
+  name: 圆的方程
+  stage: highschool
+  course: 解析几何
+  chapter: 圆
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 圆是到定点距离等于定长的点的集合。
+  definition: 以 (a,b) 为圆心、r 为半径的圆方程为 (x−a)²+(y−b)²=r²。
+  mistakes: [圆心符号写反, 把 r² 当成 r]
+  example: (x−1)²+(y+2)²=9 的圆心为 (1,−2)，半径为 3。
+  exercises:
+  - id: hs-analytic-002-e1
+    kind: choice
+    stem: 圆 x²+y²=4 的半径是（ ）
+    options: ["2", "4", "√2", "16"]
+    answer: "2"
+    solution_outline: r²=4，所以 r=2。
+  - id: hs-analytic-002-e2
+    kind: fill
+    stem: 圆 (x−1)²+(y+2)²=9 的圆心是（ ）
+    answer: "(1,-2)"
+    solution_outline: 标准形式中圆心为 (1,−2)。
+  - id: hs-analytic-002-e3
+    kind: truefalse
+    stem: 方程 (x−1)²+(y+2)²=0 表示一个点。
+    answer: true
+    solution_outline: 距离平方为 0，只有 x=1、y=−2 一个点。
+    variants: ["写出圆心 (0,3)、半径 2 的圆方程。"]
+
+- id: hs-analytic-003
+  name: 直线与圆的位置关系
+  stage: highschool
+  course: 解析几何
+  chapter: 圆
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 比较圆心到直线的距离与半径。
+  definition: 圆心到直线距离 d<r 相交，d=r 相切，d>r 相离。
+  mistakes: [点到直线距离公式漏绝对值, 把 d 与 r 的关系写反]
+  example: 原点 x+y−2=0 的距离为 2/√2=√2。
+  exercises:
+  - id: hs-analytic-003-e1
+    kind: choice
+    stem: 原点 (0,0) 到直线 x+y−2=0 的距离是（ ）
+    options: ["1", "√2", "2", "2√2"]
+    answer: "√2"
+    solution_outline: d=|−2|/√(1²+1²)=√2。
+  - id: hs-analytic-003-e2
+    kind: fill
+    stem: 以原点为圆心且与直线 x=3 相切的圆半径是（ ）
+    answer: "3"
+    solution_outline: 圆心到直线 x=3 的距离为 3。
+  - id: hs-analytic-003-e3
+    kind: find_error
+    stem: 判断圆 x²+y²=1 与直线 y=x 的位置关系，哪一步错了（ ）
+    options: ["第 1 步：圆心到直线距离 d=0", "第 2 步：半径 r=1", "第 3 步：因为 d<r，所以相离"]
+    answer: "第 3 步：因为 d<r，所以相离"
+    solution_outline: d=0<1，应为相交。
+    variants: ["判断圆 x²+y²=4 与直线 y=3 的位置关系。"]
+
+- id: hs-analytic-004
+  name: 椭圆
+  stage: highschool
+  course: 解析几何
+  chapter: 圆锥曲线
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 椭圆是到两定点距离之和为常数的点的轨迹。
+  definition: 椭圆 x²/a²+y²/b²=1（a>b>0）中 c²=a²−b²，离心率 e=c/a。
+  mistakes: [把 a、b、c 关系写成 a²=b²+c² 却混淆长短轴, 离心率公式写反]
+  example: x²/9+y²/4=1 中 a=3，b=2，c=√5，e=√5/3。
+  exercises:
+  - id: hs-analytic-004-e1
+    kind: choice
+    stem: 椭圆 x²/9+y²/4=1 的长半轴 a 为（ ）
+    options: ["2", "3", "√5", "9"]
+    answer: "3"
+    solution_outline: a²=9，所以 a=3。
+  - id: hs-analytic-004-e2
+    kind: fill
+    stem: 椭圆 x²/9+y²/4=1 的离心率是（ ）
+    answer: "√5/3"
+    solution_outline: c=√(9−4)=√5，e=c/a=√5/3。
+  - id: hs-analytic-004-e3
+    kind: truefalse
+    stem: 椭圆的离心率满足 0<e<1。
+    answer: true
+    solution_outline: 椭圆中 c<a，所以 0<c/a<1。
+    variants: ["求椭圆 x²/25+y²/16=1 的焦距。"]
+
+- id: hs-analytic-005
+  name: 抛物线
+  stage: highschool
+  course: 解析几何
+  chapter: 圆锥曲线
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 抛物线是到焦点与准线距离相等的点的轨迹。
+  definition: 抛物线 y²=2px（p>0）的焦点为 (p/2,0)，准线为 x=−p/2。
+  mistakes: [焦点与准线位置写反, 把 2p 当成 p]
+  example: y²=4x 中 2p=4，焦点为 (1,0)，准线为 x=−1。
+  exercises:
+  - id: hs-analytic-005-e1
+    kind: choice
+    stem: 抛物线 y²=4x 的焦点是（ ）
+    options: ["(1,0)", "(2,0)", "(0,1)", "(−1,0)"]
+    answer: "(1,0)"
+    solution_outline: 2p=4，焦点为 (p/2,0)=(1,0)。
+  - id: hs-analytic-005-e2
+    kind: fill
+    stem: 抛物线 y²=4x 的准线方程是（ ）
+    answer: "x=-1"
+    solution_outline: 准线为 x=−p/2=−1。
+  - id: hs-analytic-005-e3
+    kind: proof_order
+    stem: 由定义推导抛物线标准方程的步骤排序（用逗号分隔）
+    answer: "1,2,3,4"
+    solution_outline: 设动点、写距离相等、平方化简、整理成标准形式。
+    variants: ["求抛物线 y²=8x 的焦点与准线。"]

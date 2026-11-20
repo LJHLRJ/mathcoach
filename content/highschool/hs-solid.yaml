@@ -1,0 +1,151 @@
+- id: hs-solid-001
+  name: 空间点线面关系
+  stage: highschool
+  course: 立体几何
+  chapter: 空间点线面
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 空间几何从“点动成线、线动成面”开始。
+  definition: 两点确定一条直线；不共线的三点确定一个平面；两条相交或平行直线确定一个平面。
+  mistakes: [把“三点确定平面”漏掉不共线条件, 把异面直线当成相交直线]
+  example: 两条平行直线可以确定一个平面。
+  exercises:
+  - id: hs-solid-001-e1
+    kind: choice
+    stem: 下列结论正确的是（ ）
+    options: ["两点确定一条直线", "三点确定一条直线", "一条直线确定一个平面", "两条相交直线平行"]
+    answer: "两点确定一条直线"
+    solution_outline: 这是空间几何的基本公理。
+  - id: hs-solid-001-e2
+    kind: fill
+    stem: 过两点有且只有（ ）条直线
+    answer: "1"
+    solution_outline: 两点确定唯一一条直线。
+  - id: hs-solid-001-e3
+    kind: truefalse
+    stem: 两条平行直线确定一个平面。
+    answer: true
+    solution_outline: 平行线共面，且可唯一确定一个平面。
+    variants: ["不共线的三点能确定几个平面？"]
+
+- id: hs-solid-002
+  name: 线面平行
+  stage: highschool
+  course: 立体几何
+  chapter: 平行关系
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 线面平行看“线是否平行于面内某条线”。
+  definition: 平面外一条直线与平面内一条直线平行，则该直线与平面平行；线面平行时，过该直线的平面与原平面的交线与该直线平行。
+  mistakes: [忽略“平面外”条件, 把线面平行当成线线平行]
+  example: 若 a∥b，b⊂α，a⊄α，则 a∥α。
+  exercises:
+  - id: hs-solid-002-e1
+    kind: choice
+    stem: 判定直线 a 平行于平面 α 的条件是（ ）
+    options: ["a 在 α 外，且 a 平行于 α 内一条直线", "a 平行于 α 内无数条直线", "a 与 α 没有公共点且 a 在 α 内", "a 垂直于 α 内一条直线"]
+    answer: "a 在 α 外，且 a 平行于 α 内一条直线"
+    solution_outline: 这是线面平行的判定定理。
+  - id: hs-solid-002-e2
+    kind: match
+    stem: 把定理与内容配对（写成 A=1;B=2 的形式）
+    options: ["A 线面平行判定", "B 线面平行性质", "1 面外线平行于面内线则线面平行", "2 线面平行则与交线平行"]
+    answer: "A=1;B=2"
+    solution_outline: 判定是由线线平行推出线面平行，性质反过来给出交线平行。
+  - id: hs-solid-002-e3
+    kind: truefalse
+    stem: 平行于同一平面的两条直线一定平行。
+    answer: false
+    solution_outline: 两条直线可能相交、平行或异面。
+    variants: ["在长方体中找出一个线面平行的例子。"]
+
+- id: hs-solid-003
+  name: 线面垂直
+  stage: highschool
+  course: 立体几何
+  chapter: 垂直关系
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 一条线要垂直于整个平面，必须垂直于面内两条相交直线。
+  definition: 若直线 l 垂直于平面 α 内两条相交直线，则 l⊥α；线面垂直则 l 垂直于 α 内所有直线。
+  mistakes: [只验证垂直于一条直线, 两条直线不相交也下结论]
+  example: 长方体中侧棱垂直于底面。
+  exercises:
+  - id: hs-solid-003-e1
+    kind: choice
+    stem: 直线 l 垂直于平面 α 的判定条件是（ ）
+    options: ["l 垂直于 α 内两条相交直线", "l 垂直于 α 内一条直线", "l 与 α 内两条直线都平行", "l 与 α 平行"]
+    answer: "l 垂直于 α 内两条相交直线"
+    solution_outline: 线面垂直判定定理要求两条相交直线。
+  - id: hs-solid-003-e2
+    kind: proof_order
+    stem: 证明线面垂直的步骤排序（用逗号分隔）
+    answer: "1,2,3"
+    solution_outline: 找到面内两条相交直线，分别证明垂直，再下结论。
+  - id: hs-solid-003-e3
+    kind: fill
+    stem: 正方体棱长为 2，则体对角线长为（ ）
+    answer: "2√3"
+    solution_outline: 体对角线为 √(2²+2²+2²)=2√3。
+    variants: ["证明长方体的侧棱垂直于底面。"]
+
+- id: hs-solid-004
+  name: 空间角
+  stage: highschool
+  course: 立体几何
+  chapter: 空间角
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 异面直线所成角通过平移转化成相交直线夹角。
+  definition: 异面直线所成角的范围是 (0°,90°]；线面角是斜线与它在平面内射影的夹角。
+  mistakes: [把线面角当成斜线与平面内任意直线夹角, 忘记角的范围]
+  example: 正方体中，斜线与底面所成角可通过射影确定。
+  exercises:
+  - id: hs-solid-004-e1
+    kind: choice
+    stem: 正方体 ABCD-A1B1C1D1 中，A1B 与底面 ABCD 所成角为（ ）
+    options: ["30°", "45°", "60°", "90°"]
+    answer: "45°"
+    solution_outline: A1B 在底面的射影是 AB，且 A1A=AB，所以夹角为 45°。
+  - id: hs-solid-004-e2
+    kind: fill
+    stem: 正方体中，异面直线 AB 与 CC1 所成角为（ ）度
+    answer: "90"
+    solution_outline: CC1 垂直于底面，因此垂直于 AB。
+  - id: hs-solid-004-e3
+    kind: truefalse
+    stem: 异面直线所成角的范围是 (0°,90°]。
+    answer: true
+    solution_outline: 通过平移取锐角或直角，最大为 90°。
+    variants: ["求正方体中 A1B 与 B1C 所成角。"]
+
+- id: hs-solid-005
+  name: 空间几何体体积
+  stage: highschool
+  course: 立体几何
+  chapter: 体积与表面积
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: 体积公式都是“底面积乘高”的变体。
+  definition: 柱体 V=Sh；锥体 V=Sh/3；球 V=4πr³/3。
+  mistakes: [锥体忘记除以 3, 球的半径与直径混用]
+  example: 棱长为 2 的正方体体积为 8。
+  exercises:
+  - id: hs-solid-005-e1
+    kind: choice
+    stem: 半径为 r 的球体积公式是（ ）
+    options: ["4πr³/3", "4πr²", "πr²h", "πr³/3"]
+    answer: "4πr³/3"
+    solution_outline: 球的体积公式为 4/3πr³。
+  - id: hs-solid-005-e2
+    kind: fill
+    stem: 棱长为 2 的正方体体积为（ ）
+    answer: "8"
+    solution_outline: V=2³=8。
+  - id: hs-solid-005-e3
+    kind: find_error
+    stem: 求半径 2、高 3 的圆柱体积，哪一步错了（ ）
+    options: ["第 1 步：V=πr²h", "第 2 步：代入 r=2，h=3", "第 3 步：V=6π"]
+    answer: "第 3 步：V=6π"
+    solution_outline: V=π×4×3=12π。
+    variants: ["求底面半径 3、高 4 的圆锥体积。"]

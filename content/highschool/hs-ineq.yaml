@@ -1,0 +1,150 @@
+- id: hs-ineq-001
+  name: 不等式的性质
+  stage: highschool
+  course: 不等式
+  chapter: 不等式性质
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 不等式两边同加同减不改变方向，乘负数要变号。
+  definition: 若 a>b，则 a+c>b+c；若 a>b 且 c>0，则 ac>bc；若 a>b 且 c<0，则 ac<bc。
+  mistakes: [两边乘负数忘记变号, 把不等式同向相加规则用错]
+  example: 3>2，两边乘 −1 得 −3<−2。
+  exercises:
+  - id: hs-ineq-001-e1
+    kind: choice
+    stem: 若 a>b，则下列一定成立的是（ ）
+    options: ["a+c>b+c", "ac>bc", "a²>b²", "1/a<1/b"]
+    answer: "a+c>b+c"
+    solution_outline: 两边同加同一个数，不等号方向不变。
+  - id: hs-ineq-001-e2
+    kind: truefalse
+    stem: 若 a>b，则 −a>−b。
+    answer: false
+    solution_outline: 两边乘 −1 后不等号要反向。
+  - id: hs-ineq-001-e3
+    kind: fill
+    stem: 若 a>b，则 a−b（ ）0
+    answer: ">"
+    solution_outline: 移项即可得到 a−b>0。
+    variants: ["若 a>b 且 c<0，比较 ac 与 bc 的大小。"]
+
+- id: hs-ineq-002
+  name: 一元二次不等式
+  stage: highschool
+  course: 不等式
+  chapter: 一元二次不等式
+  difficulty: 基础
+  source: 智能体生成
+  intuition: 二次不等式的解集看抛物线与 x 轴的交点。
+  definition: 先求对应方程的两根，再结合开口方向写出解集。
+  mistakes: [忘记开口方向, 把“小于零”写成两根之外]
+  example: x²−1<0 的解集为 −1<x<1。
+  exercises:
+  - id: hs-ineq-002-e1
+    kind: choice
+    stem: 不等式 x²−1<0 的解集是（ ）
+    options: ["−1<x<1", "x<−1 或 x>1", "x>1", "全体实数"]
+    answer: "−1<x<1"
+    solution_outline: 两根为 −1、1，开口向上，小于零取两根之间。
+  - id: hs-ineq-002-e2
+    kind: fill
+    stem: 不等式 x²≤4 的解集是（ ）
+    answer: "-2≤x≤2"
+    solution_outline: x²−4≤0，两根为 −2、2，取中间。
+  - id: hs-ineq-002-e3
+    kind: multi
+    stem: 不等式 x²−3x+2>0 的解包含（ ）
+    options: ["x<1", "1<x<2", "x>2", "x=1"]
+    answer: ["x<1", "x>2"]
+    solution_outline: 因式分解为 (x−1)(x−2)>0，取两根之外。
+    variants: ["解不等式 x²−5x+6<0。"]
+
+- id: hs-ineq-003
+  name: 基本不等式
+  stage: highschool
+  course: 不等式
+  chapter: 基本不等式
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 两个正数的算术平均不小于几何平均。
+  definition: 若 a,b>0，则 a+b≥2√(ab)，当且仅当 a=b 时取等号。
+  mistakes: [忽略正数前提, 不检查取等条件]
+  example: x>0 时，x+1/x≥2，x=1 时取最小值 2。
+  exercises:
+  - id: hs-ineq-003-e1
+    kind: choice
+    stem: 若 a,b>0，则下列一定成立的是（ ）
+    options: ["a+b≥2√(ab)", "a+b≤2√(ab)", "a+b=2√(ab)", "a+b>ab"]
+    answer: "a+b≥2√(ab)"
+    solution_outline: 由 (√a−√b)²≥0 展开得到。
+  - id: hs-ineq-003-e2
+    kind: fill
+    stem: 当 x>0 时，x+1/x 的最小值是（ ）
+    answer: "2"
+    solution_outline: 由基本不等式，x+1/x≥2，x=1 时取等号。
+  - id: hs-ineq-003-e3
+    kind: truefalse
+    stem: 基本不等式 a+b≥2√(ab) 当且仅当 a=b 时取等号。
+    answer: true
+    solution_outline: 等号成立条件来自 (√a−√b)²=0。
+    variants: ["求 x>0 时 2x+8/x 的最小值。"]
+
+- id: hs-ineq-004
+  name: 线性规划
+  stage: highschool
+  course: 不等式
+  chapter: 线性规划
+  difficulty: 进阶
+  source: 智能体生成
+  intuition: 线性目标函数的最值通常出现在可行域的顶点。
+  definition: 由一组线性不等式围成的区域称为可行域；线性目标函数在可行域顶点处取得最值。
+  mistakes: [画错边界直线, 忘记检验顶点是否在可行域]
+  example: 可行域顶点为 (0,0)、(2,0)、(0,3) 时，z=x+y 的最大值为 3。
+  exercises:
+  - id: hs-ineq-004-e1
+    kind: choice
+    stem: 可行域顶点为 (0,0)、(2,0)、(0,3)，z=x+y 的最大值是（ ）
+    options: ["0", "2", "3", "5"]
+    answer: "3"
+    solution_outline: 比较三个顶点处的 z 值，最大为 3。
+  - id: hs-ineq-004-e2
+    kind: fill
+    stem: 同上可行域，z=2x+y 的最大值是（ ）
+    answer: "4"
+    solution_outline: 顶点 (2,0) 处 z=4，其余为 0 或 3。
+  - id: hs-ineq-004-e3
+    kind: truefalse
+    stem: 线性规划问题的目标函数最值一定在可行域顶点取得。
+    answer: true
+    solution_outline: 线性函数在凸多边形上的最值出现在顶点。
+    variants: ["可行域顶点为 (0,0)、(4,0)、(0,2)，求 z=x+2y 的最大值。"]
+
+- id: hs-ineq-005
+  name: 绝对值不等式
+  stage: highschool
+  course: 不等式
+  chapter: 绝对值不等式
+  difficulty: 挑战
+  source: 智能体生成
+  intuition: "|x−a| 表示数轴上到 a 的距离。"
+  definition: "|x|<a（a>0）等价于 −a<x<a；|x|>a 等价于 x<−a 或 x>a。"
+  mistakes: [忘记绝对值非负, 区间端点取舍错误]
+  example: "|x−1|≤2 的解集为 −1≤x≤3。"
+  exercises:
+  - id: hs-ineq-005-e1
+    kind: choice
+    stem: 不等式 |x|<3 的解集是（ ）
+    options: ["−3<x<3", "x<3", "x>−3", "x<−3 或 x>3"]
+    answer: "−3<x<3"
+    solution_outline: 到原点距离小于 3 的点落在 (−3,3)。
+  - id: hs-ineq-005-e2
+    kind: fill
+    stem: 不等式 |x−1|≤2 的解集是（ ）
+    answer: "-1≤x≤3"
+    solution_outline: −2≤x−1≤2，解得 −1≤x≤3。
+  - id: hs-ineq-005-e3
+    kind: proof_order
+    stem: 解 |x−a|≤b 的步骤排序（用逗号分隔）
+    answer: "1,2,3"
+    solution_outline: 先去绝对值转化为双侧不等式，再解出 x，最后写成区间。
+    variants: ["解不等式 |x+2|>1。"]

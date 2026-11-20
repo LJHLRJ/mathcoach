@@ -5,6 +5,11 @@ from mathcoach.domain.models import Consent
 from mathcoach.memory.sqlite_repo import SQLiteRepository
 
 
+def _select_function_card(at) -> None:
+    at.selectbox[0].select("hs-function-intro-001").run()
+    assert not at.exception
+
+
 def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file("app.py", default_timeout=15)
@@ -14,6 +19,7 @@ def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
     assert any("学习设置" in header.value for header in at.sidebar.header)
     assert (tmp_path / "mathcoach.sqlite3").exists()
 
+    _select_function_card(at)
     at.text_input[0].set_value("搞懂函数的概念")
     at.button[0].click().run()
     assert not at.exception
@@ -28,12 +34,30 @@ def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
     assert "收据已生成" in at.subheader[0].value
 
 
+def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    at.selectbox[0].select("hs-set-001").run()
+    at.text_input[0].set_value("认识集合")
+    at.button[0].click().run()
+    at.button[0].click().run()  # 开始小测
+
+    assert not at.exception
+    assert any(box.label == "输入答案" for box in at.text_input)
+    at.text_input[0].set_value("0,1,2")
+    at.button[0].click().run()
+    assert not at.exception
+    assert "收据已生成" in at.subheader[0].value
+
+
 def test_app_sidebar_shows_persisted_mistake_after_restart(tmp_path, monkeypatch):
     path = tmp_path / "mathcoach.sqlite3"
     monkeypatch.setenv("MATHCOACH_DB", str(path))
 
     first = AppTest.from_file("app.py", default_timeout=15)
     first.run()
+    _select_function_card(first)
     first.text_input[0].set_value("搞懂函数")
     first.button[0].click().run()
     first.button[0].click().run()
@@ -61,6 +85,7 @@ def test_app_guest_mode_keeps_learning_data_out_of_sqlite(tmp_path, monkeypatch)
     assert not at.exception
     assert any("游客模式" in info.value for info in at.sidebar.info)
 
+    _select_function_card(at)
     at.text_input[0].set_value("搞懂函数")
     at.button[0].click().run()
     at.button[0].click().run()
