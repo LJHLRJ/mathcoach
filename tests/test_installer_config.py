@@ -20,3 +20,15 @@ def test_macos_dmg_script_uses_hdiutil():
     assert "hdiutil create" in text
     assert "/Applications" in text
     assert "MathCoach-$version.dmg" in text
+
+
+def test_release_workflow_builds_installers():
+    text = (ROOT / ".github/workflows/release-desktop.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ISCC.exe" in text
+    assert "scripts/build_macos_dmg.sh" in text
+    assert "MathCoachSetup" in text
+    assert ".dmg" in text
+    assert "gh release upload" in text

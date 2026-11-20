@@ -11,15 +11,15 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
-            artifact: MathCoach-windows.zip
+            portable: MathCoach-windows.zip
           - os: macos-latest
-            artifact: MathCoach-macos.zip
+            portable: MathCoach-macos.zip
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,18 +42,51 @@ jobs:
       - name: Build desktop app
         run: python scripts/build_desktop.py
 
-      - name: Archive Windows
+      - name: Archive portable Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path dist/MathCoach -DestinationPath ${{ matrix.artifact }} -Force
+        run: Compress-Archive -Path dist/MathCoach -DestinationPath ${{ matrix.portable }} -Force
 
-      - name: Archive macOS
+      - name: Archive portable macOS
         if: runner.os == 'macOS'
         shell: bash
-        run: ditto -c -k --sequesterRsrc --keepParent dist/MathCoach.app ${{ matrix.artifact }}
+        run: ditto -c -k --sequesterRsrc --keepParent dist/MathCoach.app ${{ matrix.portable }}
 
-      - name: Upload to release
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --no-progress -y
+          }
+          $version = python -c "import mathcoach; print(mathcoach.__version__)"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" "scripts\installer\MathCoach.iss"
+
+      - name: Build macOS DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        run: bash scripts/build_macos_dmg.sh
+
+      - name: Upload Windows assets
+        if: runner.os == 'Windows'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "${{ matrix.artifact }}" --clobber
+        run: |
+          version=$(python -c "import mathcoach; print(mathcoach.__version__)")
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "${{ matrix.portable }}" \
+            "dist/installer/MathCoachSetup-$version.exe" \
+            --clobber
+
+      - name: Upload macOS assets
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(python -c "import mathcoach; print(mathcoach.__version__)")
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "${{ matrix.portable }}" \
+            "dist/installer/MathCoach-$version.dmg" \
+            --clobber
