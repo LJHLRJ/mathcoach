@@ -12,6 +12,10 @@
 - 导出学习包：Markdown 学习包、独立收据/错题文件、Anki TSV（不生成 `.apkg`）。
 - 安全层：注入守卫、数学伪装检测、写操作红线、脱敏与审计日志。
 
+## 桌面客户端
+
+Windows/macOS 客户端由 GitHub Actions 在发布时构建，见 [Releases](https://github.com/LJHLRJ/mathcoach/releases)。下载 zip 解压后运行；产物未签名，Windows 可能提示 SmartScreen，macOS 需右键“打开”。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+
 ## 目录
 
 ```text

@@ -147,7 +147,18 @@ python scripts/build_desktop.py --console
 6. 删除构建目录后重新执行构建脚本，产物可重复生成。
 7. 确认 `git status` 中只有源码与本文档变更，没有 `dist/`、`build/`、`*.spec`。
 
-## 7. 参考
+## 7. GitHub Actions 发布
+
+`.github/workflows/release-desktop.yml` 在 GitHub Release 发布后运行：
+
+- 在 `windows-latest` 与 `macos-latest` 上安装依赖并执行全量 `pytest`；
+- 使用 `scripts/build_desktop.py` 构建；
+- 生成 `MathCoach-windows.zip` 与 `MathCoach-macos.zip`；
+- 通过 `gh release upload` 附加到当前 Release。
+
+产物不进入 git 仓库，只作为 Release 资产分发。构建机架构以 GitHub Runner 为准；未做代码签名，Windows SmartScreen 与 macOS Gatekeeper 可能提示。
+
+## 8. 参考
 
 - streamlit-desktop-app PyPI：<https://pypi.org/project/streamlit-desktop-app/>（0.3.4，`requires_python` 排除 3.13）
 - PyInstaller 使用文档：<https://pyinstaller.org/en/stable/usage.html>（`--add-data`、`--collect-all`、`--copy-metadata`）
