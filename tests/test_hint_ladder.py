@@ -2,6 +2,7 @@
 import pytest
 
 from mathcoach.domain.hint_ladder import (
+    automatic_next_level,
     grant_requested_level,
     independence_for,
     initial_level,
@@ -17,6 +18,13 @@ def test_initial_level_is_l1():
 def test_next_level_caps_at_l6():
     assert next_level(1) == 2
     assert next_level(6) == 6
+
+
+def test_automatic_next_level_caps_at_l4():
+    assert automatic_next_level(1) == 2
+    assert automatic_next_level(4) == 4  # L5 必须显式请求
+    assert automatic_next_level(5) == 5  # 已显式开放，不倒退
+    assert automatic_next_level(6) == 6
 
 
 def test_request_step_caps_at_l4():

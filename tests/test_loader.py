@@ -1,4 +1,5 @@
 """加载器把 YAML 转成 dataclass，并在校验失败时中止。"""
+import copy
 from pathlib import Path
 
 import pytest
@@ -86,3 +87,19 @@ def test_load_content_allows_warning_in_non_strict_mode(tmp_path):
     assert len(cards) == 1
     assert result.ok
     assert len(result.warnings) == 1
+
+
+def test_multi_answer_is_canonicalized(tmp_path):
+    card = copy.deepcopy(CARD)
+    card["exercises"][0] = {
+        "id": "hs-001-e1",
+        "kind": "multi",
+        "stem": "题干",
+        "options": ["A", "B"],
+        "answer": ["A", "B"],
+        "solution_outline": "因为 A、B",
+    }
+    _write_tree(tmp_path, cards=[card])
+
+    cards, _ = load_content(tmp_path, strict=True)
+    assert cards[0].exercises[0].answer == "A,B"

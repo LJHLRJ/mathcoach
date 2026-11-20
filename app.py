@@ -88,6 +88,16 @@ elif view.phase is Phase.QUIZ:
         st.rerun()
     _render_hint_actions()
 
+elif view.phase is Phase.DIAGNOSE:
+    selected = st.radio(
+        "选择更贴近的错因",
+        view.options,
+        key=f"diagnosis_{engine.state.exercise_id}_{len(engine.state.attempts)}",
+    )
+    if st.button("确认错因", key="confirm_diagnosis"):
+        engine.confirm_diagnosis(selected)
+        st.rerun()
+
 elif view.phase is Phase.HINT:
     if st.button("再试一次", key="retry"):
         engine.retry()

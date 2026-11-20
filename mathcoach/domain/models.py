@@ -63,6 +63,7 @@ class Phase(str, Enum):
     EXPLAIN = "讲解"
     QUIZ = "小测"
     JUDGE = "判定"
+    DIAGNOSE = "错因诊断"
     HINT = "提示"
     RECEIPT = "收据"
     WRAPUP = "收尾"
@@ -120,6 +121,8 @@ class SessionState:
     max_hint_level: int = 0
     consecutive_wrong: int = 0
     attempts: list[dict] = field(default_factory=list)  # 每次作答快照，供后续诊断使用
+    hint_requests: list[str] = field(default_factory=list)  # 本题主动请求过的提示类型
+    diagnosis: ErrorType | None = None  # 连错 2 次后的错因诊断结果
     goal: str = ""
     started_at: datetime | None = None
     exercise_started_at: datetime | None = None  # 单题计时起点，收据用时按题计算

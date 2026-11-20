@@ -16,6 +16,11 @@ def next_level(current: int) -> int:
     return min(current + 1, MAX_LEVEL)
 
 
+def automatic_next_level(current: int) -> int:
+    """答错后的自动升级：L5 必须由用户显式请求，自动升级封顶 L4。"""
+    return max(current, min(next_level(current), MAX_REQUESTED_LEVEL))
+
+
 def independence_for(max_hint_level: int) -> Independence:
     if max_hint_level > INDEPENDENT_MAX_LEVEL:
         return Independence.SEMI_INDEPENDENT

@@ -3,13 +3,21 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from ..domain.diagnosis import diagnose
 from ..domain.hint_ladder import (
+    automatic_next_level,
     grant_requested_level,
     initial_level,
-    next_level,
 )
-from ..domain.judge import judge
-from ..domain.models import Exercise, KnowledgeCard, Phase, Receipt, SessionState
+from ..domain.judge import evaluate
+from ..domain.models import (
+    ErrorType,
+    Exercise,
+    KnowledgeCard,
+    Phase,
+    Receipt,
+    SessionState,
+)
 from ..domain.receipt import build_receipt
 from ..llm.base import Provider, RenderTask
 from .state import SessionView
@@ -73,10 +81,12 @@ class SessionEngine:
         self.state.exercise_id = self.current_exercise.id
         self.state.hint_level = initial_level()
         self.state.consecutive_wrong = 0
+        self.state.hint_requests = []
+        self.state.diagnosis = None
         self.state.exercise_started_at = datetime.now(timezone.utc)
         return self._render_quiz()
 
-    def _render_quiz(self) -> SessionView:
+    def _render_quiz(self, notice: str | None = None) -> SessionView:
         exercise = self.current_exercise
         return self._set(
             SessionView(
@@ -84,7 +94,9 @@ class SessionEngine:
                 title=f"小测 · 第 {self._exercise_pos + 1} / {len(self.card.exercises)} 题",
                 body=exercise.stem,
                 options=exercise.options,
-                notice=f"当前提示层级 L{self.state.hint_level}",
+                notice=notice
+                if notice is not None
+                else f"当前提示层级 L{self.state.hint_level}",
             )
         )
 
@@ -93,11 +105,27 @@ class SessionEngine:
             raise RuntimeError("当前不在小测阶段")
         exercise = self.current_exercise
         answer_level = self.state.hint_level  # 本次作答实际用到的层级
+        judgement = evaluate(exercise, answer)
         self.state.attempts.append(
-            {"exercise_id": exercise.id, "answer": answer, "hint_level": self.state.hint_level}
+            {
+                "exercise_id": exercise.id,
+                "answer": answer,
+                "hint_level": answer_level,
+                "correct": judgement.correct,
+            }
         )
         self.state.max_hint_level = max(self.state.max_hint_level, answer_level)
-        if judge(exercise, answer):
+
+        if judgement.correct is None:
+            # 符号验证超时/被拒：不伪装成判分，也不计入连错。
+            return self._render_quiz(
+                notice=(
+                    f"这一步无法自动核对（{judgement.reason}），"
+                    "建议人工核对后重试；本次不计入连错。"
+                )
+            )
+
+        if judgement.correct:
             return self._issue_receipt()
 
         self.state.consecutive_wrong += 1
@@ -109,20 +137,71 @@ class SessionEngine:
                     title="先停一下",
                     body=(
                         f"这道题连续答错 3 次。完整思路：{exercise.solution_outline}\n\n"
-                        "本次不生成收据，建议换个时间重新练这道题。"
+                        "本次不生成收据。建议先降一档难度，从更基础的保底题重新开始。"
                     ),
                     receipts=tuple(self.receipts),
                 )
             )
 
+        if self.state.consecutive_wrong == 2:
+            diagnosis = diagnose(
+                exercise,
+                self._wrong_answers(exercise.id),
+                tuple(self.state.hint_requests),
+            )
+            self.state.diagnosis = diagnosis.error_type
+            self.state.phase = Phase.DIAGNOSE
+            return self._set(
+                SessionView(
+                    phase=Phase.DIAGNOSE,
+                    title="先诊断一下错因",
+                    body=(
+                        f"这道题连续答错 2 次。初步判断：{diagnosis.error_type.value}"
+                        f"——{diagnosis.reason}。\n\n"
+                        f"请确认，或改选更贴近的一类；确认后回到提示 L"
+                        f"{automatic_next_level(self.state.hint_level)}。"
+                    ),
+                    options=tuple(item.value for item in ErrorType),
+                    notice="错因诊断只影响提示措辞，不改变判分。",
+                )
+            )
+
         self.state.phase = Phase.HINT
-        self.state.hint_level = next_level(self.state.hint_level)
+        self.state.hint_level = automatic_next_level(self.state.hint_level)
         return self._set(
             SessionView(
                 phase=Phase.HINT,
                 title=f"提示 L{self.state.hint_level}",
                 body=self._hint_text(self.state.hint_level),
                 notice="看完提示后回到原题再试一次。",
+            )
+        )
+
+    def _wrong_answers(self, exercise_id: str) -> list[str]:
+        return [
+            attempt["answer"]
+            for attempt in self.state.attempts
+            if attempt["exercise_id"] == exercise_id
+            and attempt.get("correct") is False
+        ]
+
+    def confirm_diagnosis(self, error_type: str | None = None) -> SessionView:
+        if self.state.phase is not Phase.DIAGNOSE:
+            raise RuntimeError("当前不在错因诊断阶段")
+        if error_type is not None:
+            try:
+                self.state.diagnosis = ErrorType(error_type)
+            except ValueError as exc:
+                raise ValueError(f"未知错因：{error_type}") from exc
+        self.state.phase = Phase.HINT
+        self.state.hint_level = automatic_next_level(self.state.hint_level)
+        label = self.state.diagnosis.value if self.state.diagnosis else "未确定"
+        return self._set(
+            SessionView(
+                phase=Phase.HINT,
+                title=f"提示 L{self.state.hint_level} · 错因：{label}",
+                body=self._hint_text(self.state.hint_level),
+                notice="带着错因再看一遍提示，然后回到原题。",
             )
         )
 
@@ -146,6 +225,7 @@ class SessionEngine:
         attempted = {attempt["hint_level"] for attempt in self.state.attempts}
         # M1 只做门槛判定，实际可达性依赖 M2 连错诊断；测试覆盖门槛逻辑即可。
         level, message = grant_requested_level(self.state.hint_level, kind, attempted)
+        self.state.hint_requests.append(kind)
         self.state.hint_level = level
         self.state.max_hint_level = max(self.state.max_hint_level, level)
         self.state.phase = Phase.HINT
@@ -201,6 +281,8 @@ class SessionEngine:
             self.state.phase = Phase.QUIZ
             self.state.hint_level = initial_level()
             self.state.consecutive_wrong = 0
+            self.state.hint_requests = []
+            self.state.diagnosis = None
             self.state.max_hint_level = 0  # 跨题不继承上一题的提示层级
             self.state.exercise_id = self.current_exercise.id
             self.state.exercise_started_at = datetime.now(timezone.utc)

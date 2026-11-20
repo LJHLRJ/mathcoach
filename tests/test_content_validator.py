@@ -133,3 +133,31 @@ def test_multi_answer_must_subset_options():
     result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
     assert not result.ok
     assert any("multi 的 answer 含 options 外的元素" in issue.message for issue in result.issues)
+
+
+def _expr_card(answer: str) -> dict:
+    card = _card()
+    card["exercises"][0] = {
+        "id": "hs-001-e1",
+        "kind": "expr",
+        "stem": "化简",
+        "answer": answer,
+        "solution_outline": "按公式展开",
+    }
+    return card
+
+
+def test_expr_answer_must_pass_ast_whitelist():
+    result = validate(copy.deepcopy(CURRICULUM), [_expr_card("__import__('os')")], strict=True)
+    assert not result.ok
+    assert any("expr 答案未通过 AST 白名单" in issue.message for issue in result.issues)
+
+
+def test_safe_expr_answer_is_accepted():
+    result = validate(copy.deepcopy(CURRICULUM), [_expr_card("x**2 - 1")], strict=True)
+    assert result.ok, result.issues
+
+
+def test_expr_container_guard_is_checked_per_exercise():
+    result = validate(copy.deepcopy(CURRICULUM), [_expr_card("x + 1")], strict=True)
+    assert not any("容器参数检查失效" in issue.message for issue in result.issues)

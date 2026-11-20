@@ -1,6 +1,8 @@
 """加载期校验：一次列出全部问题；未完成条目受严格模式开关影响。"""
 from dataclasses import dataclass, field
 
+from ..verify.symbolic import expr_variables, validate_expression
+
 ALLOWED_SOURCES = {"用户输入", "智能体生成", "工具返回"}
 VALID_STAGES = {"highschool", "undergraduate", "graduate"}
 CARD_FIELDS = (
@@ -49,6 +51,32 @@ class ValidationResult:
 def _blank(data: dict, key: str) -> bool:
     """字段缺失或为空；注意 False / 0 是合法答案，不算空。"""
     return key not in data or data[key] is None or data[key] == "" or data[key] == []
+
+
+_CONTAINER_SAMPLES = ("Symbol(('x',))", "[Symbol('x')]")
+
+
+def _validate_expr_answer(
+    exercise: dict, location: str, result: ValidationResult
+) -> None:
+    """expr 答案必须过白名单，并防止容器参数检查回退。"""
+    answer = str(exercise.get("answer", ""))
+    variables = expr_variables(answer)
+    reason = validate_expression(answer, variables)
+    if reason is not None:
+        result.issues.append(Issue(location, f"expr 答案未通过 AST 白名单：{reason}"))
+
+    for accepted in exercise.get("accepted") or []:
+        text = str(accepted)
+        accepted_reason = validate_expression(text, expr_variables(text))
+        if accepted_reason is not None:
+            result.issues.append(
+                Issue(location, f"expr accepted 未通过 AST 白名单：{accepted_reason}")
+            )
+
+    for sample in _CONTAINER_SAMPLES:
+        if validate_expression(sample, {"x"}) is None:
+            result.issues.append(Issue(location, "符号验证门容器参数检查失效"))
 
 
 def validate(curriculum: list[dict], cards: list[dict], strict: bool) -> ValidationResult:
@@ -126,6 +154,8 @@ def validate(curriculum: list[dict], cards: list[dict], strict: bool) -> Validat
                         result.issues.append(
                             Issue(ex_location, "multi 的 answer 含 options 外的元素")
                         )
+            if kind == "expr":
+                _validate_expr_answer(exercise, ex_location, result)
 
     for card_id in sorted(referenced - loaded):
         issue = Issue(f"curriculum.card_ids[{card_id}]", "索引引用了未加载的卡片（未完成条目）")

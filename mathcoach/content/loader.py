@@ -35,16 +35,30 @@ def load_raw_cards(root: Path) -> list[dict]:
     return cards
 
 
+def _canonical_answer(value) -> str:
+    """把 YAML 的列表/字典答案规范成判定器约定的字符串形式。"""
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    if isinstance(value, (list, tuple)):
+        return ",".join(_canonical_answer(item) for item in value)
+    if isinstance(value, dict):
+        return ";".join(
+            f"{_canonical_answer(key)}={_canonical_answer(item)}"
+            for key, item in value.items()
+        )
+    return str(value)
+
+
 def _exercise_from_dict(card_id: str, data: dict) -> Exercise:
     return Exercise(
         id=data["id"],
         card_id=card_id,  # 由所属卡片注入，避免 YAML 重复维护
         kind=ExerciseKind(data["kind"]),
         stem=data["stem"],
-        answer=str(data["answer"]),
+        answer=_canonical_answer(data["answer"]),
         solution_outline=data["solution_outline"],
         options=tuple(data.get("options") or ()),
-        accepted=tuple(data.get("accepted") or ()),
+        accepted=tuple(_canonical_answer(item) for item in (data.get("accepted") or ())),
         variants=tuple(data.get("variants") or ()),
     )
 

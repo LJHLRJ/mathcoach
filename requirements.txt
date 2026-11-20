@@ -3,5 +3,6 @@ streamlit>=1.36      # 本地 Web 界面与 AppTest
 pydantic>=2.7        # ParsedAnswer 严格模型
 PyYAML>=6.0          # 知识卡片与课程索引
 openai>=1.30         # 运行期依赖；无 Key 时 build_provider 返回离线模板，但 import 仍需要 openai 已安装
+sympy>=1.12          # expr 题等价判定与符号验证门
 # 开发/测试依赖
 pytest>=8.0          # 单元测试
