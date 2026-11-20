@@ -1,0 +1,42 @@
+; MathCoach Windows 安装器：按用户安装，不需要管理员权限
+#define MyAppName "MathCoach"
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0"
+#endif
+#define MyAppPublisher "MathCoach"
+#define MyAppExeName "MathCoach.exe"
+
+[Setup]
+AppId={{7B2E4D3A-9C41-4F6E-8A52-3D1B7F0C5E21}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+DefaultDirName={localappdata}\Programs\MathCoach
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+OutputDir=..\..\dist\installer
+OutputBaseFilename=MathCoachSetup-{#MyAppVersion}
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+CloseApplications=yes
+RestartApplications=no
+UninstallDisplayIcon={app}\MathCoach.exe
+SourceDir=..\..
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+Source: "dist\MathCoach\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+
+[Icons]
+Name: "{userprograms}\{#MyAppName}"; Filename: "{app}\MathCoach.exe"
+Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\MathCoach.exe"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\MathCoach.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
