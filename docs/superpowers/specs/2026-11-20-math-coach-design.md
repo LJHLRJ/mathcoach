@@ -114,7 +114,7 @@ Consent      = {memory: bool, mistake_book: bool}
 
 - `KnowledgeCard(id, name, stage, course, chapter, difficulty, intuition, definition, mistakes[], example, exercises[], source)`
 - `Exercise(id, card_id, kind, stem, options?, answer, accepted?, solution_outline, variants[])`
-- `MistakeEntry(id, exercise_snapshot, user_answer, correct_answer, error_type, card_id, max_hint_level, created_at, review_state, review_count, receipt_ids[])`
+- `MistakeEntry(id, exercise_snapshot, user_answer, correct_answer, error_type, stage, course, exercise_type, card_id, max_hint_level, created_at, review_state, review_count, receipt_ids[])`
 - `Receipt(id, card_id, stage, course, exercise_type, duration_s, max_hint_level, restatement_quality, goal, independence, created_at)`
 - `LearnerProfile(display_name, stage, course, goal, preferred_mode, consent)`
 - `SessionState(phase, card_id, exercise_id, hint_level, consecutive_wrong, attempts[], started_at)`
@@ -124,8 +124,9 @@ Consent      = {memory: bool, mistake_book: bool}
 ```text
 GOAL_CONFIRM → EXPLAIN → QUIZ → JUDGE
                                  ├─ 正确且未用提示 → RECEIPT → (下一题 | WRAPUP)
-                                 ├─ 正确但用过提示 → RECEIPT(半独立) → ...
-                                 └─ 错误 → DIAGNOSE → HINT(升一级) → QUIZ
+                                 ├─ 正确但用过提示 → RECEIPT(半独立) → (下一题 | WRAPUP)
+                                 └─ 错误 → HINT(升一级) → QUIZ
+                                                └─ 连续答错 2 次 → DIAGNOSE → HINT
 ```
 
 代码强制的四条规则：
@@ -255,7 +256,7 @@ class Provider(Protocol):
 
 - 校验 `consent`；
 - 观察状态下（本次会话出现过边界请求）要求用户回复完整句“我确认执行此操作”，仅回“确认”不通过；
-- 写入前打印摘要供确认；
+- 写入前打印摘要供确认；**例外**：`consent.mistake_book` / `consent.memory` 已开启时，收据与错题本的常规写入属授权范围内操作，自动执行并告知，不逐次确认；导出、GitHub、超出授权范围的写入必须逐次确认；
 - 脱敏：Token / API Key / 手机号 / 身份证 → `[已脱敏]`；
 - 禁止项：学习数据、错题本、收据、记忆数据、音频、打包产物、Pages 配置、任务文件写入仓库。
 
