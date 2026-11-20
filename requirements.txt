@@ -1,0 +1,7 @@
+# 运行期依赖
+streamlit>=1.36      # 本地 Web 界面与 AppTest
+pydantic>=2.7        # ParsedAnswer 严格模型
+PyYAML>=6.0          # 知识卡片与课程索引
+openai>=1.30         # OpenAI 兼容接口（可选，无 Key 时走离线模板）
+# 开发/测试依赖
+pytest>=8.0          # 单元测试
