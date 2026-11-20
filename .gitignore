@@ -1,0 +1,24 @@
+# 本地学习数据（禁止入库）
+*.db
+*.sqlite
+*.sqlite3
+profile.db
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 系统
+.DS_Store
+Thumbs.db
