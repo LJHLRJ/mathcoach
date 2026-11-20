@@ -12,3 +12,11 @@ def test_windows_installer_uses_per_user_install():
     assert "OutputBaseFilename=MathCoachSetup-{#MyAppVersion}" in text
     assert "UninstallDisplayIcon={app}\\MathCoach.exe" in text
     assert 'Source: "dist\\MathCoach\\*"' in text
+
+
+def test_macos_dmg_script_uses_hdiutil():
+    text = (ROOT / "scripts/build_macos_dmg.sh").read_text(encoding="utf-8")
+
+    assert "hdiutil create" in text
+    assert "/Applications" in text
+    assert "MathCoach-$version.dmg" in text
