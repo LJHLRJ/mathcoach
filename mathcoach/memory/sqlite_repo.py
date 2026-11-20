@@ -11,6 +11,7 @@ from pathlib import Path
 from ..domain.models import (
     AuditEntry,
     Consent,
+    DailyResult,
     ErrorType,
     ExerciseKind,
     Independence,
@@ -103,6 +104,15 @@ _SCHEMA = (
         op TEXT NOT NULL,
         created_at TEXT NOT NULL,
         result TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS daily_challenge (
+        date TEXT PRIMARY KEY,
+        correct INTEGER NOT NULL,
+        total INTEGER NOT NULL,
+        duration_s INTEGER NOT NULL,
+        completed_at TEXT NOT NULL
     )
     """,
 )
@@ -393,6 +403,38 @@ class SQLiteRepository:
             )
             for row in rows
         ]
+
+    def save_daily_result(self, result: DailyResult) -> None:
+        with self._lock, self._connection:
+            self._connection.execute(
+                """
+                INSERT OR REPLACE INTO daily_challenge(
+                    date, correct, total, duration_s, completed_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    result.date,
+                    result.correct,
+                    result.total,
+                    result.duration_s,
+                    _text(result.completed_at),
+                ),
+            )
+
+    def get_daily_result(self, day: str) -> DailyResult | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM daily_challenge WHERE date = ?", (day,)
+            ).fetchone()
+        if row is None:
+            return None
+        return DailyResult(
+            date=row["date"],
+            correct=row["correct"],
+            total=row["total"],
+            duration_s=row["duration_s"],
+            completed_at=_datetime(row["completed_at"]),
+        )
 
     def close(self) -> None:
         with self._lock:

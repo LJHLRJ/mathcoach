@@ -10,6 +10,7 @@ from ..config import db_path as default_db_path
 from ..domain.models import (
     AuditEntry,
     Consent,
+    DailyResult,
     MistakeEntry,
     Receipt,
     ReviewItem,
@@ -49,6 +50,10 @@ class Repository(Protocol):
 
     def list_audit(self, limit: int = 50) -> list[AuditEntry]: ...
 
+    def save_daily_result(self, result: DailyResult) -> None: ...
+
+    def get_daily_result(self, day: str) -> DailyResult | None: ...
+
     def close(self) -> None: ...
 
 
@@ -61,6 +66,7 @@ class InMemoryRepository:
         self._mistakes: dict[str, MistakeEntry] = {}
         self._due_at: dict[str, datetime] = {}
         self._audit: list[AuditEntry] = []
+        self._daily: dict[str, DailyResult] = {}
 
     def save_consent(self, consent: Consent) -> None:
         self._consent = consent
@@ -149,6 +155,12 @@ class InMemoryRepository:
 
     def list_audit(self, limit: int = 50) -> list[AuditEntry]:
         return list(reversed(self._audit))[:limit]
+
+    def save_daily_result(self, result: DailyResult) -> None:
+        self._daily[result.date] = result
+
+    def get_daily_result(self, day: str) -> DailyResult | None:
+        return self._daily.get(day)
 
     def close(self) -> None:
         return None

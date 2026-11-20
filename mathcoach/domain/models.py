@@ -157,6 +157,15 @@ class AuditEntry:
     created_at: datetime
 
 
+@dataclass(frozen=True)
+class DailyResult:
+    date: str  # ISO 日期，如 2026-11-20
+    correct: int
+    total: int
+    duration_s: int
+    completed_at: datetime
+
+
 @dataclass
 class SessionState:
     phase: Phase = Phase.GOAL_CONFIRM

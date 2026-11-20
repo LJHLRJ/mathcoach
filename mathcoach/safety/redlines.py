@@ -18,6 +18,7 @@ ROUTINE_OPS: dict[str, str | None] = {
     "receipt": "memory",
     "mistake": "mistake_book",
     "review": "mistake_book",
+    "daily": "memory",
     "profile": None,
     "consent": None,
 }

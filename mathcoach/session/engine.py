@@ -261,6 +261,7 @@ class SessionEngine:
                 "stem": exercise.stem,
                 "options": list(exercise.options),
                 "solution_outline": exercise.solution_outline,
+                "variants": list(exercise.variants),
             },
         )
         self._safe_write("mistake", lambda: self.repository.save_mistake(entry))

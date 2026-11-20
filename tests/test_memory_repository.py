@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from mathcoach.domain.models import (
     Consent,
+    DailyResult,
     ErrorType,
     ExerciseKind,
     Independence,
@@ -147,3 +148,24 @@ def test_in_memory_repository_keeps_session_data_only():
     repository.save_mistake(_mistake())
     assert len(repository.list_receipts()) == 1
     assert len(repository.list_review_items()) == 1
+
+
+def test_daily_result_persists_across_restart(tmp_path):
+    path = tmp_path / "mathcoach.sqlite3"
+    result = DailyResult(
+        date="2026-11-20",
+        correct=4,
+        total=5,
+        duration_s=180,
+        completed_at=NOW,
+    )
+    repository = SQLiteRepository(path)
+    repository.save_daily_result(result)
+    repository.close()
+
+    reopened = SQLiteRepository(path)
+    try:
+        assert reopened.get_daily_result("2026-11-20") == result
+        assert reopened.get_daily_result("2026-11-21") is None
+    finally:
+        reopened.close()
