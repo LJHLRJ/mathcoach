@@ -5,7 +5,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from mathcoach.config import content_strict
+from mathcoach.config import content_strict, resolve_content_root
 from mathcoach.content.loader import (
     ContentError,
     load_content,
@@ -55,7 +55,7 @@ from mathcoach.session.diagnosis_view import render_gaps
 from mathcoach.session.engine import SessionEngine
 from mathcoach.timeutil import local_day, local_day_key
 
-CONTENT_ROOT = Path(__file__).parent / "content"
+CONTENT_ROOT = resolve_content_root(Path(__file__))
 MODE_SESSION = "陪练"
 MODE_DASHBOARD = "仪表盘"
 MODE_DAILY = "每日挑战"

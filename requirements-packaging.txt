@@ -1,0 +1,9 @@
+# 仅构建桌面客户端时使用，不加入运行时 requirements.txt
+# PyInstaller 6.x：streamlit-desktop-app 要求 <7.0.0
+pyinstaller>=6.11,<7.0
+# 原生窗口（PyInstaller 会通过其自带 hook 收集 webview 的 JS/DLL）
+pywebview>=5.3,<6.0
+
+# 可选路线 A：streamlit-desktop-app 0.3.4 明确排除 Python 3.13，
+# 分类器仅到 3.12，3.14 未声明；默认不启用。
+# streamlit-desktop-app==0.3.4

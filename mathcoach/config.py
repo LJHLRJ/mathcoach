@@ -1,11 +1,21 @@
 """集中配置：只读环境变量，不散落在业务代码里。"""
 import os
+import sys
 from pathlib import Path
 
 
 def content_strict() -> bool:
     """内容严格模式：M1—M3 默认允许未完成条目，M4 起必须在环境里设为 1。"""
     return os.getenv("MATHCOACH_CONTENT_STRICT", "0") == "1"
+
+
+def resolve_content_root(app_file: Path) -> Path:
+    """定位 content/：PyInstaller 运行时优先用 sys._MEIPASS，否则用源码目录。"""
+    bundle_root = getattr(sys, "_MEIPASS", None)
+    if bundle_root:
+        # onefile 解压到临时目录、onedir 指向 bundle 目录，两种情况都适用
+        return Path(bundle_root) / "content"
+    return Path(app_file).resolve().parent / "content"
 
 
 def db_path() -> Path:
