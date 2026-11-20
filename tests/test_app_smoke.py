@@ -1,12 +1,18 @@
 """AppTest 冒烟：首屏可渲染，并能完成一次闭环。"""
 from streamlit.testing.v1 import AppTest
 
+from mathcoach.domain.models import Consent
+from mathcoach.memory.sqlite_repo import SQLiteRepository
 
-def test_app_renders_and_completes_one_loop():
+
+def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file("app.py", default_timeout=15)
     at.run()
     assert not at.exception
     assert at.title[0].value == "数学陪练"
+    assert any("学习设置" in header.value for header in at.sidebar.header)
+    assert (tmp_path / "mathcoach.sqlite3").exists()
 
     at.text_input[0].set_value("搞懂函数的概念")
     at.button[0].click().run()
@@ -20,3 +26,51 @@ def test_app_renders_and_completes_one_loop():
     at.button[0].click().run()
     assert not at.exception
     assert "收据已生成" in at.subheader[0].value
+
+
+def test_app_sidebar_shows_persisted_mistake_after_restart(tmp_path, monkeypatch):
+    path = tmp_path / "mathcoach.sqlite3"
+    monkeypatch.setenv("MATHCOACH_DB", str(path))
+
+    first = AppTest.from_file("app.py", default_timeout=15)
+    first.run()
+    first.text_input[0].set_value("搞懂函数")
+    first.button[0].click().run()
+    first.button[0].click().run()
+    first.radio[0].set_value("y² = x")
+    first.button[0].click().run()
+    assert not first.exception
+
+    second = AppTest.from_file("app.py", default_timeout=15)
+    second.run()
+    assert not second.exception
+    captions = " ".join(caption.value for caption in second.sidebar.caption)
+    assert "你的答案：y² = x" in captions
+    assert any("今天" in markdown.value for markdown in second.sidebar.markdown)
+
+
+def test_app_guest_mode_keeps_learning_data_out_of_sqlite(tmp_path, monkeypatch):
+    path = tmp_path / "mathcoach.sqlite3"
+    repository = SQLiteRepository(path)
+    repository.save_consent(Consent(memory=False, mistake_book=False))
+    repository.close()
+
+    monkeypatch.setenv("MATHCOACH_DB", str(path))
+    at = AppTest.from_file("app.py", default_timeout=15)
+    at.run()
+    assert not at.exception
+    assert any("游客模式" in info.value for info in at.sidebar.info)
+
+    at.text_input[0].set_value("搞懂函数")
+    at.button[0].click().run()
+    at.button[0].click().run()
+    at.radio[0].set_value("y² = x")
+    at.button[0].click().run()
+    assert not at.exception
+
+    check = SQLiteRepository(path)
+    try:
+        assert check.list_mistakes() == []
+        assert check.list_receipts() == []
+    finally:
+        check.close()

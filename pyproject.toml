@@ -9,6 +9,7 @@ dependencies = [
   "PyYAML>=6.0",
   "openai>=1.30",
   "sympy>=1.12",
+  "platformdirs>=4.0",
 ]
 
 [build-system]

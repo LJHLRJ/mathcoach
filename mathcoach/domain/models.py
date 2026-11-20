@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from uuid import uuid4
 
 
 class Stage(str, Enum):
@@ -110,6 +111,42 @@ class Receipt:
     independence: Independence
     created_at: datetime
     restatement_quality: str | None = None
+    id: str = field(default_factory=lambda: uuid4().hex)
+
+
+@dataclass(frozen=True)
+class Consent:
+    """本地记忆授权；全关时进入游客模式，不落盘。"""
+
+    memory: bool = True
+    mistake_book: bool = True
+
+
+@dataclass(frozen=True)
+class MistakeEntry:
+    id: str
+    exercise_id: str
+    card_id: str
+    stage: Stage
+    course: str
+    exercise_type: ExerciseKind
+    stem: str
+    user_answer: str
+    correct_answer: str
+    error_type: ErrorType
+    max_hint_level: int
+    created_at: datetime
+    review_state: ReviewState = ReviewState.UNREVIEWED
+    review_count: int = 0
+    consecutive_correct: int = 0
+    receipt_ids: tuple[str, ...] = ()
+    exercise_snapshot: dict[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ReviewItem:
+    mistake: MistakeEntry
+    due_at: datetime
 
 
 @dataclass

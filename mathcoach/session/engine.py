@@ -1,7 +1,9 @@
 """会话状态机：只调用 domain 纯函数，不 import Streamlit。"""
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from ..domain.diagnosis import diagnose
 from ..domain.hint_ladder import (
@@ -11,22 +13,35 @@ from ..domain.hint_ladder import (
 )
 from ..domain.judge import evaluate
 from ..domain.models import (
+    Consent,
     ErrorType,
     Exercise,
+    Independence,
     KnowledgeCard,
+    MistakeEntry,
     Phase,
     Receipt,
     SessionState,
 )
 from ..domain.receipt import build_receipt
 from ..llm.base import Provider, RenderTask
+from ..memory.repository import InMemoryRepository, Repository
 from .state import SessionView
 
 
 class SessionEngine:
-    def __init__(self, card: KnowledgeCard, provider: Provider, goal: str = "") -> None:
+    def __init__(
+        self,
+        card: KnowledgeCard,
+        provider: Provider,
+        goal: str = "",
+        repository: Repository | None = None,
+        consent: Consent | None = None,
+    ) -> None:
         self.card = card
         self.provider = provider
+        self.repository = repository or InMemoryRepository()
+        self.consent = consent or Consent()
         self.state = SessionState(card_id=card.id, hint_level=initial_level(), goal=goal)
         self._exercise_pos = 0
         self.receipts: list[Receipt] = []
@@ -129,6 +144,7 @@ class SessionEngine:
             return self._issue_receipt()
 
         self.state.consecutive_wrong += 1
+        self._record_mistake(exercise, answer)
         if self.state.consecutive_wrong >= 3:
             self.state.phase = Phase.WRAPUP
             return self._set(
@@ -185,6 +201,41 @@ class SessionEngine:
             and attempt.get("correct") is False
         ]
 
+    def _record_mistake(self, exercise: Exercise, answer: str) -> None:
+        if not self.consent.mistake_book:
+            return
+        now = datetime.now(timezone.utc)
+        error_type = self.state.diagnosis
+        if error_type is None:
+            error_type = diagnose(
+                exercise,
+                self._wrong_answers(exercise.id),
+                tuple(self.state.hint_requests),
+            ).error_type
+        self.repository.save_mistake(
+            MistakeEntry(
+                id=uuid4().hex,
+                exercise_id=exercise.id,
+                card_id=self.card.id,
+                stage=self.card.stage,
+                course=self.card.course,
+                exercise_type=exercise.kind,
+                stem=exercise.stem,
+                user_answer=answer,
+                correct_answer=exercise.answer,
+                error_type=error_type,
+                max_hint_level=self.state.max_hint_level,
+                created_at=now,
+                exercise_snapshot={
+                    "id": exercise.id,
+                    "kind": exercise.kind.value,
+                    "stem": exercise.stem,
+                    "options": list(exercise.options),
+                    "solution_outline": exercise.solution_outline,
+                },
+            )
+        )
+
     def confirm_diagnosis(self, error_type: str | None = None) -> SessionView:
         if self.state.phase is not Phase.DIAGNOSE:
             raise RuntimeError("当前不在错因诊断阶段")
@@ -195,6 +246,12 @@ class SessionEngine:
                 raise ValueError(f"未知错因：{error_type}") from exc
         self.state.phase = Phase.HINT
         self.state.hint_level = automatic_next_level(self.state.hint_level)
+        if self.state.diagnosis is not None and self.consent.mistake_book:
+            existing = self.repository.find_mistake(self.current_exercise.id)
+            if existing is not None:
+                self.repository.save_mistake(
+                    replace(existing, error_type=self.state.diagnosis)
+                )
         label = self.state.diagnosis.value if self.state.diagnosis else "未确定"
         return self._set(
             SessionView(
@@ -244,6 +301,17 @@ class SessionEngine:
         self.state.phase = Phase.QUIZ
         return self._render_quiz()
 
+    def _persist_receipt(self, receipt: Receipt) -> None:
+        exercise = self.current_exercise
+        if self.consent.memory:
+            self.repository.save_receipt(receipt, exercise.id)
+        if self.consent.mistake_book:
+            self.repository.record_review(
+                exercise.id,
+                independent=receipt.independence is Independence.INDEPENDENT,
+                now=datetime.now(timezone.utc),
+            )
+
     def _issue_receipt(self) -> SessionView:
         self.state.phase = Phase.RECEIPT
         elapsed = 0
@@ -259,6 +327,7 @@ class SessionEngine:
             duration_s=elapsed,
         )
         self.receipts.append(receipt)
+        self._persist_receipt(receipt)
         return self._set(
             SessionView(
                 phase=Phase.RECEIPT,
