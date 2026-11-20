@@ -14,7 +14,7 @@
 
 ## 桌面客户端
 
-Windows/macOS 客户端由 GitHub Actions 在发布时构建，见 [Releases](https://github.com/LJHLRJ/mathcoach/releases)。下载 zip 解压后运行；产物未签名，Windows 可能提示 SmartScreen，macOS 需右键“打开”。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用侧边栏“关于与更新”可检查新版本并打开下载页，不自动下载或安装。产物未签名，Windows SmartScreen / macOS Gatekeeper 可能提示。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
 
 ## 目录
 

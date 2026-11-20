@@ -125,6 +125,12 @@ python scripts/build_desktop.py --console
 3. 轮询 `/_stcore/health`，就绪后打开 PyWebview 原生窗口；
 4. 关闭窗口时终止 Streamlit 子进程。
 
+### 安装器
+
+- Windows：`scripts/installer/MathCoach.iss`，Inno Setup 按用户安装到 `%LOCALAPPDATA%\Programs\MathCoach`，生成 `dist/installer/MathCoachSetup-<version>.exe`。
+- macOS：`scripts/build_macos_dmg.sh`，用系统 `hdiutil` 生成 `dist/installer/MathCoach-<version>.dmg`，附带 `/Applications` 软链接。
+- 安装器只包含程序文件，不包含学习数据或数据库。
+
 ## 5. 已知限制
 
 - **体积**：Streamlit + SymPy + PyWebview 的 onedir 产物通常在数百 MB 量级；具体大小需在本机构建后确认。
@@ -135,6 +141,7 @@ python scripts/build_desktop.py --console
 - **PyInstaller 收集项**：`--collect-all streamlit --copy-metadata streamlit` 是必须项；若升级 Streamlit 后出现静态资源 404，需要重新验证收集项。
 - **数据位置**：SQLite 默认仍在用户数据目录（`platformdirs`），不会打进客户端，也不会随客户端复制；卸载客户端不会自动删除学习数据。
 - **安全边界**：本地服务只绑定 `127.0.0.1`，不对外网开放；仍建议在受信任的本机环境运行。
+- **更新检查**：只读 GitHub Releases API，需联网；不会自动下载或执行安装器。
 - 以上“构建后大小、启动时间、双击行为”均标记为**需在本机验证**，本仓库未实际执行打包。
 
 ## 6. 验证清单（需在本机执行）
@@ -146,6 +153,8 @@ python scripts/build_desktop.py --console
 5. 关闭窗口后，任务管理器/活动监视器中无残留 Streamlit 子进程。
 6. 删除构建目录后重新执行构建脚本，产物可重复生成。
 7. 确认 `git status` 中只有源码与本文档变更，没有 `dist/`、`build/`、`*.spec`。
+8. Windows 安装器可按用户完成安装、创建开始菜单快捷方式并卸载。
+9. macOS DMG 可挂载并拖拽安装。
 
 ## 7. GitHub Actions 发布
 
@@ -153,12 +162,19 @@ python scripts/build_desktop.py --console
 
 - 在 `windows-latest` 与 `macos-latest` 上安装依赖并执行全量 `pytest`；
 - 使用 `scripts/build_desktop.py` 构建；
-- 生成 `MathCoach-windows.zip` 与 `MathCoach-macos.zip`；
+- Windows 生成 `MathCoach-windows.zip` 与 `MathCoachSetup-<version>.exe`；
+- macOS 生成 `MathCoach-macos.zip` 与 `MathCoach-<version>.dmg`；
 - 通过 `gh release upload` 附加到当前 Release。
 
 产物不进入 git 仓库，只作为 Release 资产分发。构建机架构以 GitHub Runner 为准；未做代码签名，Windows SmartScreen 与 macOS Gatekeeper 可能提示。
 
-## 8. 参考
+## 8. 更新检查
+
+- `mathcoach/update_check.py` 只读 GitHub Releases latest API，3 秒超时，无 Token。
+- 侧边栏“关于与更新”由用户点击触发；不自动联网、不自动下载、不执行安装器。
+- 网络失败或限流只显示提示，不影响判题与本地记忆。
+
+## 9. 参考
 
 - streamlit-desktop-app PyPI：<https://pypi.org/project/streamlit-desktop-app/>（0.3.4，`requires_python` 排除 3.13）
 - PyInstaller 使用文档：<https://pyinstaller.org/en/stable/usage.html>（`--add-data`、`--collect-all`、`--copy-metadata`）
