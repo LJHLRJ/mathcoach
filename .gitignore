@@ -29,6 +29,9 @@ build/
 # Streamlit（主题配置需要入库，仅忽略密钥）
 .streamlit/secrets.toml
 
+# 视觉回归产物（基线截图需要入库）
+tests/visual/artifacts/
+
 # 系统
 .DS_Store
 Thumbs.db
