@@ -25,11 +25,29 @@
 
 统计口径：按文件名匹配 `test_safety*.py` / `test_guards*.py` / `test_redlines*.py`，统计以 `test_` 开头的函数；同一函数内多个样本只计 1 项。注入样本按函数名匹配 block / reject / inject，或函数体断言含 blocked / rejected / injection 识别；`test_safe_learning_text_is_allowed` 作为反向用例计入样本但不计入拦截。脱敏样本按 redact / masked / 已脱敏 识别；同一函数可同时命中两类。`test_audit.py`（2 项）与 `test_engine_safety.py`（4 项）不属于本小节文件口径，未计入。
 
-## 桌面客户端
+## 下载与安装
 
-Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+当前版本：**v0.6.1**（2026-11-21）。下载入口以 GitHub Releases 为准：
 
-Windows 版 .exe 和 macOS 版 .dmg 未签名。首次运行时：Windows 可能弹出 SmartScreen 提示，点击“更多信息”→“仍要运行”；macOS 可能提示“无法打开”，需在“系统设置 → 隐私与安全性”中允许。这是未签名应用的正常行为，不影响功能。
+- 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
+- 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
+
+| 平台 | 文件 | 安装方式 |
+|---|---|---|
+| Windows x64 | `MathCoachSetup-0.6.1.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
+| macOS | `MathCoach-0.6.1.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
+
+- 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
+- 首次启动无需登录，也不要求配置 AI；未配置 Key 时使用离线模板。
+- 应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。
+- macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silicon 架构，构建架构以 GitHub Actions Runner 为准（待确认）。
+- Linux 未提供桌面安装包，请按下方“从源码安装”章节运行。
+
+Windows 版 .exe 和 macOS 版 .dmg 未签名。首次运行时：Windows 可能弹出 SmartScreen 提示，点击“更多信息”→“仍要运行”；macOS 可能提示“无法验证开发者”或“已损坏”，前者可在“系统设置 → 隐私与安全性”中允许，后者需执行 `xattr -cr /Applications/MathCoach.app`。这是未签名应用的正常行为，不影响功能。
+
+完整安装步骤、SHA256 校验、安装器行为与版本更新说明见 [docs/install.md](docs/install.md)。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
 
 ## 目录
 
@@ -49,9 +67,9 @@ tests/                  单元测试与 AppTest 冒烟
 docs/                   设计文档与实施计划
 ```
 
-## 安装
+## 从源码安装
 
-仅本地运行，默认不联网。
+仅本地运行，默认不联网。未提供桌面安装包的平台（包括 Linux）按本节运行。
 
 ```bash
 python -m venv .venv
