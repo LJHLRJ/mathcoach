@@ -38,13 +38,20 @@ def _print_prerequisites() -> None:
     print("  python -m pip install -r requirements-packaging.txt")
 
 
-def _pyinstaller_command(name: str, onefile: bool, console: bool) -> list[str]:
+def _pyinstaller_command(
+    name: str, onefile: bool, console: bool, output_dir: str
+) -> list[str]:
     sep = _data_separator()
     extras: list[str] = []
     if onefile:
         extras.append("--onefile")
     if not console:
         extras.append("--windowed")  # 双击启动时不弹控制台窗口
+
+    # 相对路径统一按仓库根目录解析，保证 CI 与本机行为一致
+    dist_path = Path(output_dir)
+    if not dist_path.is_absolute():
+        dist_path = ROOT / dist_path
 
     return [
         sys.executable,
@@ -55,6 +62,8 @@ def _pyinstaller_command(name: str, onefile: bool, console: bool) -> list[str]:
         *extras,
         "--name",
         name,
+        "--distpath",
+        str(dist_path),
         "--paths",
         str(ROOT),
         # Streamlit 的静态资源、子模块与版本元数据必须显式收集
@@ -79,6 +88,11 @@ def main() -> int:
     parser.add_argument("--name", default=DEFAULT_NAME, help="产物名称")
     parser.add_argument("--onefile", action="store_true", help="生成单文件产物（启动更慢）")
     parser.add_argument("--console", action="store_true", help="保留控制台，便于排查启动问题")
+    parser.add_argument(
+        "--output-dir",
+        default="dist",
+        help="PyInstaller 输出目录，默认 dist/（相对路径按仓库根目录解析）",
+    )
     parser.add_argument("--dry-run", action="store_true", help="只打印命令，不执行构建")
     args = parser.parse_args()
 
@@ -97,7 +111,9 @@ def main() -> int:
 
     if _missing("streamlit") or _missing("PyInstaller") or _missing("webview"):
         # 先打印命令，保证 --dry-run 在没有打包依赖时也能用于核对参数
-        command = _pyinstaller_command(args.name, args.onefile, args.console)
+        command = _pyinstaller_command(
+            args.name, args.onefile, args.console, args.output_dir
+        )
         print("将执行：")
         print(" ".join(command))
         if args.dry_run:
@@ -106,7 +122,9 @@ def main() -> int:
         _print_prerequisites()
         return 2
 
-    command = _pyinstaller_command(args.name, args.onefile, args.console)
+    command = _pyinstaller_command(
+        args.name, args.onefile, args.console, args.output_dir
+    )
     print("将执行：")
     print(" ".join(command))
     if args.dry_run:
