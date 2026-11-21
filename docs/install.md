@@ -34,6 +34,34 @@ macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silico
 
 若启动后没有出现窗口，请尝试安装 Microsoft Edge WebView2 Runtime 后重新启动；v0.6.1 Release 说明记录了该排查项。
 
+### 安装向导页面
+
+当前 Windows 安装器使用 Inno Setup 6，向导界面为英文。按当前配置，页面顺序为：
+
+1. Welcome
+2. Select Destination Location
+3. Select Additional Tasks
+4. Ready to Install
+5. Installing
+6. Completing
+
+- 不显示 Start Menu Folder 页面。
+- 没有许可协议页、自定义页面、自定义向导图片或安装器图标。
+- 桌面图标选项位于 Select Additional Tasks 页，当前默认不勾选；开始菜单快捷方式始终创建。
+- 完成页的 Launch MathCoach 默认勾选；静默安装不自动启动。
+
+### 数据边界
+
+学习数据仅保存在本机 SQLite 数据库，不会上传到任何服务器。安装器只释放程序文件，不包含学习数据、数据库或 AI 密钥；安装阶段不会请求 AI 密钥。AI 配置可在应用内完全跳过。
+
+### 当前限制
+
+- 没有分组件进度状态，只显示 Inno Setup 默认进度条。
+- 安装器不创建数据库结构；数据库与表结构在首次启动时自动创建。
+- 未签名构建无法消除 Windows SmartScreen 提示。
+- 安装器不提供自定义图标或中文界面。
+- 安装期间取消会由 Inno Setup 回滚已写入的更改；安装进入最后阶段后不再允许取消。
+
 ## Windows 便携版
 
 1. 下载 `MathCoach-windows.zip`。
