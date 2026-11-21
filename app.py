@@ -15,7 +15,8 @@ from mathcoach.content.loader import (
 from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
-from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
+from mathcoach.domain.learning_path import Recommendation, recommend
+from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase, ReviewState
 from mathcoach.domain.prerequisites import Gap, trace_gap
 from mathcoach.export.package import (
     build_export_artifact,
@@ -405,6 +406,30 @@ def _mastery_rows(repository) -> list[tuple[str, str]]:
     return rows
 
 
+def _next_recommendations(repository, cards, prerequisites) -> list[Recommendation]:
+    """按先修复拓扑顺序推荐 3 张未掌握卡片，错题卡优先。"""
+    receipts = repository.list_receipts(limit=None)
+    mistakes = repository.list_mistakes(limit=None)
+    completed = {receipt.exercise_id for receipt in receipts}
+    mastered = {
+        card.id
+        for card in cards
+        if card.exercises and all(exercise.id in completed for exercise in card.exercises)
+    }
+    weak_cards = {
+        mistake.card_id
+        for mistake in mistakes
+        if mistake.review_state is not ReviewState.MASTERED
+    }
+    return recommend(
+        [card.id for card in cards],
+        prerequisites,
+        mastered,
+        weak_cards,
+        limit=3,
+    )
+
+
 def _render_dashboard() -> None:
     summary = build_dashboard(
         st.session_state.repository, datetime.now(timezone.utc)
@@ -428,6 +453,16 @@ def _render_dashboard() -> None:
         st.markdown("**掌握概率**")
         for card_id, text in mastery_rows:
             st.markdown(f"- {card_id}：{text}")
+    recommendations = _next_recommendations(
+        st.session_state.repository, cards, prerequisites
+    )
+    if recommendations:
+        st.markdown("**下一步推荐**")
+        for recommendation in recommendations:
+            st.markdown(
+                f"- {recommendation.card_id}：{recommendation.reason}"
+                f"（依据：{recommendation.basis}）"
+            )
     if summary.top_errors:
         st.markdown(
             "**高频错因**："
