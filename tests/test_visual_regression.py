@@ -37,8 +37,13 @@ ARTIFACT_DIR = ROOT / "tests" / "visual" / "artifacts"
 VIEWPORT = {"width": 1440, "height": 900}
 CHANNEL = os.getenv("VISUAL_BROWSER_CHANNEL", "chrome")
 CDP_URL = os.getenv("VISUAL_BROWSER_CDP")
+STRICT = os.getenv("VISUAL_REQUIRE_BROWSER") == "1"
 PIXEL_THRESHOLD = 24
-MAX_DIFF_RATIO = 0.005
+# 基线由 CI 的 headless Chrome 生成；本地 headed Chrome 只做宽松冒烟
+DEFAULT_MAX_DIFF_RATIO = 0.005 if STRICT else 0.03
+MAX_DIFF_RATIO = float(
+    os.getenv("VISUAL_MAX_DIFF_RATIO", str(DEFAULT_MAX_DIFF_RATIO))
+)
 HIDE_CSS = """
 [data-testid="stStatusWidget"],
 [data-testid="stToolbar"],

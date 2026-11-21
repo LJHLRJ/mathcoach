@@ -29,6 +29,7 @@ def test_visual_workflow_runs_test_and_uploads_artifacts():
     assert "requirements-visual.txt" in text
     assert "google-chrome --version" in text
     assert "VISUAL_REQUIRE_BROWSER" in text
+    assert "VISUAL_MAX_DIFF_RATIO" in text
     assert "tests/test_visual_regression.py" in text
     assert "actions/upload-artifact" in text
     assert "if: always()" in text
