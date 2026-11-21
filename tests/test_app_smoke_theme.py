@@ -1,4 +1,5 @@
 """M17 主题冒烟：AppTest 首屏 + config.toml 静态键检查。"""
+import ast
 import tomllib
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from streamlit.testing.v1 import AppTest
 ROOT = Path(__file__).resolve().parents[1]
 APP_PATH = ROOT / "app.py"
 CONFIG_PATH = ROOT / ".streamlit/config.toml"
+ICONS_PATH = ROOT / "mathcoach" / "ui" / "icons.py"
 
 
 def test_app_first_screen_loads_without_exception(tmp_path, monkeypatch):
@@ -110,3 +112,33 @@ def test_wrong_answer_shows_error_feedback(tmp_path, monkeypatch):
 
     assert not at.exception
     assert any("再看一眼提示" in element.value for element in at.error)
+
+
+def test_icon_constants_use_material_syntax():
+    tree = ast.parse(ICONS_PATH.read_text(encoding="utf-8"))
+    constants = {
+        node.targets[0].id: node.value.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and len(node.targets) == 1
+        and isinstance(node.targets[0], ast.Name)
+        and node.targets[0].id.startswith("ICON_")
+        and isinstance(node.value, ast.Constant)
+    }
+
+    assert constants
+    for name, value in constants.items():
+        assert value.startswith(":material/"), name
+        assert value.endswith(":"), name
+
+
+def test_first_screen_buttons_use_material_icons(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    assert not at.exception
+    assert any(
+        "material" in (getattr(button, "icon", "") or "")
+        for button in at.button
+    )

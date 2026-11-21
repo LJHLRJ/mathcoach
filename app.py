@@ -41,6 +41,18 @@ from mathcoach.safety.redlines import (
     WriteBlocked,
     assert_write_allowed,
 )
+from mathcoach.ui.icons import (
+    ICON_CHECK,
+    ICON_ERROR,
+    ICON_EXPORT,
+    ICON_HINT,
+    ICON_INFO,
+    ICON_PLAY,
+    ICON_RESTART,
+    ICON_REVIEW,
+    ICON_SUBMIT,
+    ICON_UPDATE,
+)
 from mathcoach.ui.layout import card, hint_block, kpi_row
 from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
@@ -98,7 +110,7 @@ def _load_cards():
             load_prerequisites(CONTENT_ROOT), [card.id for card in cards]
         )
     except (ContentError, ValidationError) as exc:
-        st.error(f"内容加载失败：\n{exc}")
+        st.error(f"{ICON_ERROR} 内容加载失败：\n{exc}")
         st.stop()
     for warning in result.warnings:
         st.warning(f"{warning.location}: {warning.message}")
@@ -242,7 +254,7 @@ def _render_answer_input(exercise: Exercise, key_suffix: str | None = None) -> s
 def _render_update_section() -> None:
     with st.expander("关于与更新", expanded=False):
         st.caption(f"版本 {mathcoach.__version__}")
-        if st.button("检查更新", key="check_update"):
+        if st.button("检查更新", key="check_update", icon=ICON_UPDATE):
             try:
                 release = check_for_update(mathcoach.__version__)
             except UpdateCheckError:
@@ -260,7 +272,7 @@ def _render_update_section() -> None:
         elif status == "current":
             st.caption("已是最新版本。")
         elif release is not None:
-            st.success(f"发现新版本 {release.version}")
+            st.success(f"{ICON_UPDATE} 发现新版本 {release.version}")
             if release.notes:
                 st.caption(release.notes[:200])
             st.link_button("打开下载页", release.page_url)
@@ -298,9 +310,9 @@ def _render_sidebar() -> None:
             st.rerun()
 
         if not (consent.memory or consent.mistake_book):
-            st.info("游客模式：本次学习数据只存在内存中。")
+            st.info(f"{ICON_INFO} 游客模式：本次学习数据只存在内存中。")
         st.divider()
-        if st.button("重置会话", key="reset_session"):
+        if st.button("重置会话", key="reset_session", icon=ICON_RESTART):
             st.session_state.engine = SessionEngine(
                 card=st.session_state.engine.card,
                 provider=st.session_state.provider,
@@ -315,7 +327,7 @@ def _render_mistake_tab() -> None:
     consent: Consent = st.session_state.consent
     st.subheader("错题本")
     if not consent.mistake_book:
-        st.info("错题本已关闭。")
+        st.info(f"{ICON_INFO} 错题本已关闭。")
         return
     entries = repository.list_mistakes(limit=None)
     pending = sum(
@@ -339,13 +351,15 @@ def _render_settings_tab() -> None:
 
 def _render_hint_actions() -> None:
     with st.expander("需要提示？"):
-        if st.button("给步骤（最高 L4）", key="hint_step"):
+        if st.button("给步骤（最高 L4）", key="hint_step", icon=ICON_HINT):
             engine.request_hint("step")
             st.rerun()
-        if st.button("直接给答案（最高 L4）", key="hint_answer"):
+        if st.button("直接给答案（最高 L4）", key="hint_answer", icon=ICON_HINT):
             engine.request_hint("answer")
             st.rerun()
-        if st.button("开放 L5（需先尝试 L1—L4）", key="hint_level5"):
+        if st.button(
+            "开放 L5（需先尝试 L1—L4）", key="hint_level5", icon=ICON_HINT
+        ):
             engine.request_hint("level5")
             st.rerun()
 
@@ -357,14 +371,14 @@ def _render_session() -> None:
         with card(view.title):
             st.write(view.body)
             goal = st.text_input("今天想练到什么？", key="goal_input")
-            if st.button("确认目标", key="confirm_goal"):
+            if st.button("确认目标", key="confirm_goal", icon=ICON_PLAY):
                 try:
                     with st.spinner("正在准备讲解…"):
                         engine.confirm_goal(goal)
                 except Blocked:
-                    st.error(REFUSAL_TEXT)
+                    st.error(f"{ICON_ERROR} {REFUSAL_TEXT}")
                 except ValueError as exc:
-                    st.error(str(exc))
+                    st.error(f"{ICON_ERROR} {exc}")
                 else:
                     st.rerun()
         return
@@ -373,10 +387,10 @@ def _render_session() -> None:
         with card(view.title, engine.card.course):
             st.write(view.body)
             if view.notice:
-                st.info(view.notice)
+                st.info(f"{ICON_INFO} {view.notice}")
             # 可视化是可选增强：失败时只提示，不阻断讲解/小测
             if render_visual(engine.card.id) == "failed":
-                st.info("可视化暂不可用")
+                st.info(f"{ICON_INFO} 可视化暂不可用")
             kpi_row(
                 [
                     ("当前卡片", engine.card.name),
@@ -384,7 +398,7 @@ def _render_session() -> None:
                     ("难度", engine.card.difficulty.value),
                 ]
             )
-            if st.button("开始小测", key="begin_quiz"):
+            if st.button("开始小测", key="begin_quiz", icon=ICON_PLAY):
                 engine.begin_quiz()
                 st.rerun()
         return
@@ -407,9 +421,9 @@ def _render_session() -> None:
             if view.notice:
                 st.caption(view.notice)
             if render_visual(engine.card.id) == "failed":
-                st.info("可视化暂不可用")
+                st.info(f"{ICON_INFO} 可视化暂不可用")
             answer = _render_answer_input(engine.current_exercise)
-            if st.button("提交答案", key="submit_answer"):
+            if st.button("提交答案", key="submit_answer", icon=ICON_SUBMIT):
                 engine.submit_answer(answer)
                 st.rerun()
         _render_hint_actions()
@@ -417,16 +431,16 @@ def _render_session() -> None:
 
     if view.phase is Phase.DIAGNOSE:
         with card(view.title):
-            st.error(":material/error: 再看一眼提示")
+            st.error(f"{ICON_ERROR} 再看一眼提示")
             st.write(view.body)
             if view.notice:
-                st.info(view.notice)
+                st.info(f"{ICON_INFO} {view.notice}")
             selected = st.radio(
                 "选择更贴近的错因",
                 view.options,
                 key=f"diagnosis_{engine.state.exercise_id}_{len(engine.state.attempts)}",
             )
-            if st.button("确认错因", key="confirm_diagnosis"):
+            if st.button("确认错因", key="confirm_diagnosis", icon=ICON_CHECK):
                 engine.confirm_diagnosis(selected)
                 st.rerun()
         return
@@ -438,11 +452,11 @@ def _render_session() -> None:
             and attempt.get("correct") is False
             for attempt in engine.state.attempts
         ):
-            st.error(":material/error: 再看一眼提示")
+            st.error(f"{ICON_ERROR} 再看一眼提示")
         hint_block(engine.state.hint_level, view.body)
         if view.notice:
             st.caption(view.notice)
-        if st.button("再试一次", key="retry"):
+        if st.button("再试一次", key="retry", icon=ICON_RESTART):
             engine.retry()
             st.rerun()
         _render_hint_actions()
@@ -451,7 +465,7 @@ def _render_session() -> None:
     if view.phase is Phase.RECEIPT:
         receipt = view.receipt
         with card("收据已生成"):
-            st.success(":material/check_circle: 答对了")
+            st.success(f"{ICON_CHECK} 答对了")
             if receipt is not None:
                 st.caption(f"题型：{receipt.exercise_type.value}")
                 kpi_row(
@@ -474,7 +488,7 @@ def _render_session() -> None:
                     st.caption("叙事：本段旅程已全部点亮。")
                 else:
                     st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
-        if st.button("继续", key="advance"):
+        if st.button("继续", key="advance", icon=ICON_PLAY):
             engine.advance()
             st.rerun()
         return
@@ -482,7 +496,7 @@ def _render_session() -> None:
     if view.phase is Phase.WRAPUP:
         with card("本次闭环完成"):
             st.write(view.body)
-            if st.button("重新开始", key="restart"):
+            if st.button("重新开始", key="restart", icon=ICON_RESTART):
                 st.session_state.engine = SessionEngine(
                     card=engine.card,
                     provider=provider,
@@ -611,18 +625,19 @@ def _render_dashboard() -> None:
     if gaps:
         st.markdown(render_gaps(gaps))
     if summary.receipts == 0 and summary.mistakes == 0:
-        st.info("还没有学习记录，先完成一次讲解 → 小测闭环。")
+        st.info(f"{ICON_INFO} 还没有学习记录，先完成一次讲解 → 小测闭环。")
 
 
 def _render_quiz_summary(state: DailyState, now: datetime, title: str) -> None:
     used = min(state.time_limit_s, elapsed_seconds(state, now))
     st.success(
-        f"{title}：{state.correct}/{len(state.questions)} 正确，用时 {used} 秒。"
+        f"{ICON_CHECK} {title}：{state.correct}/{len(state.questions)} 正确，"
+        f"用时 {used} 秒。"
     )
     if state.timed_out:
         st.caption("时间到，未作答题目不计分。")
     if state.feedback:
-        st.info(state.feedback)
+        st.info(f"{ICON_INFO} {state.feedback}")
 
 
 def _render_active_quiz(
@@ -648,7 +663,7 @@ def _render_active_quiz(
         f"第 {state.index + 1}/{len(state.questions)} 题"
     )
     if state.feedback:
-        st.info(state.feedback)
+        st.info(f"{ICON_INFO} {state.feedback}")
     question = current_question(state)
     if question is None:
         return
@@ -657,7 +672,9 @@ def _render_active_quiz(
     answer = _render_answer_input(
         question.exercise, key_suffix=f"{key_prefix}_{state.index}"
     )
-    if st.button("提交答案", key=f"{key_prefix}_submit"):
+    if st.button(
+        "提交答案", key=f"{key_prefix}_submit", icon=ICON_SUBMIT
+    ):
         submission = submit_daily_answer(state, answer, now)
         if submission is not None and on_submission is not None:
             on_submission(submission, answer, now)
@@ -682,7 +699,7 @@ def _render_daily_challenge() -> None:
     result = repository.get_daily_result(day_key)
     if state is None and result is not None:
         st.success(
-            f"今天的挑战已完成：{result.correct}/{result.total} 正确，"
+            f"{ICON_CHECK} 今天的挑战已完成：{result.correct}/{result.total} 正确，"
             f"用时 {result.duration_s} 秒。"
         )
         st.caption("明天再来。")
@@ -690,7 +707,7 @@ def _render_daily_challenge() -> None:
 
     if state is None:
         st.write("5 道跨模块小题，限时 5 分钟。答错会自动进入错题本。")
-        if st.button("开始 5 分钟挑战", key="start_daily"):
+        if st.button("开始 5 分钟挑战", key="start_daily", icon=ICON_PLAY):
             st.session_state.daily_state = DailyState(
                 date_key=day_key,
                 questions=build_daily_questions(cards, local_day(now)),
@@ -733,7 +750,7 @@ def _render_challenge() -> None:
     state: DailyState | None = st.session_state.get("challenge_state")
     if state is None:
         st.write("10 道跨模块小题，限时 5 分钟，可反复挑战。")
-        if st.button("开始挑战赛", key="start_challenge"):
+        if st.button("开始挑战赛", key="start_challenge", icon=ICON_PLAY):
             st.session_state.challenge_state = build_challenge_state(
                 cards, now, time.time_ns()
             )
@@ -756,7 +773,9 @@ def _render_challenge() -> None:
         on_finish=_on_finish,
         summary_title="挑战赛结束",
     )
-    if state.finished and st.button("再来一局", key="restart_challenge"):
+    if state.finished and st.button(
+        "再来一局", key="restart_challenge", icon=ICON_RESTART
+    ):
         st.session_state.pop("challenge_state", None)
         st.rerun()
 
@@ -772,11 +791,11 @@ def _render_learning_path() -> None:
     if path.recommended_card is not None:
         card = path.recommended_card
         st.success(
-            f"建议下一张：{STAGE_LABELS[card.stage.value]} · {card.course} · "
-            f"{card.name}（{path.recommended_reason}）"
+            f"{ICON_PLAY} 建议下一张：{STAGE_LABELS[card.stage.value]} · "
+            f"{card.course} · {card.name}（{path.recommended_reason}）"
         )
     else:
-        st.success(path.recommended_reason)
+        st.success(f"{ICON_CHECK} {path.recommended_reason}")
 
     for course in path.courses:
         label = (
@@ -850,7 +869,7 @@ def _render_review_package() -> None:
     consent: Consent = st.session_state.consent
     st.subheader("智能复习包 · 15 分钟 5 题")
     if not consent.mistake_book:
-        st.info("错题本已关闭，无法生成复习包。")
+        st.info(f"{ICON_INFO} 错题本已关闭，无法生成复习包。")
         return
 
     state: DailyState | None = st.session_state.get("review_state")
@@ -863,10 +882,10 @@ def _render_review_package() -> None:
             repository, cards, now, priority_card_ids=priority
         )
         if not package.questions:
-            st.info(package.reason)
+            st.info(f"{ICON_INFO} {package.reason}")
             return
         st.write(package.reason)
-        if st.button("开始复习包", key="start_review"):
+        if st.button("开始复习包", key="start_review", icon=ICON_PLAY):
             st.session_state.review_state = DailyState(
                 date_key=f"review-{time.time_ns()}",
                 questions=package.questions,
@@ -891,7 +910,9 @@ def _render_review_package() -> None:
         on_submission=_on_submission,
         summary_title="复习包完成",
     )
-    if state.finished and st.button("再来一组", key="restart_review"):
+    if state.finished and st.button(
+        "再来一组", key="restart_review", icon=ICON_RESTART
+    ):
         st.session_state.pop("review_state", None)
         st.rerun()
 
@@ -909,7 +930,7 @@ def _render_variant_practice() -> None:
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
     if not consent.mistake_book:
-        st.info("错题本已关闭，无法练习变式。")
+        st.info(f"{ICON_INFO} 错题本已关闭，无法练习变式。")
         return
 
     exercises_by_id = {
@@ -921,7 +942,7 @@ def _render_variant_practice() -> None:
         if _mistake_variants(mistake, exercises_by_id)
     ]
     if not mistakes:
-        st.info("还没有带变式的错题。先在陪练或每日挑战中答错一题。")
+        st.info(f"{ICON_INFO} 还没有带变式的错题。先在陪练或每日挑战中答错一题。")
         return
 
     labels = {
@@ -942,10 +963,10 @@ def _render_variant_practice() -> None:
         st.write(entry.exercise_snapshot.get("solution_outline", "暂无"))
 
     left, right = st.columns(2)
-    if left.button("我已独立完成", key="variant_done"):
+    if left.button("我已独立完成", key="variant_done", icon=ICON_CHECK):
         _record_review_write(entry.exercise_id, True)
         st.rerun()
-    if right.button("仍需复习", key="variant_retry"):
+    if right.button("仍需复习", key="variant_retry", icon=ICON_REVIEW):
         _record_review_write(entry.exercise_id, False)
         st.rerun()
 
@@ -955,7 +976,7 @@ def _render_export() -> None:
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
     if not (consent.memory or consent.mistake_book):
-        st.info("游客模式不可导出，请先开启本机记忆或错题本。")
+        st.info(f"{ICON_INFO} 游客模式不可导出，请先开启本机记忆或错题本。")
         return
 
     default_dir = str(Path.home() / "mathcoach-exports")
@@ -974,7 +995,7 @@ def _render_export() -> None:
     confirmation = st.text_input(
         "确认语句（我确认执行此操作）", key="export_confirmation"
     )
-    if st.button("确认导出", key="confirm_export"):
+    if st.button("确认导出", key="confirm_export", icon=ICON_EXPORT):
         try:
             written = write_export(
                 artifact,
@@ -983,11 +1004,11 @@ def _render_export() -> None:
                 repository=repository,
             )
         except ConfirmationRequired:
-            st.error("导出未执行：请输入完整确认语句“我确认执行此操作”。")
+            st.error(f"{ICON_ERROR} 导出未执行：请输入完整确认语句“我确认执行此操作”。")
         except WriteBlocked as exc:
-            st.error(f"导出未执行：{exc.reason}")
+            st.error(f"{ICON_ERROR} 导出未执行：{exc.reason}")
         else:
-            st.success(f"已导出 {len(written)} 个文件到 {directory}")
+            st.success(f"{ICON_CHECK} 已导出 {len(written)} 个文件到 {directory}")
 
 
 def _render_current_mode() -> None:
