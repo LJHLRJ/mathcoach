@@ -35,6 +35,9 @@ CELEBRATION_IFRAME = (
 
 MICRO_INTERACTIONS_CSS = """
 <style>
+[data-testid="stMarkdown"]:has(style) {
+  display: none !important;
+}
 button {
   transition: transform .12s ease, box-shadow .12s ease;
 }

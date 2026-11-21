@@ -39,7 +39,6 @@ from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
 from .milestones import celebrate_mistakes_cleared
 from .motion import (
-    inject_micro_interactions,
     load_celebration_settings,
     load_dynamic_background,
     save_celebration_settings,
@@ -177,7 +176,6 @@ def inject_font_size_css(size: str) -> None:
     consent = st.session_state.get("consent")
     if consent is not None:
         inject_background_css(consent)
-        inject_micro_interactions(consent)
 
 
 def sanitized_connection_error(exc: Exception, api_key: str) -> str:

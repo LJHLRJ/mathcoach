@@ -65,6 +65,7 @@ from mathcoach.ui.milestones import (
     celebrate_review_complete,
 )
 from mathcoach.ui.motion import (
+    inject_micro_interactions,
     play_pending_celebration,
     render_dynamic_background,
 )
@@ -1174,3 +1175,4 @@ with tabs[3]:
 
 play_pending_feedback(st.session_state.consent)
 play_pending_celebration(st.session_state.consent)
+inject_micro_interactions(st.session_state.consent)
