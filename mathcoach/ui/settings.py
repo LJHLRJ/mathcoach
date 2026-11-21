@@ -64,6 +64,26 @@ THEME_LABELS = {
     "深色": "dark",
     "跟随系统": "system",
 }
+RESOURCE_NOTICE = (
+    "- 背景：Pattern Craft（MIT）\n"
+    "- 反馈音：uisfx（音频 CC0 1.0）\n"
+    "- 专注音频：Noisekun / Moodist / Open Lo-Fi（仅外部链接）\n"
+    "- CozyPixels：仅参考配色，未使用任何图片\n"
+    "- 未使用：bgvault、Quiz and Game Show Sound Effects、"
+    "math-pattern-gen、tiks"
+)
+DISCLAIMER_TEXT = """## 免责声明
+
+本项目集成的背景图案、音效与环境音来自第三方开源项目，其许可证以各项目仓库声明为准。我们已尽力核实许可证信息，但**不对第三方资源的版权状态作任何法律保证**，也不构成法律建议。
+
+- CC0 / 公有领域资源：无需署名，但我们仍在 THIRD_PARTY_NOTICES.md 中列出来源以示尊重。
+- MIT 资源：保留原版权声明与许可声明。
+- 来源不明或许可证不清的资源：一律不使用。
+
+若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
+
+用户自行选择的外部曲库与外部链接，其许可证与使用条款由对应项目负责，本项目仅提供入口，不承担相关责任。
+"""
 
 
 def _is_guest(consent: Consent) -> bool:
@@ -468,6 +488,17 @@ def _render_sound_form(
             )
 
 
+def _render_about() -> None:
+    with st.expander("关于 / 致谢", expanded=False):
+        st.markdown("**第三方资源**")
+        st.markdown(RESOURCE_NOTICE)
+        st.caption(
+            "完整清单见仓库根目录 THIRD_PARTY_NOTICES.md；"
+            "核实人：待人工复核。"
+        )
+        st.markdown(DISCLAIMER_TEXT)
+
+
 def _render_review_ratio_form(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
@@ -627,3 +658,4 @@ def render_settings_page(
     _render_clear(repository, consent)
     _render_audit(repository, consent)
     _render_dev_panel(consent, settings)
+    _render_about()
