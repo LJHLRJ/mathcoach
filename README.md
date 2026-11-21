@@ -18,16 +18,14 @@
 
 ### 安全测试覆盖
 
-| 项目 | 结果 | 数据来源 |
-|---|---|---|
-| 安全相关测试 | 28 个用例，全部通过 | `tests/test_guards.py` 9、`tests/test_redlines.py` 13、`tests/test_audit.py` 2、`tests/test_engine_safety.py` 4 |
-| 显式注入样本 | 10/10 全部拦截 | `tests/test_guards.py::INJECTION_SAMPLES` |
-| 数学伪装样本 | 3/3 命中 | `tests/test_guards.py::test_math_framing_examples` |
-| 零宽字符样本 | 1/1 拦截 | `tests/test_guards.py::test_zero_width_characters_are_blocked` |
-| 低置信解析 | 1/1 拒绝 | `tests/test_guards.py::test_low_confidence_parsed_answer_is_rejected` |
-| 脱敏样本 | 12/12 替换 | `tests/test_redlines.py` 中 token、API Key、Bearer、手机号、身份证、内网地址、姓名、住址等断言 |
+- 安全相关测试用例：22 项（`tests/test_guards.py` 9、`tests/test_redlines.py` 13；`test_safety*.py` 暂无用例）
+- 注入样本拦截：9 / 9（按测试函数统计，全部拦截）
+- 脱敏样本替换：6 / 6（按测试函数统计）
+- 数据来源：由 CI 在每次 push 时运行，结果见 GitHub Actions 的 pytest 输出。
 
-以上由 CI 在 push 到 `main` 与 PR 时运行完整单元测试和截图回归；Release 构建流程也会执行完整回归。结果见 GitHub Actions。
+统计口径：按文件名匹配 `test_safety*.py` / `test_guards*.py` / `test_redlines*.py`，统计以 `test_` 开头的函数；同一函数内多个样本只计 1 项；按函数名或断言中的 blocked / rejected / injection / 拒绝 识别拦截用例，`safe_*` 等反向用例不计入。`test_audit.py`（2 项）与 `test_engine_safety.py`（4 项）不属于本小节文件口径，未计入。
+
+补充口径：若将 `test_audit.py` 与 `test_engine_safety.py` 合并统计，共 28 个用例；其中显式注入样本 10/10 拦截、脱敏断言样本 12/12 替换。
 
 ## 桌面客户端
 
