@@ -1,5 +1,5 @@
 # 运行期依赖
-streamlit>=1.36      # 本地 Web 界面与 AppTest
+streamlit>=1.59      # 本地 Web 界面与 AppTest；st.skeleton 需 1.59+
 plotly>=5.0          # 交互式可视化（切线/3D 平面）
 pydantic>=2.7        # ParsedAnswer 严格模型
 PyYAML>=6.0          # 知识卡片与课程索引
