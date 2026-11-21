@@ -104,6 +104,10 @@
 - 真实浏览器验证（Playwright + Chrome for Testing 155，1280×800）：动态背景面板 1120×180，canvas 连续变化，opacity 0.25
 - 庆祝 iframe：位置 (0,0)、尺寸 1280×800、`position: fixed`、`z-index: 9999`、`pointer-events: none`；内容区滚动 700px 后仍覆盖视口；点击穿透成功；下一次 rerun 后移除
 - 截图调色板统计：confetti 播放期间 824 个采样像素，结束后 20 个（UI 颜色残差）
+- Firefox 151（Playwright，1280×800）：动态背景面板 1120×180 且 canvas 持续变化；庆祝 iframe 固定覆盖全视口、`pointer-events: none`；点击穿透成功
+- WebKit 2311（Playwright，Safari 同源引擎；Linux 无法运行 Safari 本体）：动态背景与庆祝 iframe 同样通过；点击穿透成功
+- pywebview 5.4 + Qt WebEngine（Xvfb，1280×700 真实窗口）：打开打包产物的本地服务并正常渲染主界面
+- Linux 打包产物未内置 GTK/Qt 后端，直接双击启动会提示缺少 Qt/GTK；Linux 不在发布矩阵（仅 Windows/macOS），不影响发布产物
 - 应用内“减少动效”：不注入 shader 面板与庆祝 iframe；浏览器 `prefers-reduced-motion`：canvas `display: none`、checksum 0、不创建 confetti canvas
 - 静态服务：源码与打包产物 `confetti.html` / `confetti.browser.js` 均 200；打包产物在 cwd 无 `.streamlit/config.toml`、且未预设环境变量时仍为 200，验证启动器设置 `STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true`
 - PyInstaller onedir 构建成功：`dist/MathCoach` 574MB，入口 50MB；`static/` 位于 `_internal/static/`；health=200，打包应用页面正常渲染
@@ -117,5 +121,6 @@
 - 若需要内置专注曲库，需要单独评估文件体积、许可证与打包配置。
 - 外部专注音频的播放/停止/音量由对应网站控制。
 - 动态背景仍是装饰面板；全屏背景需另行评估可读性与性能。
-- confetti 全屏效果已在 Chrome 155 headless 中验证；Safari/Firefox 与 pywebview 真实窗口仍需人工复核。
+- Safari 本体无法在 Linux 运行，已用 Playwright WebKit 替代验证；macOS Safari 仍建议人工复核。
+- pywebview 窗口已在 Linux + Qt WebEngine 验证；Windows EdgeChromium 与 macOS Cocoa 窗口仍建议人工复核。
 - `bgvault`、Quiz and Game Show Sound Effects、streamlit-animate、matanim 许可证/来源未确认，未集成。
