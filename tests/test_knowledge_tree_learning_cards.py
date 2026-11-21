@@ -8,7 +8,6 @@ from streamlit.testing.v1 import AppTest
 from mathcoach.content.loader import load_content
 from mathcoach.domain.knowledge_tree import (
     LEARNING_CARDS_DIR,
-    learning_card_is_filled,
     learning_card_path,
     load_learning_card,
 )
@@ -42,21 +41,18 @@ def test_every_card_has_a_learning_card_file():
     assert set(card_ids) == files
 
 
-def test_card_files_are_filled_or_marked_as_template():
+def test_card_files_are_all_filled():
     filled: list[str] = []
     for card_id in _card_ids():
         text = load_learning_card(card_id)
         assert text is not None
-        if learning_card_is_filled(text):
-            filled.append(card_id)
-            assert "状态：已填充" in text
-            for section in FILLED_SECTIONS:
-                assert section in text, f"{card_id} 缺少 {section}"
-        else:
-            assert "状态：待填充" in text
-            assert "待填充" in text
+        assert "状态：已填充" in text
+        assert "待填充" not in text
+        for section in FILLED_SECTIONS:
+            assert section in text, f"{card_id} 缺少 {section}"
+        filled.append(card_id)
 
-    assert len(filled) >= 5
+    assert len(filled) == 122
     assert "hs-function-intro-001" in filled
 
 
