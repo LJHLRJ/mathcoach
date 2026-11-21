@@ -27,7 +27,7 @@ from ..domain.spaced_repetition import Quality, update_schedule
 from .repository import DEFAULT_CONSENT
 from .scheduler import next_review
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _SCHEMA = (
     """
@@ -138,6 +138,13 @@ _MIGRATIONS: dict[int, tuple[str, ...]] = {
         "ALTER TABLE mistakes ADD COLUMN interval_days INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE mistakes ADD COLUMN next_review_at TEXT NOT NULL "
         "DEFAULT '1970-01-01T00:00:00+00:00'",
+    ),
+    3: (
+        # FSRS 状态；stability=0 表示旧数据尚未初始化，由调度器首次评分时补齐
+        "ALTER TABLE mistakes ADD COLUMN stability REAL NOT NULL DEFAULT 0.0",
+        "ALTER TABLE mistakes ADD COLUMN difficulty REAL NOT NULL DEFAULT 5.0",
+        "ALTER TABLE mistakes ADD COLUMN reps INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE mistakes ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0",
     ),
 }
 

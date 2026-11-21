@@ -33,7 +33,7 @@ def test_v1_db_migrates_and_keeps_rows(tmp_path):
         row = conn.execute(
             "SELECT ease, interval_days, next_review_at FROM mistakes WHERE id='m1'"
         ).fetchone()
-    assert version == 2
+    assert version == SCHEMA_VERSION
     assert row[0] == 2.5
     assert row[1] == 1
     assert row[2] is not None
