@@ -11,6 +11,7 @@ from ..config import db_path
 from ..domain.models import Consent
 from ..memory.repository import Repository
 from ..memory.settings_repo import SQLiteSettingsStore
+from .components import PRIMARY, button_kwargs
 from .icons import ICON_ERROR, ICON_INFO
 
 FOCUS_ENABLED_KEY = "focus_audio_enabled"
@@ -104,7 +105,9 @@ def render_focus_audio(
             value=enabled,
             key="settings_focus_audio_enabled",
         )
-        saved = st.form_submit_button("保存专注音频设置")
+        saved = st.form_submit_button(
+            "保存专注音频设置", **button_kwargs(PRIMARY)
+        )
     if saved:
         if save_focus_enabled(consent, enabled_new):
             repository.record_audit("settings_focus_audio", "ok")

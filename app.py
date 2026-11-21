@@ -3,9 +3,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import mathcoach
 import streamlit as st
 
+import mathcoach
 from mathcoach.config import content_strict, resolve_content_root
 from mathcoach.content.loader import (
     ContentError,
@@ -40,6 +40,31 @@ from mathcoach.safety.redlines import (
     ConfirmationRequired,
     WriteBlocked,
     assert_write_allowed,
+)
+from mathcoach.session.challenge import (
+    build_challenge_state,
+    save_challenge_result,
+)
+from mathcoach.session.daily import (
+    DailyState,
+    build_daily_questions,
+    current_question,
+    elapsed_seconds,
+    finish_daily,
+    record_daily_mistake,
+    remaining_seconds,
+    save_daily_result,
+    submit_daily_answer,
+    time_is_up,
+)
+from mathcoach.session.engine import SessionEngine
+from mathcoach.timeutil import local_day, local_day_key
+from mathcoach.ui.components import (
+    PRIMARY,
+    SKELETON_CARD,
+    SKELETON_PANEL,
+    button_kwargs,
+    loading_skeleton,
 )
 from mathcoach.ui.first_run import (
     FirstRunError,
@@ -81,25 +106,8 @@ from mathcoach.ui.settings import (
     render_settings_page,
 )
 from mathcoach.ui.sound import play_pending_feedback, queue_feedback
+from mathcoach.ui.theme import inject_theme
 from mathcoach.ui.visuals.registry import render_visual
-from mathcoach.session.challenge import (
-    build_challenge_state,
-    save_challenge_result,
-)
-from mathcoach.session.daily import (
-    DailyState,
-    build_daily_questions,
-    current_question,
-    elapsed_seconds,
-    finish_daily,
-    record_daily_mistake,
-    remaining_seconds,
-    save_daily_result,
-    submit_daily_answer,
-    time_is_up,
-)
-from mathcoach.session.engine import SessionEngine
-from mathcoach.timeutil import local_day, local_day_key
 from mathcoach.update_check import UpdateCheckError, check_for_update
 
 CONTENT_ROOT = resolve_content_root(Path(__file__))
@@ -149,10 +157,10 @@ prerequisites = load_prerequisites(CONTENT_ROOT)
 narrative_nodes = load_narrative(CONTENT_ROOT)
 
 
-def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
-    """汇总未掌握错题的先修缺口；同一链路只保留一次。"""
-    stats = build_mistake_stats(repository.list_mistakes(limit=None))
-    entries = repository.list_mistakes(limit=None, include_mastered=False)
+def _gaps_from_stats(
+    stats, entries, card_id: str | None = None
+) -> list[Gap]:
+    """用已取好的统计与错题列表计算先修缺口。"""
     if card_id is not None:
         entries = [entry for entry in entries if entry.card_id == card_id]
     gaps: list[Gap] = []
@@ -163,6 +171,13 @@ def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
                 seen.add(gap.chain)
                 gaps.append(gap)
     return gaps
+
+
+def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
+    """汇总未掌握错题的先修缺口；同一链路只保留一次。"""
+    stats = build_mistake_stats(repository.list_mistakes(limit=None))
+    entries = repository.list_mistakes(limit=None, include_mastered=False)
+    return _gaps_from_stats(stats, entries, card_id)
 
 
 def _render_gap_diagnosis(gaps: list[Gap]) -> None:
@@ -212,6 +227,7 @@ if "onboarding_had_history" not in st.session_state:
     st.session_state["onboarding_had_history"] = repository_has_history(
         st.session_state.repository
     )
+inject_theme(st.session_state.consent)
 inject_font_size_css(st.session_state.settings.font_size)
 
 
@@ -220,13 +236,17 @@ def _render_mistake_book(repository) -> None:
     if not entries:
         st.caption("还没有错题。")
         return
+    stats = build_mistake_stats(repository.list_mistakes(limit=None))
+    active_mistakes = repository.list_mistakes(
+        limit=None, include_mastered=False
+    )
     for entry in entries:
         st.markdown(f"**{entry.stem}**")
         st.caption(
             f"你的答案：{entry.user_answer} · 正确答案：{entry.correct_answer} · "
             f"{entry.error_type.value} · {entry.review_state.value}"
         )
-        gaps = _collect_gaps(repository, entry.card_id)
+        gaps = _gaps_from_stats(stats, active_mistakes, entry.card_id)
         if gaps:
             _render_gap_diagnosis(gaps)
 
@@ -326,6 +346,8 @@ def _render_update_section() -> None:
     with st.expander("关于与更新", expanded=False):
         st.caption(f"版本 {mathcoach.__version__}")
         if st.button("检查更新", key="check_update", icon=ICON_UPDATE):
+            placeholder = st.empty()
+            placeholder.markdown(":shimmer[正在检查更新…]")
             try:
                 release = check_for_update(mathcoach.__version__)
             except UpdateCheckError:
@@ -334,6 +356,8 @@ def _render_update_section() -> None:
                 st.session_state.update_notice = (
                     ("current", None) if release is None else ("update", release)
                 )
+            finally:
+                placeholder.empty()
         notice = st.session_state.get("update_notice")
         if notice is None:
             return
@@ -447,10 +471,24 @@ def _render_session() -> None:
     if view.phase is Phase.GOAL_CONFIRM:
         with card(view.title):
             st.write(math_markdown(view.body))
-            goal = st.text_input("今天想练到什么？", key="goal_input")
-            if st.button("确认目标", key="confirm_goal", icon=ICON_PLAY):
+            with st.form(
+                "goal_form",
+                clear_on_submit=False,
+                enter_to_submit=False,
+                border=False,
+            ):
+                goal = st.text_input(
+                    "今天想练到什么？", key="goal_input"
+                )
+                submitted = st.form_submit_button(
+                    "确认目标",
+                    key="confirm_goal",
+                    icon=ICON_PLAY,
+                    **button_kwargs(PRIMARY),
+                )
+            if submitted:
                 try:
-                    with st.spinner("正在准备讲解…"):
+                    with loading_skeleton(SKELETON_CARD):
                         engine.confirm_goal(goal)
                 except Blocked:
                     st.error(f"{ICON_ERROR} {REFUSAL_TEXT}")
@@ -475,7 +513,12 @@ def _render_session() -> None:
                     ("难度", engine.card.difficulty.value),
                 ]
             )
-            if st.button("开始小测", key="begin_quiz", icon=ICON_PLAY):
+            if st.button(
+                "开始小测",
+                key="begin_quiz",
+                icon=ICON_PLAY,
+                **button_kwargs(PRIMARY),
+            ):
                 engine.begin_quiz()
                 st.rerun()
         return
@@ -501,7 +544,12 @@ def _render_session() -> None:
                 st.info(f"{ICON_INFO} 可视化暂不可用")
             st.write(math_markdown(view.body))
             answer = _render_answer_input(engine.current_exercise)
-            if st.button("提交答案", key="submit_answer", icon=ICON_SUBMIT):
+            if st.button(
+                "提交答案",
+                key="submit_answer",
+                icon=ICON_SUBMIT,
+                **button_kwargs(PRIMARY),
+            ):
                 next_view = engine.submit_answer(answer)
                 if next_view.phase is Phase.RECEIPT:
                     queue_feedback("correct", st.session_state.consent)
@@ -529,7 +577,12 @@ def _render_session() -> None:
                 view.options,
                 key=f"diagnosis_{engine.state.exercise_id}_{len(engine.state.attempts)}",
             )
-            if st.button("确认错因", key="confirm_diagnosis", icon=ICON_CHECK):
+            if st.button(
+                "确认错因",
+                key="confirm_diagnosis",
+                icon=ICON_CHECK,
+                **button_kwargs(PRIMARY),
+            ):
                 engine.confirm_diagnosis(selected)
                 st.rerun()
         return
@@ -578,7 +631,12 @@ def _render_session() -> None:
                     st.caption("叙事：本段旅程已全部点亮。")
                 else:
                     st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
-        if st.button("继续", key="advance", icon=ICON_PLAY):
+        if st.button(
+            "继续",
+            key="advance",
+            icon=ICON_PLAY,
+            **button_kwargs(PRIMARY),
+        ):
             next_view = engine.advance()
             if next_view.phase is Phase.WRAPUP:
                 queue_feedback("complete", st.session_state.consent)
@@ -734,6 +792,19 @@ def _render_quiz_summary(state: DailyState, now: datetime, title: str) -> None:
         st.info(f"{ICON_INFO} {state.feedback}")
 
 
+@st.fragment(run_every=5)
+def _render_quiz_countdown(state: DailyState) -> None:
+    """只刷新倒计时文本，避免整页周期性重跑。"""
+    now = datetime.now(timezone.utc)
+    if time_is_up(state, now):
+        st.caption("时间到，提交当前答案后结算。")
+        return
+    st.caption(
+        f"剩余 {remaining_seconds(state, now)} 秒 · "
+        f"第 {state.index + 1}/{len(state.questions)} 题"
+    )
+
+
 def _render_active_quiz(
     state: DailyState,
     *,
@@ -756,10 +827,7 @@ def _render_active_quiz(
             queue_feedback("complete", st.session_state.consent)
         return
 
-    st.caption(
-        f"剩余 {remaining_seconds(state, now)} 秒 · "
-        f"第 {state.index + 1}/{len(state.questions)} 题"
-    )
+    _render_quiz_countdown(state)
     if state.feedback:
         st.info(f"{ICON_INFO} {state.feedback}")
     question = current_question(state)
@@ -771,7 +839,10 @@ def _render_active_quiz(
         question.exercise, key_suffix=f"{key_prefix}_{state.index}"
     )
     if st.button(
-        "提交答案", key=f"{key_prefix}_submit", icon=ICON_SUBMIT
+        "提交答案",
+        key=f"{key_prefix}_submit",
+        icon=ICON_SUBMIT,
+        **button_kwargs(PRIMARY),
     ):
         submission = submit_daily_answer(state, answer, now)
         if submission is not None:
@@ -810,7 +881,12 @@ def _render_daily_challenge() -> None:
 
     if state is None:
         st.write("5 道跨模块小题，限时 5 分钟。答错会自动进入错题本。")
-        if st.button("开始 5 分钟挑战", key="start_daily", icon=ICON_PLAY):
+        if st.button(
+            "开始 5 分钟挑战",
+            key="start_daily",
+            icon=ICON_PLAY,
+            **button_kwargs(PRIMARY),
+        ):
             st.session_state.daily_state = DailyState(
                 date_key=day_key,
                 questions=build_daily_questions(cards, local_day(now)),
@@ -853,7 +929,12 @@ def _render_challenge() -> None:
     state: DailyState | None = st.session_state.get("challenge_state")
     if state is None:
         st.write("10 道跨模块小题，限时 5 分钟，可反复挑战。")
-        if st.button("开始挑战赛", key="start_challenge", icon=ICON_PLAY):
+        if st.button(
+            "开始挑战赛",
+            key="start_challenge",
+            icon=ICON_PLAY,
+            **button_kwargs(PRIMARY),
+        ):
             st.session_state.challenge_state = build_challenge_state(
                 cards, now, time.time_ns()
             )
@@ -977,23 +1058,31 @@ def _render_review_package() -> None:
 
     state: DailyState | None = st.session_state.get("review_state")
     if state is None:
-        gaps = _collect_gaps(repository)
+        with loading_skeleton(SKELETON_CARD):
+            gaps = _collect_gaps(repository)
+            priority = {gap.chain[-1] for gap in gaps}
+            new_ratio = current_settings(
+                st.session_state.consent
+            ).new_review_ratio
+            package = build_review_package(
+                repository,
+                cards,
+                now,
+                priority_card_ids=priority,
+                new_ratio=new_ratio,
+            )
         if gaps:
             _render_gap_diagnosis(gaps)
-        priority = {gap.chain[-1] for gap in gaps}
-        new_ratio = current_settings(st.session_state.consent).new_review_ratio
-        package = build_review_package(
-            repository,
-            cards,
-            now,
-            priority_card_ids=priority,
-            new_ratio=new_ratio,
-        )
         if not package.questions:
             st.info(f"{ICON_INFO} {package.reason}")
             return
         st.write(package.reason)
-        if st.button("开始复习包", key="start_review", icon=ICON_PLAY):
+        if st.button(
+            "开始复习包",
+            key="start_review",
+            icon=ICON_PLAY,
+            **button_kwargs(PRIMARY),
+        ):
             st.session_state.review_state = DailyState(
                 date_key=f"review-{time.time_ns()}",
                 questions=package.questions,
@@ -1093,7 +1182,10 @@ def _render_export() -> None:
     default_dir = str(Path.home() / "mathcoach-exports")
     directory = st.text_input("导出目录", value=default_dir, key="export_dir")
     now = datetime.now(timezone.utc)
-    artifact = build_export_artifact(repository, cards, Path(directory), now)
+    with loading_skeleton(SKELETON_PANEL):
+        artifact = build_export_artifact(
+            repository, cards, Path(directory), now
+        )
 
     st.markdown(f"**导出摘要**：{artifact.summary_text()}")
     st.code(describe_export(artifact), language="text")
@@ -1106,7 +1198,12 @@ def _render_export() -> None:
     confirmation = st.text_input(
         "确认语句（我确认执行此操作）", key="export_confirmation"
     )
-    if st.button("确认导出", key="confirm_export", icon=ICON_EXPORT):
+    if st.button(
+        "确认导出",
+        key="confirm_export",
+        icon=ICON_EXPORT,
+        **button_kwargs(PRIMARY),
+    ):
         try:
             written = write_export(
                 artifact,

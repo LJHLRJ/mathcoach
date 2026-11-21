@@ -98,7 +98,7 @@
 
 ### 验证
 
-- 全量 pytest：437 passed, 1 skipped
+- 全量 pytest：455 passed, 1 skipped
 - 新增测试：背景 5、反馈音 7、专注音频 5、许可证/免责声明 4、动态背景 6、庆祝 8、里程碑 4、静态资源 4、动效许可证 5
 - 静态服务实测：`confetti.html=200`、`confetti.browser.js=200`
 - 真实浏览器验证（Playwright + Chrome for Testing 155，1280×800）：动态背景面板 1120×180，canvas 连续变化，opacity 0.25

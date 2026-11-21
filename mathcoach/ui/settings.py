@@ -35,8 +35,18 @@ from ..memory.settings_repo import (
     secrets_path,
 )
 from ..safety.redlines import sanitize_text
+from .components import (
+    DANGER,
+    DANGER_KEY,
+    PRIMARY,
+    SECONDARY,
+    SKELETON_INLINE,
+    SKELETON_PANEL,
+    button_kwargs,
+    loading_skeleton,
+)
 from .focus_audio import render_focus_audio
-from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .icons import ICON_CHECK, ICON_ERROR, ICON_EXPORT, ICON_INFO
 from .milestones import celebrate_mistakes_cleared
 from .motion import (
     load_celebration_settings,
@@ -49,6 +59,12 @@ from .sound import (
     load_sound_settings,
     save_sound_settings,
 )
+from .theme import (
+    DENSITY_COMFORTABLE,
+    DENSITY_COMPACT,
+    layout_density,
+    save_layout_density,
+)
 from .theme_background import (
     BACKGROUND_OPTIONS,
     inject_background_css,
@@ -57,6 +73,7 @@ from .theme_background import (
 )
 
 FONT_SIZE_LABELS = {"小": "small", "中": "medium", "大": "large"}
+EXPORT_PAYLOAD_KEY = "settings_export_payload"
 FONT_SIZE_CSS = {
     "small": "html{font-size:14px;}",
     "medium": "html{font-size:16px;}",
@@ -216,13 +233,14 @@ def _render_connection_test(existing_key: str, existing_base: str) -> None:
         provider = OpenAICompatibleProvider(
             api_key=test_key, base_url=base_url.strip() or None
         )
-        provider.render(
-            RenderTask(
-                kind="explain",
-                card_name="连接测试",
-                content="请只回复 OK",
+        with loading_skeleton(SKELETON_INLINE):
+            provider.render(
+                RenderTask(
+                    kind="explain",
+                    card_name="连接测试",
+                    content="请只回复 OK",
+                )
             )
-        )
     except Exception as exc:  # noqa: BLE001 - 需要把任意网络/鉴权错误转成页面提示
         st.error(f"连接失败：{sanitized_connection_error(exc, test_key)}")
     else:
@@ -247,7 +265,9 @@ def _render_ai_config(
             placeholder="已保存，留空表示不修改" if existing_key else "",
         )
         base_url = st.text_input("Base URL", value=existing_base)
-        saved = st.form_submit_button("保存 AI 配置")
+        saved = st.form_submit_button(
+            "保存 AI 配置", **button_kwargs(PRIMARY)
+        )
     if saved:
         final_key = api_key.strip() or existing_key
         save_ai_credentials(final_key, base_url)
@@ -277,6 +297,36 @@ def _render_notices() -> None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
 
 
+def _build_export_payloads(
+    repository: Repository, consent: Consent
+) -> dict[str, str]:
+    """按需构建 4 个导出 payload；仅由用户点击触发。"""
+    receipts = repository.list_receipts(limit=None)
+    mistakes = repository.list_mistakes(limit=None)
+    review_items = repository.list_review_items()
+    now = datetime.now(UTC)
+    stamp = now.strftime("%Y%m%d-%H%M%S")
+    settings = current_settings(consent)
+    return {
+        "stamp": stamp,
+        "json": export_json(
+            receipts=receipts,
+            mistakes=mistakes,
+            review_items=review_items,
+            settings=settings,
+            now=now,
+        ),
+        "receipts": export_receipts_csv(receipts),
+        "mistakes": export_mistakes_csv(mistakes),
+        "markdown": export_markdown(
+            receipts=receipts,
+            mistakes=mistakes,
+            settings=settings,
+            now=now,
+        ),
+    }
+
+
 def _render_export(repository: Repository, consent: Consent) -> None:
     st.divider()
     st.markdown("### 导出学习数据")
@@ -284,22 +334,29 @@ def _render_export(repository: Repository, consent: Consent) -> None:
         st.info(f"{ICON_INFO} 游客模式没有持久学习数据可导出。")
         return
 
-    receipts = repository.list_receipts(limit=None)
-    mistakes = repository.list_mistakes(limit=None)
-    review_items = repository.list_review_items()
-    now = datetime.now(UTC)
-    stamp = now.strftime("%Y%m%d-%H%M%S")
-    settings = current_settings(consent)
     st.caption("导出不包含 API 密钥、secrets 文件或审计日志。")
+    payload = st.session_state.get(EXPORT_PAYLOAD_KEY)
+    if not isinstance(payload, dict):
+        payload = None
+    label = "生成 / 刷新导出数据"
+    role = SECONDARY if payload is not None else PRIMARY
+    if st.button(
+        label,
+        key="settings_prepare_export",
+        icon=ICON_EXPORT,
+        **button_kwargs(role),
+    ):
+        with loading_skeleton(SKELETON_PANEL):
+            payload = _build_export_payloads(repository, consent)
+            st.session_state[EXPORT_PAYLOAD_KEY] = payload
+    if payload is None:
+        st.caption("按需生成：点击按钮后显示下载入口；学习数据变化后请刷新。")
+        return
+    stamp = payload["stamp"]
+    st.caption(f"导出数据生成于 {stamp}；如学习数据已变化，请刷新。")
     st.download_button(
         "下载完整 JSON",
-        data=export_json(
-            receipts=receipts,
-            mistakes=mistakes,
-            review_items=review_items,
-            settings=settings,
-            now=now,
-        ),
+        data=payload["json"],
         file_name=f"mathcoach-{stamp}.json",
         mime="application/json",
         key="settings_export_json",
@@ -308,7 +365,7 @@ def _render_export(repository: Repository, consent: Consent) -> None:
     with left:
         st.download_button(
             "下载收据 CSV",
-            data=export_receipts_csv(receipts),
+            data=payload["receipts"],
             file_name=f"mathcoach-receipts-{stamp}.csv",
             mime="text/csv",
             key="settings_export_receipts",
@@ -316,19 +373,14 @@ def _render_export(repository: Repository, consent: Consent) -> None:
     with right:
         st.download_button(
             "下载错题 CSV",
-            data=export_mistakes_csv(mistakes),
+            data=payload["mistakes"],
             file_name=f"mathcoach-mistakes-{stamp}.csv",
             mime="text/csv",
             key="settings_export_mistakes",
         )
     st.download_button(
         "下载 Markdown 报告",
-        data=export_markdown(
-            receipts=receipts,
-            mistakes=mistakes,
-            settings=settings,
-            now=now,
-        ),
+        data=payload["markdown"],
         file_name=f"mathcoach-report-{stamp}.md",
         mime="text/markdown",
         key="settings_export_markdown",
@@ -353,7 +405,11 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
         purge_audit = st.checkbox(
             "同时删除安全审计日志", key="settings_clear_audit"
         )
-        submitted = st.form_submit_button("永久清除学习数据")
+        submitted = st.form_submit_button(
+            "永久清除学习数据",
+            key=DANGER_KEY,
+            **button_kwargs(DANGER),
+        )
     if not submitted:
         return
     if confirmation != "DELETE":
@@ -373,38 +429,41 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
 def _render_audit(repository: Repository, consent: Consent) -> None:
     st.divider()
     st.markdown("### 安全审计日志（只读）")
-    entries = repository.list_audit(limit=200)
-    if not entries:
-        st.caption("暂无审计记录。")
-        return
-    rows = [
-        {
-            "id": entry.id,
-            "时间": entry.created_at.isoformat(),
-            "操作": sanitize_text(entry.op),
-            "结果": sanitize_text(entry.result),
-        }
-        for entry in entries
-    ]
-    with st.expander("查看审计日志", expanded=False):
-        st.dataframe(rows, hide_index=True)
-    now = datetime.now(UTC)
-    stamp = now.strftime("%Y%m%d-%H%M%S")
-    st.download_button(
-        "下载审计 CSV",
-        data=export_audit_csv(entries),
-        file_name=f"mathcoach-audit-{stamp}.csv",
-        mime="text/csv",
-        key="settings_audit_csv",
-    )
-    st.download_button(
-        "下载审计 JSON",
-        data=export_audit_json(entries, now),
-        file_name=f"mathcoach-audit-{stamp}.json",
-        mime="application/json",
-        key="settings_audit_json",
-    )
-    st.caption("审计日志只读；不包含 Token 或学习内容。")
+    with st.expander(
+        "查看审计日志", expanded=False, on_change="rerun"
+    ) as expander:
+        if expander.open:
+            entries = repository.list_audit(limit=200)
+            if not entries:
+                st.caption("暂无审计记录。")
+            else:
+                rows = [
+                    {
+                        "id": entry.id,
+                        "时间": entry.created_at.isoformat(),
+                        "操作": sanitize_text(entry.op),
+                        "结果": sanitize_text(entry.result),
+                    }
+                    for entry in entries
+                ]
+                st.dataframe(rows, hide_index=True)
+                now = datetime.now(UTC)
+                stamp = now.strftime("%Y%m%d-%H%M%S")
+                st.download_button(
+                    "下载审计 CSV",
+                    data=export_audit_csv(entries),
+                    file_name=f"mathcoach-audit-{stamp}.csv",
+                    mime="text/csv",
+                    key="settings_audit_csv",
+                )
+                st.download_button(
+                    "下载审计 JSON",
+                    data=export_audit_json(entries, now),
+                    file_name=f"mathcoach-audit-{stamp}.json",
+                    mime="application/json",
+                    key="settings_audit_json",
+                )
+    st.caption("审计日志只读；展开后加载最近 200 条记录与下载入口。")
 
 
 def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
@@ -439,6 +498,7 @@ def _render_appearance_form(
     )
     current = load_background(consent)
     current_dynamic = load_dynamic_background(consent)
+    current_density = layout_density(consent)
     labels = list(BACKGROUND_OPTIONS.values())
     keys = list(BACKGROUND_OPTIONS)
     index = keys.index(current) if current in keys else 0
@@ -455,13 +515,25 @@ def _render_appearance_form(
             key="settings_dynamic_background",
             help="仅在仪表盘和空状态显示；默认关闭。",
         )
-        saved = st.form_submit_button("保存外观设置")
+        compact_layout = st.toggle(
+            "紧凑布局",
+            value=current_density == DENSITY_COMPACT,
+            key="settings_compact_layout",
+            help="减少区块间距；保存后立即生效。",
+        )
+        saved = st.form_submit_button(
+            "保存外观设置", **button_kwargs(PRIMARY)
+        )
     if not saved:
         return
     choice = keys[labels.index(label)]
     background_saved = save_background(consent, choice)
     motion_saved = save_dynamic_background(consent, dynamic_background)
-    if background_saved and motion_saved:
+    density_saved = save_layout_density(
+        consent,
+        DENSITY_COMPACT if compact_layout else DENSITY_COMFORTABLE,
+    )
+    if background_saved and motion_saved and density_saved:
         repository.record_audit("settings_appearance", "ok")
         st.session_state["settings_appearance_saved"] = True
         st.rerun()
@@ -489,7 +561,9 @@ def _render_sound_form(
             value=current.feedback_enabled,
             key="settings_feedback_enabled",
         )
-        saved = st.form_submit_button("保存声音设置")
+        saved = st.form_submit_button(
+            "保存声音设置", **button_kwargs(PRIMARY)
+        )
     if saved:
         if save_sound_settings(
             consent,
@@ -553,7 +627,9 @@ def _render_motion_form(
             value=current.reduce_motion,
             key="settings_reduce_motion",
         )
-        saved = st.form_submit_button("保存动效设置")
+        saved = st.form_submit_button(
+            "保存动效设置", **button_kwargs(PRIMARY)
+        )
     if saved:
         if save_celebration_settings(
             consent,
@@ -587,7 +663,9 @@ def _render_review_ratio_form(
             ),
         )
         st.caption("范围 0–100，步长 5；0% 保持 1+3+1。")
-        saved = st.form_submit_button("保存复习配比")
+        saved = st.form_submit_button(
+            "保存复习配比", **button_kwargs(PRIMARY)
+        )
     if saved:
         new_settings = replace(settings, new_review_ratio=int(ratio))
         _save_settings(consent, new_settings)
@@ -670,8 +748,8 @@ def render_settings_page(
             key="settings_theme",
         )
         st.caption(
-            "主题需重启应用或手动修改 .streamlit/config.toml 生效，"
-            "不做即时切换。"
+            "主题需重启应用或手动修改 .streamlit/config.toml 生效；"
+            "此选项只记录偏好，不做即时切换。"
         )
         reminder_enabled = st.toggle(
             "复习提醒",
@@ -690,7 +768,9 @@ def render_settings_page(
             )
             st.caption(f"最大复习间隔：{DEFAULT_PARAMS.max_interval_days} 天")
             st.caption("高级参数使用内置默认值，当前不可编辑。")
-        saved = st.form_submit_button("保存设置")
+        saved = st.form_submit_button(
+            "保存设置", **button_kwargs(PRIMARY)
+        )
     if saved:
         new_settings = AppSettings(
             ai_enabled=ai_enabled,
