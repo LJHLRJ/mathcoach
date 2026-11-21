@@ -36,6 +36,7 @@ from mathcoach.safety.redlines import (
     WriteBlocked,
     assert_write_allowed,
 )
+from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
     build_challenge_state,
     save_challenge_result,
@@ -311,6 +312,11 @@ def _render_session() -> None:
     # 收据页只在现有正文后追加依据，不改变判定与布局
     if view.phase is Phase.RECEIPT and view.receipt and view.receipt.basis:
         st.caption(f"依据：{view.receipt.basis}")
+    # 可视化是可选增强：失败时只提示，不阻断讲解/小测
+    if view.phase in (Phase.EXPLAIN, Phase.QUIZ):
+        status = render_visual(engine.card.id)
+        if status == "failed":
+            st.info("可视化暂不可用")
 
     if view.phase is Phase.GOAL_CONFIRM:
         goal = st.text_input("今天想练到什么？", key="goal_input")
