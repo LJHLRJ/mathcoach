@@ -17,6 +17,11 @@ from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
 from mathcoach.domain.explanation import build_explanation, locate_error
+from mathcoach.domain.grade_index import (
+    GradeIndexError,
+    load_grade_index,
+    load_grade_spans,
+)
 from mathcoach.domain.knowledge_tree import (
     KnowledgeTreeError,
     load_knowledge_tree,
@@ -84,6 +89,10 @@ from mathcoach.ui.first_run import (
     initialize_repository,
     initialize_settings,
 )
+from mathcoach.ui.grade_page import (
+    load_default_grade,
+    render_grade_page,
+)
 from mathcoach.ui.icons import (
     ICON_CHECK,
     ICON_ERROR,
@@ -130,6 +139,7 @@ from mathcoach.update_check import UpdateCheckError, check_for_update
 
 CONTENT_ROOT = resolve_content_root(Path(__file__))
 MODE_SESSION = "陪练"
+MODE_GRADE = "按年级"
 MODE_DASHBOARD = "仪表盘"
 MODE_DAILY = "每日挑战"
 MODE_CHALLENGE = "挑战赛"
@@ -140,6 +150,7 @@ MODE_VARIANTS = "错题变式"
 MODE_EXPORT = "导出学习包"
 MODES = (
     MODE_SESSION,
+    MODE_GRADE,
     MODE_DASHBOARD,
     MODE_DAILY,
     MODE_CHALLENGE,
@@ -176,6 +187,24 @@ def _load_knowledge_tree():
         return load_knowledge_tree(CONTENT_ROOT / "knowledge_tree.yaml")
     except KnowledgeTreeError as exc:
         st.warning(f"{ICON_INFO} 知识点树暂不可用：{exc}")
+        return None
+
+
+@st.cache_resource
+def _load_grade_index():
+    try:
+        return load_grade_index(CONTENT_ROOT)
+    except GradeIndexError as exc:
+        st.error(f"{ICON_ERROR} 年级元数据加载失败：{exc}")
+        return None
+
+
+@st.cache_resource
+def _load_grade_spans():
+    try:
+        return load_grade_spans(CONTENT_ROOT / "knowledge_tree.yaml")
+    except GradeIndexError as exc:
+        st.warning(f"{ICON_INFO} 知识点年级范围暂不可用：{exc}")
         return None
 
 
@@ -407,7 +436,25 @@ def _render_sidebar() -> None:
     with st.sidebar:
         st.header("学习设置")
         _render_card_selector()
-        st.selectbox("功能", MODES, key="app_mode")
+        if (
+            st.query_params.get("grade")
+            and st.session_state.get("app_mode") != MODE_GRADE
+        ):
+            st.session_state["app_mode"] = MODE_GRADE
+
+        def _on_mode_change() -> None:
+            if (
+                st.session_state.get("app_mode") != MODE_GRADE
+                and st.query_params.get("grade")
+            ):
+                st.query_params.pop("grade", None)
+
+        st.selectbox(
+            "功能",
+            MODES,
+            key="app_mode",
+            on_change=_on_mode_change,
+        )
         st.caption(
             f"当前卡片：{st.session_state.engine.card.name} · "
             f"课程：{st.session_state.engine.card.course}"
@@ -1363,6 +1410,21 @@ def _render_export() -> None:
             st.success(f"{ICON_CHECK} 已导出 {len(written)} 个文件到 {directory}")
 
 
+def _render_grade_mode(initial_grade: str | None = None) -> None:
+    index = _load_grade_index()
+    if index is None:
+        return
+    spans = _load_grade_spans() or {}
+    render_grade_page(
+        cards=cards,
+        index=index,
+        spans=spans,
+        repository=st.session_state.repository,
+        consent=st.session_state.consent,
+        initial_grade=initial_grade,
+    )
+
+
 def _render_current_mode() -> None:
     focus = st.query_params.get("kp")
     if isinstance(focus, list):
@@ -1376,8 +1438,24 @@ def _render_current_mode() -> None:
             focus_id=focus,
         )
         return
+    grade = st.query_params.get("grade")
+    if isinstance(grade, list):
+        grade = grade[0] if grade else None
+    if grade:
+        st.session_state["_last_rendered_mode"] = MODE_GRADE
+        _render_grade_mode(grade)
+        return
     mode = st.session_state.get("app_mode", MODE_SESSION)
-    if mode == MODE_DASHBOARD:
+    previous_mode = st.session_state.get("_last_rendered_mode")
+    if mode == MODE_GRADE and previous_mode != MODE_GRADE:
+        fallback = load_default_grade(st.session_state.consent)
+        st.session_state["grade_filter"] = st.session_state.get(
+            "grade_last_selected", fallback
+        )
+    st.session_state["_last_rendered_mode"] = mode
+    if mode == MODE_GRADE:
+        _render_grade_mode()
+    elif mode == MODE_DASHBOARD:
         _render_dashboard()
     elif mode == MODE_DAILY:
         _render_daily_challenge()

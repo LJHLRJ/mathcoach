@@ -11,17 +11,23 @@
   example: 30°=π/6，90°=π/2。
   exercises:
   - id: hs-trig-001-e1
+    grade: g11
+    difficulty: basic
     kind: choice
     stem: 180° 等于（ ）弧度
     options: ["π", "2π", "π/2", "π/3"]
     answer: "π"
     solution_outline: 半圈对应的弧长是 πr，所以角度为 π 弧度。
   - id: hs-trig-001-e2
+    grade: g11
+    difficulty: basic
     kind: fill
     stem: 30° 化为弧度是（ ）
     answer: "π/6"
     solution_outline: 30/180=1/6，所以是 π/6。
   - id: hs-trig-001-e3
+    grade: g11
+    difficulty: basic
     kind: truefalse
     stem: 1 弧度约等于 57.3°。
     answer: true
@@ -41,17 +47,23 @@
   example: 若 sin x=3/5 且 x 在第一象限，则 cos x=4/5。
   exercises:
   - id: hs-trig-002-e1
+    grade: g11
+    difficulty: basic
     kind: choice
     stem: 下列恒等式正确的是（ ）
     options: ["sin²x+cos²x=1", "sin²x−cos²x=1", "sin x+cos x=1", "tan x=cos x/sin x"]
     answer: "sin²x+cos²x=1"
     solution_outline: 单位圆上点的坐标满足 x²+y²=1。
   - id: hs-trig-002-e2
+    grade: g11
+    difficulty: basic
     kind: fill
     stem: 若 sin x=3/5 且 x 在第一象限，则 cos x=（ ）
     answer: "4/5"
     solution_outline: cos²x=1−9/25=16/25，第一象限取正。
   - id: hs-trig-002-e3
+    grade: g11
+    difficulty: basic
     kind: expr
     stem: 化简 sin(x)**2 + cos(x)**2
     answer: "1"
@@ -71,17 +83,23 @@
   example: sin(π−π/6)=sin(π/6)=1/2。
   exercises:
   - id: hs-trig-003-e1
+    grade: g11
+    difficulty: intermediate
     kind: choice
     stem: sin(π−x) 等于（ ）
     options: ["sin x", "−sin x", "cos x", "−cos x"]
     answer: "sin x"
     solution_outline: 利用“补角正弦相等”。
   - id: hs-trig-003-e2
+    grade: g11
+    difficulty: intermediate
     kind: fill
     stem: cos π=（ ）
     answer: "-1"
     solution_outline: 单位圆上 π 对应点 (−1,0)，横坐标为 −1。
   - id: hs-trig-003-e3
+    grade: g11
+    difficulty: intermediate
     kind: find_error
     stem: 化简 sin(π+x)，哪一步错了（ ）
     options: ["第 1 步：sin(π+x)=sin π cos x+cos π sin x", "第 2 步：=0·cos x+1·sin x", "第 3 步：=sin x"]
@@ -102,17 +120,23 @@
   example: y=3sin(2x) 的振幅为 3，周期为 π。
   exercises:
   - id: hs-trig-004-e1
+    grade: g11
+    difficulty: intermediate
     kind: choice
     stem: 函数 y=sin(2x) 的最小正周期是（ ）
     options: ["π", "2π", "π/2", "4π"]
     answer: "π"
     solution_outline: 周期 T=2π/|ω|=2π/2=π。
   - id: hs-trig-004-e2
+    grade: g11
+    difficulty: intermediate
     kind: fill
     stem: 函数 y=3sin x 的振幅是（ ）
     answer: "3"
     solution_outline: 振幅为 |A|，此处 A=3。
   - id: hs-trig-004-e3
+    grade: g11
+    difficulty: intermediate
     kind: match
     stem: 把函数与最小正周期配对（写成 A=1;B=2 的形式）
     options: ["A y=sin x", "B y=sin 2x", "1 2π", "2 π"]
@@ -133,17 +157,23 @@
   example: 若 a=3，b=4，C=90°，则 c=5。
   exercises:
   - id: hs-trig-005-e1
+    grade: g11
+    difficulty: challenge
     kind: choice
     stem: 余弦定理的正确形式是（ ）
     options: ["c²=a²+b²−2ab cos C", "c²=a²+b²+2ab cos C", "c²=a²−b²+2ab cos C", "c²=a²+b²−ab cos C"]
     answer: "c²=a²+b²−2ab cos C"
     solution_outline: 两边平方展开后得到余弦定理。
   - id: hs-trig-005-e2
+    grade: g11
+    difficulty: challenge
     kind: fill
     stem: 在三角形中 a=3，b=4，C=90°，则 c=（ ）
     answer: "5"
     solution_outline: c²=9+16−0=25，所以 c=5。
   - id: hs-trig-005-e3
+    grade: g11
+    difficulty: challenge
     kind: proof_order
     stem: 用正弦定理解三角形的步骤排序（用逗号分隔）
     answer: "1,2,3,4"

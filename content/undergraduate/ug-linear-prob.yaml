@@ -11,17 +11,23 @@
   example: 二阶单位矩阵与任意同阶矩阵相乘可交换。
   exercises:
   - id: ug-linear-001-e1
+    grade: u1
+    difficulty: basic
     kind: choice
     stem: 对同阶方阵 A、B，一般（ ）
     options: ["AB≠BA", "AB=BA", "AB=0", "A+B=0"]
     answer: "AB≠BA"
     solution_outline: 矩阵乘法一般不可交换。
   - id: ug-linear-001-e2
+    grade: u1
+    difficulty: basic
     kind: fill
     stem: 2 阶单位矩阵的迹为（ ）
     answer: "2"
     solution_outline: 单位矩阵对角线元素为 1、1，迹为 2。
   - id: ug-linear-001-e3
+    grade: u1
+    difficulty: basic
     kind: truefalse
     stem: (AB)^T=B^T A^T。
     answer: true
@@ -41,17 +47,23 @@
   example: "|1 2; 3 4|=1×4−2×3=−2。"
   exercises:
   - id: ug-linear-002-e1
+    grade: u1
+    difficulty: basic
     kind: choice
     stem: 行列式 |1 2; 3 4| 等于（ ）
     options: ["−2", "2", "10", "−10"]
     answer: "−2"
     solution_outline: 1×4−2×3=−2。
   - id: ug-linear-002-e2
+    grade: u1
+    difficulty: basic
     kind: fill
     stem: 3 阶单位矩阵的行列式是（ ）
     answer: "1"
     solution_outline: 单位矩阵行列式为 1。
   - id: ug-linear-002-e3
+    grade: u1
+    difficulty: basic
     kind: truefalse
     stem: det(AB)=det A·det B。
     answer: true
@@ -71,17 +83,23 @@
   example: 单位矩阵的秩等于阶数。
   exercises:
   - id: ug-linear-003-e1
+    grade: u1
+    difficulty: intermediate
     kind: choice
     stem: m×n 矩阵 A 的秩满足（ ）
     options: ["rank(A)≤min(m,n)", "rank(A)=m", "rank(A)=n", "rank(A)>m+n"]
     answer: "rank(A)≤min(m,n)"
     solution_outline: 秩不超过行数和列数。
   - id: ug-linear-003-e2
+    grade: u1
+    difficulty: intermediate
     kind: fill
     stem: 矩阵 [1 0; 0 1] 的秩是（ ）
     answer: "2"
     solution_outline: 两行线性无关。
   - id: ug-linear-003-e3
+    grade: u1
+    difficulty: intermediate
     kind: find_error
     stem: 求矩阵 [1 2; 2 4] 的秩，哪一步错了（ ）
     options: ["第 1 步：第二行减去第一行的 2 倍", "第 2 步：得到 [1 2; 0 0]", "第 3 步：非零行有 2 行，所以秩为 2"]
@@ -102,17 +120,23 @@
   example: det A≠0 时，A 可逆，解为 x=A⁻¹b。
   exercises:
   - id: ug-linear-004-e1
+    grade: u1
+    difficulty: intermediate
     kind: choice
     stem: 方阵方程组 Ax=b 有唯一解的充要条件是（ ）
     options: ["det A≠0", "det A=0", "b=0", "A 对称"]
     answer: "det A≠0"
     solution_outline: det A≠0 时 A 可逆。
   - id: ug-linear-004-e2
+    grade: u1
+    difficulty: intermediate
     kind: fill
     stem: 齐次线性方程组 Ax=0 一定有一个解是（ ）
     answer: "零解"
     solution_outline: x=0 总满足 Ax=0。
   - id: ug-linear-004-e3
+    grade: u1
+    difficulty: intermediate
     kind: truefalse
     stem: 若 rank(A)<rank([A|b])，则方程组 Ax=b 无解。
     answer: true
@@ -132,17 +156,23 @@
   example: diag(2,3) 的特征值为 2、3。
   exercises:
   - id: ug-linear-005-e1
+    grade: u1
+    difficulty: challenge
     kind: choice
     stem: 矩阵 [[2,0],[0,3]] 的特征值是（ ）
     options: ["2 和 3", "0 和 0", "1 和 1", "2 和 −3"]
     answer: "2 和 3"
     solution_outline: 对角矩阵的特征值就是对角元。
   - id: ug-linear-005-e2
+    grade: u1
+    difficulty: challenge
     kind: fill
     stem: 矩阵 [[2,1],[0,3]] 的迹是（ ）
     answer: "5"
     solution_outline: 迹等于主对角线元素之和 2+3=5。
   - id: ug-linear-005-e3
+    grade: u1
+    difficulty: challenge
     kind: proof_order
     stem: 求特征值与特征向量的步骤排序（用逗号分隔）
     answer: "1,2,3,4"
@@ -162,17 +192,23 @@
   example: 若 P(A)=0.3，则 P(A^c)=0.7。
   exercises:
   - id: ug-prob-001-e1
+    grade: u2
+    difficulty: basic
     kind: choice
     stem: 对样本空间 Ω，有（ ）
     options: ["P(Ω)=1", "P(Ω)=0", "P(Ω)=∞", "P(Ω)=0.5"]
     answer: "P(Ω)=1"
     solution_outline: 概率公理规定全样本空间概率为 1。
   - id: ug-prob-001-e2
+    grade: u2
+    difficulty: basic
     kind: fill
     stem: 若 P(A)=0.3，则 P(A^c)=（ ）
     answer: "0.7"
     solution_outline: 补集概率为 1−P(A)。
   - id: ug-prob-001-e3
+    grade: u2
+    difficulty: basic
     kind: truefalse
     stem: 对任意事件 A、B，都有 P(A∪B)=P(A)+P(B)。
     answer: false
@@ -192,17 +228,23 @@
   example: 独立事件中，已知 B 发生不会改变 A 的概率。
   exercises:
   - id: ug-prob-002-e1
+    grade: u2
+    difficulty: basic
     kind: choice
     stem: 条件概率公式是（ ）
     options: ["P(A|B)=P(A∩B)/P(B)", "P(A|B)=P(B)/P(A)", "P(A|B)=P(A)P(B)", "P(A|B)=P(A)+P(B)"]
     answer: "P(A|B)=P(A∩B)/P(B)"
     solution_outline: 条件概率将样本空间限制到 B。
   - id: ug-prob-002-e2
+    grade: u2
+    difficulty: basic
     kind: fill
     stem: 若 A、B 独立，则 P(A|B)=（ ）
     answer: "P(A)"
     solution_outline: 独立性使 B 的发生不影响 A。
   - id: ug-prob-002-e3
+    grade: u2
+    difficulty: basic
     kind: truefalse
     stem: 对任意事件 A、B，P(A|B)=P(B|A)。
     answer: false
@@ -222,17 +264,23 @@
   example: E(X)=3 时，E(2X+1)=7。
   exercises:
   - id: ug-prob-003-e1
+    grade: u2
+    difficulty: intermediate
     kind: choice
     stem: 正态分布的概率密度曲线关于（ ）对称
     options: ["均值", "中位数", "原点", "方差"]
     answer: "均值"
     solution_outline: 正态分布关于均值对称。
   - id: ug-prob-003-e2
+    grade: u2
+    difficulty: intermediate
     kind: fill
     stem: 若 E(X)=3，则 E(2X+1)=（ ）
     answer: "7"
     solution_outline: E(2X+1)=2E(X)+1=7。
   - id: ug-prob-003-e3
+    grade: u2
+    difficulty: intermediate
     kind: truefalse
     stem: 对常数 b，Var(X+b)=Var(X)。
     answer: true
@@ -252,17 +300,23 @@
   example: X~B(10,0.2) 时，E(X)=2，Var(X)=1.6。
   exercises:
   - id: ug-prob-004-e1
+    grade: u2
+    difficulty: intermediate
     kind: choice
     stem: 泊松分布 P(λ) 的均值与方差满足（ ）
     options: ["都等于 λ", "均值 λ，方差 λ²", "均值 0", "方差 0"]
     answer: "都等于 λ"
     solution_outline: 泊松分布的均值与方差均为参数 λ。
   - id: ug-prob-004-e2
+    grade: u2
+    difficulty: intermediate
     kind: fill
     stem: 若 X~B(10,0.2)，则 Var(X)=（ ）
     answer: "1.6"
     solution_outline: np(1−p)=10×0.2×0.8=1.6。
   - id: ug-prob-004-e3
+    grade: u2
+    difficulty: intermediate
     kind: match
     stem: 把分布与数字特征配对（写成 A=1;B=2 的形式）
     options: ["A 二项分布 B(n,p)", "B 泊松分布 P(λ)", "1 均值 np", "2 均值 λ"]
@@ -283,17 +337,23 @@
   example: 样本 2,4,6 的均值为 4。
   exercises:
   - id: ug-prob-005-e1
+    grade: u2
+    difficulty: challenge
     kind: choice
     stem: 总体均值的常用无偏估计是（ ）
     options: ["样本均值", "样本最大值", "样本最小值", "样本个数"]
     answer: "样本均值"
     solution_outline: 样本均值的期望等于总体均值。
   - id: ug-prob-005-e2
+    grade: u2
+    difficulty: challenge
     kind: fill
     stem: 样本 2,4,6 的均值是（ ）
     answer: "4"
     solution_outline: (2+4+6)/3=4。
   - id: ug-prob-005-e3
+    grade: u2
+    difficulty: challenge
     kind: truefalse
     stem: 置信水平 95% 表示重复抽样构造的区间约有 95% 能覆盖总体参数。
     answer: true

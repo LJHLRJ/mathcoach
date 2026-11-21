@@ -11,17 +11,23 @@
   example: 位移、速度是向量；质量、温度是标量。
   exercises:
   - id: hs-vector-001-e1
+    grade: g10
+    difficulty: basic
     kind: choice
     stem: 关于零向量，下列说法正确的是（ ）
     options: ["方向任意", "方向一定向右", "没有大小", "不能与任何向量相加"]
     answer: "方向任意"
     solution_outline: 零向量长度为 0，方向没有限制。
   - id: hs-vector-001-e2
+    grade: g10
+    difficulty: basic
     kind: truefalse
     stem: 相等的向量一定大小相同且方向相同。
     answer: true
     solution_outline: 这正是向量相等的定义。
   - id: hs-vector-001-e3
+    grade: g10
+    difficulty: basic
     kind: fill
     stem: 向量 (3,4) 的模是（ ）
     answer: "5"
@@ -41,17 +47,23 @@
   example: (1,2)+(3,4)=(4,6)。
   exercises:
   - id: hs-vector-002-e1
+    grade: g10
+    difficulty: basic
     kind: choice
     stem: (1,2)+(3,4)=（ ）
     options: ["(4,6)", "(3,6)", "(4,2)", "(2,2)"]
     answer: "(4,6)"
     solution_outline: 对应分量相加。
   - id: hs-vector-002-e2
+    grade: g10
+    difficulty: basic
     kind: fill
     stem: 2·(1,2)=（ ）
     answer: "(2,4)"
     solution_outline: 数乘把每个分量都乘以 2。
   - id: hs-vector-002-e3
+    grade: g10
+    difficulty: basic
     kind: multi
     stem: 若 a=(1,2)，b=(3,4)，则 a+b 的分量为（ ）
     options: ["4", "6", "3", "2"]
@@ -72,17 +84,23 @@
   example: (1,0)·(0,1)=0，说明两向量垂直。
   exercises:
   - id: hs-vector-003-e1
+    grade: g10
+    difficulty: intermediate
     kind: choice
     stem: (1,0)·(0,1)=（ ）
     options: ["0", "1", "−1", "2"]
     answer: "0"
     solution_outline: 1×0+0×1=0。
   - id: hs-vector-003-e2
+    grade: g10
+    difficulty: intermediate
     kind: fill
     stem: (1,2)·(3,4)=（ ）
     answer: "11"
     solution_outline: 1×3+2×4=11。
   - id: hs-vector-003-e3
+    grade: g10
+    difficulty: intermediate
     kind: truefalse
     stem: 两个非零向量垂直的充要条件是数量积为 0。
     answer: true
@@ -102,17 +120,23 @@
   example: (1,2) 与 (2,4) 平行。
   exercises:
   - id: hs-vector-004-e1
+    grade: g10
+    difficulty: intermediate
     kind: choice
     stem: 向量 (x1,y1) 与 (x2,y2) 平行的条件是（ ）
     options: ["x1y2−x2y1=0", "x1x2+y1y2=0", "x1=x2", "y1=y2"]
     answer: "x1y2−x2y1=0"
     solution_outline: 坐标成比例交叉相乘得到此式。
   - id: hs-vector-004-e2
+    grade: g10
+    difficulty: intermediate
     kind: fill
     stem: 向量 (1,2) 与 (2,4) 的位置关系是（ ）
     answer: "平行"
     solution_outline: 1×4−2×2=0。
   - id: hs-vector-004-e3
+    grade: g10
+    difficulty: intermediate
     kind: find_error
     stem: 判断 (1,2) 与 (2,−1) 是否垂直，哪一步错了（ ）
     options: ["第 1 步：计算数量积 1×2+2×(−1)", "第 2 步：结果为 0", "第 3 步：数量积为 0 所以平行"]
@@ -133,17 +157,23 @@
   example: (1,0) 与 (0,1) 的夹角为 90°。
   exercises:
   - id: hs-vector-005-e1
+    grade: g10
+    difficulty: challenge
     kind: choice
     stem: 向量 (1,0) 与 (0,1) 的夹角是（ ）
     options: ["0°", "45°", "90°", "180°"]
     answer: "90°"
     solution_outline: 数量积为 0，所以夹角为 90°。
   - id: hs-vector-005-e2
+    grade: g10
+    difficulty: challenge
     kind: fill
     stem: 若 |a|=3，|b|=4 且 a⊥b，则 a·b=（ ）
     answer: "0"
     solution_outline: 垂直向量数量积为 0。
   - id: hs-vector-005-e3
+    grade: g10
+    difficulty: challenge
     kind: proof_order
     stem: 用数量积求两向量夹角的步骤排序（用逗号分隔）
     answer: "1,2,3,4"
@@ -163,17 +193,23 @@
   example: 从 3 本数学书或 4 本物理书中选一本，有 3+4=7 种选法。
   exercises:
   - id: hs-count-001-e1
+    grade: g12
+    difficulty: basic
     kind: choice
     stem: 从 3 本数学书或 4 本物理书中选一本，共有（ ）种选法
     options: ["3", "4", "7", "12"]
     answer: "7"
     solution_outline: 两类互斥，方法数为 3+4=7。
   - id: hs-count-001-e2
+    grade: g12
+    difficulty: basic
     kind: fill
     stem: 从 2 条红绳或 5 条蓝绳中选一条，共有（ ）种选法
     answer: "7"
     solution_outline: 分类相加 2+5=7。
   - id: hs-count-001-e3
+    grade: g12
+    difficulty: basic
     kind: truefalse
     stem: 分类计数原理使用加法。
     answer: true
@@ -193,17 +229,23 @@
   example: 3 件上衣配 4 条裤子，共有 3×4=12 种搭配。
   exercises:
   - id: hs-count-002-e1
+    grade: g12
+    difficulty: basic
     kind: choice
     stem: 2 件上衣配 3 条裤子，共有（ ）种搭配
     options: ["5", "6", "8", "9"]
     answer: "6"
     solution_outline: 分两步，方法数 2×3=6。
   - id: hs-count-002-e2
+    grade: g12
+    difficulty: basic
     kind: fill
     stem: 3 件上衣配 4 条裤子，共有（ ）种搭配
     answer: "12"
     solution_outline: 分步相乘 3×4=12。
   - id: hs-count-002-e3
+    grade: g12
+    difficulty: basic
     kind: truefalse
     stem: 分步计数原理使用乘法。
     answer: true
@@ -223,17 +265,23 @@
   example: 从 5 人中选 2 人排队，有 A(5,2)=20 种。
   exercises:
   - id: hs-count-003-e1
+    grade: g12
+    difficulty: intermediate
     kind: choice
     stem: A(5,2)=（ ）
     options: ["10", "20", "25", "5"]
     answer: "20"
     solution_outline: 5×4=20。
   - id: hs-count-003-e2
+    grade: g12
+    difficulty: intermediate
     kind: fill
     stem: A(4,3)=（ ）
     answer: "24"
     solution_outline: 4×3×2=24。
   - id: hs-count-003-e3
+    grade: g12
+    difficulty: intermediate
     kind: find_error
     stem: 计算 A(5,2)，哪一步错了（ ）
     options: ["第 1 步：排列公式 A(5,2)=5×4", "第 2 步：结果为 20", "第 3 步：所以 A(5,2)=5+4=9"]
@@ -254,17 +302,23 @@
   example: 从 5 人中选 2 人，有 C(5,2)=10 种。
   exercises:
   - id: hs-count-004-e1
+    grade: g12
+    difficulty: intermediate
     kind: choice
     stem: C(5,2)=（ ）
     options: ["5", "10", "20", "25"]
     answer: "10"
     solution_outline: 5×4/2=10。
   - id: hs-count-004-e2
+    grade: g12
+    difficulty: intermediate
     kind: fill
     stem: C(6,3)=（ ）
     answer: "20"
     solution_outline: 6×5×4/(3×2×1)=20。
   - id: hs-count-004-e3
+    grade: g12
+    difficulty: intermediate
     kind: truefalse
     stem: C(n,m)=C(n,n−m)。
     answer: true
@@ -284,17 +338,23 @@
   example: (x+1)³=x³+3x²+3x+1。
   exercises:
   - id: hs-count-005-e1
+    grade: g12
+    difficulty: challenge
     kind: choice
     stem: (x+1)³ 中 x² 的系数是（ ）
     options: ["1", "2", "3", "6"]
     answer: "3"
     solution_outline: 对应 C(3,1)=3。
   - id: hs-count-005-e2
+    grade: g12
+    difficulty: challenge
     kind: fill
     stem: (x+1)³ 中 x 的系数是（ ）
     answer: "3"
     solution_outline: 展开为 x³+3x²+3x+1。
   - id: hs-count-005-e3
+    grade: g12
+    difficulty: challenge
     kind: match
     stem: 把项与系数配对（写成 A=1;B=2 的形式）
     options: ["A (x+1)³ 中 x² 项", "B (x+1)³ 中 x 项", "1 系数 3", "2 系数 3"]

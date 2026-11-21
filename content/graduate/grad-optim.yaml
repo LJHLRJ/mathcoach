@@ -11,17 +11,23 @@
   example: f(x)=x² 是凸函数。
   exercises:
   - id: grad-optim-001-e1
+    grade: m3
+    difficulty: basic
     kind: choice
     stem: 集合 C 为凸集的条件是（ ）
     options: ["任意两点连线仍在 C 内", "任意两点距离小于 1", "C 有界", "C 包含原点"]
     answer: "任意两点连线仍在 C 内"
     solution_outline: 凸集的定义。
   - id: grad-optim-001-e2
+    grade: m3
+    difficulty: basic
     kind: fill
     stem: 一元二阶可导函数 f 为凸函数的条件是 f''（ ）0
     answer: "≥"
     solution_outline: 二阶导数非负。
   - id: grad-optim-001-e3
+    grade: m3
+    difficulty: basic
     kind: truefalse
     stem: 凸函数的局部极小值也是全局极小值。
     answer: true
@@ -41,17 +47,23 @@
   example: f(x,y)=x²+y² 在原点梯度为零且 Hessian 正定。
   exercises:
   - id: grad-optim-002-e1
+    grade: m3
+    difficulty: basic
     kind: choice
     stem: 无约束可微优化的一阶必要条件是（ ）
     options: ["∇f=0", "∇f>0", "f=0", "Hessian=0"]
     answer: "∇f=0"
     solution_outline: 极值点处梯度为零。
   - id: grad-optim-002-e2
+    grade: m3
+    difficulty: basic
     kind: fill
     stem: 若 Hessian 在驻点处正定，则该点为严格局部（ ）
     answer: "极小"
     solution_outline: 二阶充分条件。
   - id: grad-optim-002-e3
+    grade: m3
+    difficulty: basic
     kind: truefalse
     stem: 梯度为零的点一定是极小值点。
     answer: false
@@ -71,17 +83,23 @@
   example: f(x)=x² 时，梯度下降更新 x←x−2αx。
   exercises:
   - id: grad-optim-003-e1
+    grade: m3
+    difficulty: intermediate
     kind: choice
     stem: 梯度下降的更新式是（ ）
     options: ["x_{k+1}=x_k−α∇f", "x_{k+1}=x_k+α∇f", "x_{k+1}=α∇f", "x_{k+1}=∇f/α"]
     answer: "x_{k+1}=x_k−α∇f"
     solution_outline: 沿负梯度方向下降。
   - id: grad-optim-003-e2
+    grade: m3
+    difficulty: intermediate
     kind: fill
     stem: 梯度下降中的 α 通常称为（ ）
     answer: "学习率"
     solution_outline: α 控制步长。
   - id: grad-optim-003-e3
+    grade: m3
+    difficulty: intermediate
     kind: find_error
     stem: 用梯度下降最小化 f(x)=x²，哪一步错了（ ）
     options: ["第 1 步：梯度为 2x", "第 2 步：更新 x←x−2αx", "第 3 步：沿正梯度方向更新"]
@@ -102,17 +120,23 @@
   example: 在 x+y=1 上最小化 x²+y²，最优解为 (1/2,1/2)。
   exercises:
   - id: grad-optim-004-e1
+    grade: m3
+    difficulty: intermediate
     kind: choice
     stem: 等式约束 g(x)=0 下，拉格朗日函数为（ ）
     options: ["L=f+λg", "L=f−g", "L=λf", "L=fg"]
     answer: "L=f+λg"
     solution_outline: 引入乘子 λ 构造拉格朗日函数。
   - id: grad-optim-004-e2
+    grade: m3
+    difficulty: intermediate
     kind: fill
     stem: 拉格朗日乘子法中，需要令 ∇L=（ ）
     answer: "0"
     solution_outline: 对 x 与 λ 分别求偏导并令其为零。
   - id: grad-optim-004-e3
+    grade: m3
+    difficulty: intermediate
     kind: proof_order
     stem: 拉格朗日乘子法步骤排序（用逗号分隔）
     answer: "1,2,3,4"
@@ -132,17 +156,23 @@
   example: 约束 x≥0 的乘子必须非负。
   exercises:
   - id: grad-optim-005-e1
+    grade: m3
+    difficulty: challenge
     kind: choice
     stem: 不等式约束 g(x)≤0 对应的乘子应满足（ ）
     options: ["λ≥0", "λ≤0", "λ=1", "λ 任意"]
     answer: "λ≥0"
     solution_outline: 对偶可行性要求不等式约束乘子非负。
   - id: grad-optim-005-e2
+    grade: m3
+    difficulty: challenge
     kind: fill
     stem: 互补松弛条件为 λ_i g_i(x)=（ ）
     answer: "0"
     solution_outline: 乘子与约束至少一个为零。
   - id: grad-optim-005-e3
+    grade: m3
+    difficulty: challenge
     kind: truefalse
     stem: 凸优化问题中 KKT 条件也是全局最优的充分条件。
     answer: true
@@ -162,17 +192,23 @@
   example: 线性规划在可行域非空时强对偶成立。
   exercises:
   - id: grad-optim-006-e1
+    grade: m3
+    difficulty: challenge
     kind: choice
     stem: 弱对偶给出（ ）
     options: ["d*≤p*", "d*≥p*", "d*=0", "p*=0"]
     answer: "d*≤p*"
     solution_outline: 对偶最优值是原问题最优值的下界。
   - id: grad-optim-006-e2
+    grade: m3
+    difficulty: challenge
     kind: fill
     stem: 凸优化问题在 Slater 条件下满足（ ）对偶
     answer: "强"
     solution_outline: Slater 条件保证强对偶。
   - id: grad-optim-006-e3
+    grade: m3
+    difficulty: challenge
     kind: truefalse
     stem: 线性规划问题通常具有强对偶性。
     answer: true

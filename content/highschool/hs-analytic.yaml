@@ -11,17 +11,23 @@
   example: y=3x 是过原点、斜率为 3 的直线。
   exercises:
   - id: hs-analytic-001-e1
+    grade: g11
+    difficulty: basic
     kind: choice
     stem: 直线 y=2x+1 的斜率为（ ）
     options: ["1", "2", "−2", "1/2"]
     answer: "2"
     solution_outline: 斜截式 y=kx+b 中 k=2。
   - id: hs-analytic-001-e2
+    grade: g11
+    difficulty: basic
     kind: fill
     stem: 过原点且斜率为 3 的直线方程是（ ）
     answer: "y=3x"
     solution_outline: 代入 y−0=3(x−0)。
   - id: hs-analytic-001-e3
+    grade: g11
+    difficulty: basic
     kind: truefalse
     stem: 直线 x=1 的斜率为 0。
     answer: false
@@ -41,17 +47,23 @@
   example: (x−1)²+(y+2)²=9 的圆心为 (1,−2)，半径为 3。
   exercises:
   - id: hs-analytic-002-e1
+    grade: g11
+    difficulty: basic
     kind: choice
     stem: 圆 x²+y²=4 的半径是（ ）
     options: ["2", "4", "√2", "16"]
     answer: "2"
     solution_outline: r²=4，所以 r=2。
   - id: hs-analytic-002-e2
+    grade: g11
+    difficulty: basic
     kind: fill
     stem: 圆 (x−1)²+(y+2)²=9 的圆心是（ ）
     answer: "(1,-2)"
     solution_outline: 标准形式中圆心为 (1,−2)。
   - id: hs-analytic-002-e3
+    grade: g11
+    difficulty: basic
     kind: truefalse
     stem: 方程 (x−1)²+(y+2)²=0 表示一个点。
     answer: true
@@ -71,17 +83,23 @@
   example: 原点 x+y−2=0 的距离为 2/√2=√2。
   exercises:
   - id: hs-analytic-003-e1
+    grade: g11
+    difficulty: intermediate
     kind: choice
     stem: 原点 (0,0) 到直线 x+y−2=0 的距离是（ ）
     options: ["1", "√2", "2", "2√2"]
     answer: "√2"
     solution_outline: d=|−2|/√(1²+1²)=√2。
   - id: hs-analytic-003-e2
+    grade: g11
+    difficulty: intermediate
     kind: fill
     stem: 以原点为圆心且与直线 x=3 相切的圆半径是（ ）
     answer: "3"
     solution_outline: 圆心到直线 x=3 的距离为 3。
   - id: hs-analytic-003-e3
+    grade: g11
+    difficulty: intermediate
     kind: find_error
     stem: 判断圆 x²+y²=1 与直线 y=x 的位置关系，哪一步错了（ ）
     options: ["第 1 步：圆心到直线距离 d=0", "第 2 步：半径 r=1", "第 3 步：因为 d<r，所以相离"]
@@ -102,17 +120,23 @@
   example: x²/9+y²/4=1 中 a=3，b=2，c=√5，e=√5/3。
   exercises:
   - id: hs-analytic-004-e1
+    grade: g11
+    difficulty: intermediate
     kind: choice
     stem: 椭圆 x²/9+y²/4=1 的长半轴 a 为（ ）
     options: ["2", "3", "√5", "9"]
     answer: "3"
     solution_outline: a²=9，所以 a=3。
   - id: hs-analytic-004-e2
+    grade: g11
+    difficulty: intermediate
     kind: fill
     stem: 椭圆 x²/9+y²/4=1 的离心率是（ ）
     answer: "√5/3"
     solution_outline: c=√(9−4)=√5，e=c/a=√5/3。
   - id: hs-analytic-004-e3
+    grade: g11
+    difficulty: intermediate
     kind: truefalse
     stem: 椭圆的离心率满足 0<e<1。
     answer: true
@@ -132,17 +156,23 @@
   example: y²=4x 中 2p=4，焦点为 (1,0)，准线为 x=−1。
   exercises:
   - id: hs-analytic-005-e1
+    grade: g11
+    difficulty: challenge
     kind: choice
     stem: 抛物线 y²=4x 的焦点是（ ）
     options: ["(1,0)", "(2,0)", "(0,1)", "(−1,0)"]
     answer: "(1,0)"
     solution_outline: 2p=4，焦点为 (p/2,0)=(1,0)。
   - id: hs-analytic-005-e2
+    grade: g11
+    difficulty: challenge
     kind: fill
     stem: 抛物线 y²=4x 的准线方程是（ ）
     answer: "x=-1"
     solution_outline: 准线为 x=−p/2=−1。
   - id: hs-analytic-005-e3
+    grade: g11
+    difficulty: challenge
     kind: proof_order
     stem: 由定义推导抛物线标准方程的步骤排序（用逗号分隔）
     answer: "1,2,3,4"

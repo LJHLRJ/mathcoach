@@ -11,17 +11,23 @@
   example: lim x→0 sin x/x=1，尽管 sin x/x 在 0 处无定义。
   exercises:
   - id: ug-calculus-001-e1
+    grade: u1
+    difficulty: basic
     kind: choice
     stem: lim x→0 sin x/x 等于（ ）
     options: ["0", "1", "∞", "不存在"]
     answer: "1"
     solution_outline: 这是第一个重要极限。
   - id: ug-calculus-001-e2
+    grade: u1
+    difficulty: basic
     kind: fill
     stem: lim n→∞ (1+1/n)^n=（ ）
     answer: "e"
     solution_outline: 这是自然常数 e 的定义式。
   - id: ug-calculus-001-e3
+    grade: u1
+    difficulty: basic
     kind: truefalse
     stem: 函数在某点的极限存在，则函数在该点一定连续。
     answer: false
@@ -41,17 +47,23 @@
   example: (e^x)′=e^x，(ln x)′=1/x。
   exercises:
   - id: ug-calculus-002-e1
+    grade: u1
+    difficulty: basic
     kind: choice
     stem: (e^x)′ 等于（ ）
     options: ["e^x", "x e^x", "e^x/x", "1"]
     answer: "e^x"
     solution_outline: 指数函数以 e 为底时导数等于自身。
   - id: ug-calculus-002-e2
+    grade: u1
+    difficulty: basic
     kind: fill
     stem: (ln x)′ 在 x=1 处的值为（ ）
     answer: "1"
     solution_outline: (ln x)′=1/x，代入 x=1 得 1。
   - id: ug-calculus-002-e3
+    grade: u1
+    difficulty: basic
     kind: expr
     stem: 求 sin(x) 的导数
     answer: "cos(x)"
@@ -71,17 +83,23 @@
   example: ∫x dx=x²/2+C。
   exercises:
   - id: ug-calculus-003-e1
+    grade: u1
+    difficulty: intermediate
     kind: choice
     stem: ∫x dx 等于（ ）
     options: ["x²/2+C", "x²+C", "2x+C", "x+C"]
     answer: "x²/2+C"
     solution_outline: 幂函数积分公式。
   - id: ug-calculus-003-e2
+    grade: u1
+    difficulty: intermediate
     kind: fill
     stem: ∫_0^1 x dx=（ ）
     answer: "1/2"
     solution_outline: 原函数 x²/2，代入上下限得 1/2。
   - id: ug-calculus-003-e3
+    grade: u1
+    difficulty: intermediate
     kind: expr
     stem: 求 ∫2*x dx 的一个原函数（不含常数 C）
     answer: "x**2"
@@ -101,17 +119,23 @@
   example: Σ_{n=1}^∞ (1/2)^n=1。
   exercises:
   - id: ug-calculus-004-e1
+    grade: u1
+    difficulty: intermediate
     kind: choice
     stem: 几何级数 Σq^n 收敛的条件是（ ）
     options: ["|q|<1", "q>1", "q=1", "q>0"]
     answer: "|q|<1"
     solution_outline: 公比绝对值小于 1 时部分和收敛。
   - id: ug-calculus-004-e2
+    grade: u1
+    difficulty: intermediate
     kind: fill
     stem: Σ_{n=1}^∞ (1/2)^n=（ ）
     answer: "1"
     solution_outline: 首项 1/2、公比 1/2，和为 1。
   - id: ug-calculus-004-e3
+    grade: u1
+    difficulty: intermediate
     kind: truefalse
     stem: 调和级数 Σ1/n 收敛。
     answer: false
@@ -131,17 +155,23 @@
   example: f=x²y 时，f_x=2xy，f_y=x²，梯度为 (2xy,x²)。
   exercises:
   - id: ug-calculus-005-e1
+    grade: u1
+    difficulty: challenge
     kind: choice
     stem: f(x,y)=x²y 对 x 的偏导数是（ ）
     options: ["2xy", "x²", "2x", "2y"]
     answer: "2xy"
     solution_outline: 把 y 当常数，对 x² 求导得 2xy。
   - id: ug-calculus-005-e2
+    grade: u1
+    difficulty: challenge
     kind: fill
     stem: f(x,y)=x²+y² 在 (1,1) 处的梯度是（ ）
     answer: "(2,2)"
     solution_outline: 梯度为 (2x,2y)，代入 (1,1)。
   - id: ug-calculus-005-e3
+    grade: u1
+    difficulty: challenge
     kind: find_error
     stem: 求 f(x,y)=xy 的偏导数，哪一步错了（ ）
     options: ["第 1 步：f_x 把 y 当常数", "第 2 步：f_x=y", "第 3 步：f_y=x²"]

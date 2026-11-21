@@ -11,17 +11,23 @@
   example: 真值 100、近似值 99 时，绝对误差为 1，相对误差为 1%。
   exercises:
   - id: ug-numerical-001-e1
+    grade: u4
+    difficulty: basic
     kind: choice
     stem: 绝对误差的定义是（ ）
     options: ["|x−x*|", "(x−x*)/x", "x*/x", "|x|"]
     answer: "|x−x*|"
     solution_outline: 绝对误差是近似值与真值之差的绝对值。
   - id: ug-numerical-001-e2
+    grade: u4
+    difficulty: basic
     kind: fill
     stem: 真值 100、近似值 99 的相对误差是（ ）
     answer: "0.01"
     solution_outline: "|100−99|/100=0.01。"
   - id: ug-numerical-001-e3
+    grade: u4
+    difficulty: basic
     kind: truefalse
     stem: 浮点运算的舍入误差在任何情况下都可以忽略。
     answer: false
@@ -41,17 +47,23 @@
   example: 区间长度 1 二分 10 次后长度约为 1/1024。
   exercises:
   - id: ug-numerical-002-e1
+    grade: u4
+    difficulty: basic
     kind: choice
     stem: 二分法能保证收敛的前提是（ ）
     options: ["函数连续且端点异号", "函数可导", "函数单调", "区间长度大于 1"]
     answer: "函数连续且端点异号"
     solution_outline: 由介值定理保证区间内存在根。
   - id: ug-numerical-002-e2
+    grade: u4
+    difficulty: basic
     kind: fill
     stem: 区间每二分一次，长度变为原来的（ ）
     answer: "1/2"
     solution_outline: 二分法每次取中点，区间长度减半。
   - id: ug-numerical-002-e3
+    grade: u4
+    difficulty: basic
     kind: truefalse
     stem: 二分法每一步都需要计算函数值。
     answer: true
@@ -71,17 +83,23 @@
   example: 求 √2 可用牛顿法解 f(x)=x²−2=0。
   exercises:
   - id: ug-numerical-003-e1
+    grade: u4
+    difficulty: intermediate
     kind: choice
     stem: 牛顿迭代公式是（ ）
     options: ["x_{n+1}=x_n−f/f′", "x_{n+1}=x_n+f/f′", "x_{n+1}=f/f′", "x_{n+1}=x_n/2"]
     answer: "x_{n+1}=x_n−f/f′"
     solution_outline: 由切线方程与 x 轴交点得到。
   - id: ug-numerical-003-e2
+    grade: u4
+    difficulty: intermediate
     kind: fill
     stem: 牛顿法在单根附近通常具有（ ）次收敛速度
     answer: "2"
     solution_outline: 误差平方级下降，即二次收敛。
   - id: ug-numerical-003-e3
+    grade: u4
+    difficulty: intermediate
     kind: truefalse
     stem: 牛顿法对任意初值都一定收敛。
     answer: false
@@ -101,17 +119,23 @@
   example: 两个点确定一条直线，即一次插值多项式。
   exercises:
   - id: ug-numerical-004-e1
+    grade: u4
+    difficulty: intermediate
     kind: choice
     stem: n+1 个互异节点可确定次数不超过（ ）的插值多项式
     options: ["n", "n+1", "2n", "1"]
     answer: "n"
     solution_outline: 插值多项式次数不超过节点数减一。
   - id: ug-numerical-004-e2
+    grade: u4
+    difficulty: intermediate
     kind: fill
     stem: 两个节点确定的是（ ）次插值多项式
     answer: "1"
     solution_outline: 两点确定一条直线。
   - id: ug-numerical-004-e3
+    grade: u4
+    difficulty: intermediate
     kind: match
     stem: 把方法与特点配对（写成 A=1;B=2 的形式）
     options: ["A 拉格朗日插值", "B 牛顿插值", "1 基函数形式", "2 差商递推"]
@@ -132,17 +156,23 @@
   example: ∫_0^1 x dx 用梯形公式得 (1)(0+1)/2=1/2，正好精确。
   exercises:
   - id: ug-numerical-005-e1
+    grade: u4
+    difficulty: challenge
     kind: choice
     stem: 梯形公式是（ ）
     options: ["(b−a)[f(a)+f(b)]/2", "(b−a)f(a)", "(a+b)/2", "f(a)+f(b)"]
     answer: "(b−a)[f(a)+f(b)]/2"
     solution_outline: 梯形面积为上下底平均乘高。
   - id: ug-numerical-005-e2
+    grade: u4
+    difficulty: challenge
     kind: fill
     stem: ∫_0^1 x dx 用梯形公式计算的结果是（ ）
     answer: "1/2"
     solution_outline: (1−0)(0+1)/2=1/2。
   - id: ug-numerical-005-e3
+    grade: u4
+    difficulty: challenge
     kind: truefalse
     stem: 辛普森公式对二次多项式是精确的。
     answer: true

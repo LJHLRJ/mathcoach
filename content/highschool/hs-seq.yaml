@@ -11,17 +11,23 @@
   example: 数列 1,3,5,7,… 的通项公式可以是 a_n=2n−1。
   exercises:
   - id: hs-seq-001-e1
+    grade: g11
+    difficulty: basic
     kind: choice
     stem: 数列 a_n=2n−1 的第 2 项是（ ）
     options: ["1", "3", "5", "7"]
     answer: "3"
     solution_outline: 代入 n=2，得 2×2−1=3。
   - id: hs-seq-001-e2
+    grade: g11
+    difficulty: basic
     kind: fill
     stem: 若 a_n=n²，则 a_3=（ ）
     answer: "9"
     solution_outline: 代入 n=3，得 3²=9。
   - id: hs-seq-001-e3
+    grade: g11
+    difficulty: basic
     kind: truefalse
     stem: 数列可以看成定义在正整数集上的函数。
     answer: true
@@ -41,17 +47,23 @@
   example: a_1=2，d=3，则 a_5=2+4×3=14。
   exercises:
   - id: hs-seq-002-e1
+    grade: g11
+    difficulty: basic
     kind: choice
     stem: 等差数列首项为 2，公差为 3，则第 5 项为（ ）
     options: ["11", "14", "17", "20"]
     answer: "14"
     solution_outline: a_5=2+(5−1)×3=14。
   - id: hs-seq-002-e2
+    grade: g11
+    difficulty: basic
     kind: fill
     stem: 1+2+3+…+10=（ ）
     answer: "55"
     solution_outline: 等差数列求和 (1+10)×10/2=55。
   - id: hs-seq-002-e3
+    grade: g11
+    difficulty: basic
     kind: expr
     stem: 首项 2、公差 3 的等差数列通项公式（用 n 表示，如 3*n-1）
     answer: "3*n-1"
@@ -71,17 +83,23 @@
   example: 2,4,8,16 是首项 2、公比 2 的等比数列。
   exercises:
   - id: hs-seq-003-e1
+    grade: g11
+    difficulty: intermediate
     kind: choice
     stem: 等比数列 2,4,8,… 的下一项是（ ）
     options: ["10", "12", "16", "18"]
     answer: "16"
     solution_outline: 公比为 2，下一项为 8×2=16。
   - id: hs-seq-003-e2
+    grade: g11
+    difficulty: intermediate
     kind: fill
     stem: 首项 1、公比 2 的等比数列第 6 项是（ ）
     answer: "32"
     solution_outline: a_6=1×2^5=32。
   - id: hs-seq-003-e3
+    grade: g11
+    difficulty: intermediate
     kind: truefalse
     stem: 等比数列的公比不能为 0。
     answer: true
@@ -101,17 +119,23 @@
   example: 1+2+…+n=n(n+1)/2。
   exercises:
   - id: hs-seq-004-e1
+    grade: g11
+    difficulty: intermediate
     kind: choice
     stem: 1+2+…+n 的和为（ ）
     options: ["n(n+1)/2", "n(n−1)/2", "n²", "2n"]
     answer: "n(n+1)/2"
     solution_outline: 倒序相加得到 n(n+1)/2。
   - id: hs-seq-004-e2
+    grade: g11
+    difficulty: intermediate
     kind: fill
     stem: 1+2+4+8=（ ）
     answer: "15"
     solution_outline: 等比数列求和 (1−2^4)/(1−2)=15。
   - id: hs-seq-004-e3
+    grade: g11
+    difficulty: intermediate
     kind: proof_order
     stem: 用错位相减法求和的步骤排序（用逗号分隔）
     answer: "1,2,3,4"
@@ -131,17 +155,23 @@
   example: a_1=1，a_{n+1}=a_n+2，则数列为 1,3,5,7,…。
   exercises:
   - id: hs-seq-005-e1
+    grade: g11
+    difficulty: challenge
     kind: choice
     stem: 斐波那契数列的递推关系是（ ）
     options: ["a_{n+2}=a_{n+1}+a_n", "a_{n+2}=a_{n+1}−a_n", "a_{n+1}=2a_n", "a_{n+1}=a_n+n"]
     answer: "a_{n+2}=a_{n+1}+a_n"
     solution_outline: 每一项等于前两项之和。
   - id: hs-seq-005-e2
+    grade: g11
+    difficulty: challenge
     kind: fill
     stem: a_1=1，a_{n+1}=a_n+2，则 a_4=（ ）
     answer: "7"
     solution_outline: 依次得 1,3,5,7。
   - id: hs-seq-005-e3
+    grade: g11
+    difficulty: challenge
     kind: find_error
     stem: 由 a_1=1，a_{n+1}=2a_n 求 a_3，哪一步错了（ ）
     options: ["第 1 步：a_2=2a_1=2", "第 2 步：a_3=2a_2=4", "第 3 步：a_3=6"]
