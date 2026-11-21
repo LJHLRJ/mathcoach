@@ -24,9 +24,9 @@ macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silico
 ## Windows 安装器
 
 1. 下载 `MathCoachSetup-0.6.1.exe`。
-2. 双击运行。安装器为英文向导，按当前用户安装，不需要管理员权限。
+2. 双击运行。安装器页面标题和按钮为英文；首屏为中文“安装前说明”页，包含未签名、数据边界与安装选项说明。安装按当前用户进行，不需要管理员权限。
 3. 选择安装目录。默认路径为 `%LOCALAPPDATA%\Programs\MathCoach`，支持自定义路径。
-4. 选择是否创建桌面图标。该选项默认不勾选；开始菜单快捷方式始终创建。
+4. 选择附加任务：桌面快捷方式默认勾选；开机自启默认不勾选，勾选后可在“Windows 设置 → 应用 → 启动”中关闭。开始菜单快捷方式始终创建。
 5. 点击安装。完成后，结束页默认勾选 “Launch MathCoach”，取消勾选则不会自动启动。
 6. 卸载入口位于 Windows 设置的“应用”列表中的 MathCoach。
 
@@ -36,18 +36,18 @@ macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silico
 
 ### 安装向导页面
 
-当前 Windows 安装器使用 Inno Setup 6，向导界面为英文。按当前配置，页面顺序为：
+当前 Windows 安装器使用 Inno Setup 6，页面标题和按钮为英文，首屏说明页为中文。按当前配置，页面顺序为：
 
-1. Welcome
+1. Information（中文安装前说明）
 2. Select Destination Location
 3. Select Additional Tasks
 4. Ready to Install
 5. Installing
 6. Completing
 
-- 不显示 Start Menu Folder 页面。
-- 没有许可协议页、自定义页面、自定义向导图片或安装器图标。
-- 桌面图标选项位于 Select Additional Tasks 页，当前默认不勾选；开始菜单快捷方式始终创建。
+- 不显示 Welcome 和 Start Menu Folder 页面。
+- 除标准 Information 说明页外，没有许可协议页、自定义页面、自定义向导图片或安装器图标。
+- Select Additional Tasks 页包含桌面快捷方式与开机自启：桌面快捷方式默认勾选；开机自启默认不勾选。
 - 完成页的 Launch MathCoach 默认勾选；静默安装不自动启动。
 
 ### 数据边界
@@ -59,8 +59,9 @@ macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silico
 - 没有分组件进度状态，只显示 Inno Setup 默认进度条。
 - 安装器不创建数据库结构；数据库与表结构在首次启动时自动创建。
 - 未签名构建无法消除 Windows SmartScreen 提示。
-- 安装器不提供自定义图标或中文界面。
-- 安装期间取消会由 Inno Setup 回滚已写入的更改；安装进入最后阶段后不再允许取消。
+- 安装器不提供自定义图标；向导按钮和页面标题为英文，只有首屏说明页为中文。
+- 开机自启没有应用内开关；勾选后可通过“Windows 设置 → 应用 → 启动”关闭，卸载时会自动移除。
+- 安装期间取消会由 Inno Setup 回滚已写入的更改，取消提示会明确说明回滚；安装进入最后阶段后不再允许取消。
 
 ## Windows 便携版
 
