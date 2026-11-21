@@ -3,15 +3,18 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
+from datetime import time as dt_time
 from typing import Any
 
 import streamlit as st
 
-from ..config import db_path
+from ..config import content_strict, db_path
 from ..domain.fsrs import DEFAULT_PARAMS
 from ..domain.models import Consent
 from ..domain.settings import (
     AppSettings,
+    export_audit_csv,
+    export_audit_json,
     export_json,
     export_markdown,
     export_mistakes_csv,
@@ -42,6 +45,11 @@ FONT_SIZE_CSS = {
 SCHEDULER_LABELS = {
     "FSRS（当前默认）": "fsrs",
     "SM-2（兼容）": "sm2",
+}
+THEME_LABELS = {
+    "浅色": "light",
+    "深色": "dark",
+    "跟随系统": "system",
 }
 
 
@@ -294,6 +302,65 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
     st.rerun()
 
 
+def _render_audit(repository: Repository, consent: Consent) -> None:
+    st.divider()
+    st.markdown("### 安全审计日志（只读）")
+    entries = repository.list_audit(limit=200)
+    if not entries:
+        st.caption("暂无审计记录。")
+        return
+    rows = [
+        {
+            "id": entry.id,
+            "时间": entry.created_at.isoformat(),
+            "操作": sanitize_text(entry.op),
+            "结果": sanitize_text(entry.result),
+        }
+        for entry in entries
+    ]
+    with st.expander("查看审计日志", expanded=False):
+        st.dataframe(rows, hide_index=True)
+    now = datetime.now(UTC)
+    stamp = now.strftime("%Y%m%d-%H%M%S")
+    st.download_button(
+        "下载审计 CSV",
+        data=export_audit_csv(entries),
+        file_name=f"mathcoach-audit-{stamp}.csv",
+        mime="text/csv",
+        key="settings_audit_csv",
+    )
+    st.download_button(
+        "下载审计 JSON",
+        data=export_audit_json(entries, now),
+        file_name=f"mathcoach-audit-{stamp}.json",
+        mime="application/json",
+        key="settings_audit_json",
+    )
+    st.caption("审计日志只读；不包含 Token 或学习内容。")
+
+
+def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
+    st.divider()
+    with st.expander("开发者信息（只读）", expanded=False):
+        st.caption(
+            f"存储后端：{'游客内存' if _is_guest(consent) else 'SQLite'}"
+        )
+        if not _is_guest(consent):
+            st.caption(f"数据库路径：{db_path()}")
+        st.caption(
+            f"MATHCOACH_CONTENT_STRICT：{'1' if content_strict() else '0'}"
+        )
+        st.caption(
+            "调度环境："
+            f"{os.environ.get('MATHCOACH_SCHEDULER', 'fsrs')}"
+        )
+        st.caption(
+            f"主题偏好：{settings.theme}（需重启或手动修改 "
+            ".streamlit/config.toml 生效）"
+        )
+        st.caption("本面板只读，不提供写入口。")
+
+
 def render_settings_page(
     repository: Repository, consent: Consent, provider
 ) -> None:
@@ -327,6 +394,11 @@ def render_settings_page(
         label
         for label, value in FONT_SIZE_LABELS.items()
         if value == settings.font_size
+    )
+    current_theme = next(
+        label
+        for label, value in THEME_LABELS.items()
+        if value == settings.theme
     )
     with st.form("settings_general_form"):
         ai_enabled = st.toggle(
@@ -365,6 +437,27 @@ def render_settings_page(
             value=current_font,
             key="settings_font_size",
         )
+        theme_label = st.selectbox(
+            "主题",
+            list(THEME_LABELS),
+            index=list(THEME_LABELS).index(current_theme),
+            key="settings_theme",
+        )
+        st.caption(
+            "主题需重启应用或手动修改 .streamlit/config.toml 生效，"
+            "不做即时切换。"
+        )
+        reminder_enabled = st.toggle(
+            "复习提醒",
+            value=settings.reminder_enabled,
+            key="settings_reminder_enabled",
+        )
+        reminder_time = st.time_input(
+            "提醒时间",
+            value=dt_time.fromisoformat(settings.reminder_time),
+            key="settings_reminder_time",
+        )
+        st.caption("提醒仅在应用打开时生效，不发送系统通知。")
         with st.expander("高级参数（默认锁定）"):
             st.caption(
                 f"FSRS 目标记忆率：{DEFAULT_PARAMS.desired_retention}"
@@ -379,6 +472,9 @@ def render_settings_page(
             new_review_ratio=int(new_review_ratio),
             scheduler=SCHEDULER_LABELS[scheduler_label],
             font_size=FONT_SIZE_LABELS[font_label],
+            theme=THEME_LABELS[theme_label],
+            reminder_enabled=reminder_enabled,
+            reminder_time=reminder_time.strftime("%H:%M"),
         )
         scheduler_changed = new_settings.scheduler != settings.scheduler
         _save_settings(consent, new_settings)
@@ -398,3 +494,5 @@ def render_settings_page(
 
     _render_export(repository, consent)
     _render_clear(repository, consent)
+    _render_audit(repository, consent)
+    _render_dev_panel(consent, settings)
