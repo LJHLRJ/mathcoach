@@ -74,6 +74,10 @@ jobs:
               public static extern bool EnumChildWindows(IntPtr hWndParent, EnumProc lpEnumFunc, IntPtr lParam);
               [DllImport("user32.dll", CharSet = CharSet.Unicode)]
               public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+              [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+              public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, StringBuilder lParam);
+              [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+              public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
               [DllImport("user32.dll")]
               public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
               [StructLayout(LayoutKind.Sequential)]
@@ -111,10 +115,18 @@ jobs:
           $script:windowTexts = New-Object System.Collections.Generic.List[string]
           $childCallback = [Win32Wizard+EnumProc]{
             param([IntPtr]$hWnd, [IntPtr]$lParam)
-            $buffer = New-Object System.Text.StringBuilder 16384
+            $classBuffer = New-Object System.Text.StringBuilder 256
+            [void][Win32Wizard]::GetClassName($hWnd, $classBuffer, $classBuffer.Capacity)
+            $buffer = New-Object System.Text.StringBuilder 32768
             [void][Win32Wizard]::GetWindowText($hWnd, $buffer, $buffer.Capacity)
-            if ($buffer.Length -gt 0) {
-              $script:windowTexts.Add($buffer.ToString())
+            $text = $buffer.ToString()
+            if ($text.Length -eq 0) {
+              $sendBuffer = New-Object System.Text.StringBuilder 32768
+              [void][Win32Wizard]::SendMessage($hWnd, 0x000D, [IntPtr]$sendBuffer.Capacity, $sendBuffer)
+              $text = $sendBuffer.ToString()
+            }
+            if ($text.Length -gt 0) {
+              $script:windowTexts.Add("[" + $classBuffer.ToString() + "] " + $text)
             }
             return $true
           }
@@ -133,6 +145,15 @@ jobs:
                 $name = $element.Current.Name
                 if ($name) {
                   $script:windowTexts.Add($name)
+                }
+                try {
+                  $textPattern = $element.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+                  $text = $textPattern.DocumentRange.GetText(-1)
+                  if ($text) {
+                    $script:windowTexts.Add($text)
+                  }
+                } catch {
+                  continue
                 }
               } catch {
                 continue
