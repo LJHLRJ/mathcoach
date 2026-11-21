@@ -135,6 +135,23 @@ def test_explicit_reason_overrides_default(cards_by_id, tree):
     assert localization.reason == "看错了不等号方向"
 
 
+def test_receipt_shows_full_explanation(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "explanation-receipt.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _start_quiz(at)
+    _wrong_once(at, "y = x²")
+
+    assert not at.exception
+    assert at.subheader[0].value == "收据已生成"
+    text = _text(at)
+    assert "完整解析" in text
+    assert "标准答案：y = x²" in text
+    assert "解题思路：" in text
+
+
 def test_hint_page_shows_knowledge_context_without_answer(
     tmp_path, monkeypatch
 ):

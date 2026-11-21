@@ -764,6 +764,7 @@ def _render_session() -> None:
                     st.caption("叙事：本段旅程已全部点亮。")
                 else:
                     st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
+            _render_explanation(engine.card, engine.current_exercise)
         if st.button(
             "继续",
             key="advance",
