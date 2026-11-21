@@ -16,8 +16,20 @@ from mathcoach.content.loader import (
 from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
+from mathcoach.domain.explanation import build_explanation, locate_error
+from mathcoach.domain.knowledge_tree import (
+    KnowledgeTreeError,
+    load_knowledge_tree,
+)
 from mathcoach.domain.learning_path import Recommendation, recommend
-from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase, ReviewState
+from mathcoach.domain.models import (
+    Consent,
+    ErrorType,
+    Exercise,
+    ExerciseKind,
+    Phase,
+    ReviewState,
+)
 from mathcoach.domain.narrative import build_progress, next_node
 from mathcoach.domain.prerequisites import Gap, trace_gap
 from mathcoach.export.package import (
@@ -153,6 +165,16 @@ def _load_cards():
     for warning in result.warnings:
         st.warning(f"{warning.location}: {warning.message}")
     return cards
+
+
+@st.cache_resource
+def _load_knowledge_tree():
+    """知识点树是只读展示数据；加载失败时回退到卡片字段。"""
+    try:
+        return load_knowledge_tree(CONTENT_ROOT / "knowledge_tree.yaml")
+    except KnowledgeTreeError as exc:
+        st.warning(f"{ICON_INFO} 知识点树暂不可用：{exc}")
+        return None
 
 
 with st.spinner("正在准备讲解…"):
@@ -480,6 +502,79 @@ def _render_knowledge_entry(card) -> None:
         st.rerun()
 
 
+def _prerequisite_chain_text(prerequisites, current_name: str) -> str:
+    if not prerequisites:
+        return "无"
+    names = [item.name for item in reversed(prerequisites)]
+    return " → ".join(names + [current_name])
+
+
+def _render_knowledge_context(card, exercise) -> None:
+    """答错后先定位知识点，不提前泄露标准答案。"""
+    explanation = build_explanation(
+        card, exercise, _load_knowledge_tree()
+    )
+    st.markdown("**知识点定位**")
+    st.markdown(
+        f"- 知识点：{explanation.knowledge_point_name}"
+        f"（{explanation.course}）\n"
+        f"- 概念回看：{explanation.definition}"
+    )
+    if explanation.common_mistakes:
+        st.markdown(
+            "- 常见误区：" + "；".join(explanation.common_mistakes)
+        )
+    st.caption(
+        "先修链："
+        + _prerequisite_chain_text(
+            explanation.prerequisites, explanation.knowledge_point_name
+        )
+    )
+
+
+def _render_error_localization(card, error_type: ErrorType) -> None:
+    """把已确认的错因落到知识点与先修链上。"""
+    localization = locate_error(
+        card, error_type, _load_knowledge_tree()
+    )
+    st.markdown("**错因定位**")
+    st.markdown(
+        f"- 知识点：{localization.knowledge_point_name}"
+        f"（{localization.course}）\n"
+        f"- 错因：{localization.error_type.value}"
+        f"——{localization.reason}\n"
+        f"- 建议先复习：{localization.review_name}"
+    )
+    st.caption(f"补法：{localization.suggestion}")
+    st.caption(
+        "先修链："
+        + _prerequisite_chain_text(
+            localization.prerequisites, localization.knowledge_point_name
+        )
+    )
+
+
+def _render_explanation(card, exercise) -> None:
+    explanation = build_explanation(
+        card, exercise, _load_knowledge_tree()
+    )
+    st.markdown("**完整解析**")
+    st.markdown(
+        f"- 标准答案：{explanation.answer}\n"
+        f"- 解题思路：{explanation.solution_outline}"
+    )
+    if explanation.common_mistakes:
+        st.markdown(
+            "- 常见误区：" + "；".join(explanation.common_mistakes)
+        )
+    st.caption(
+        "先修链："
+        + _prerequisite_chain_text(
+            explanation.prerequisites, explanation.knowledge_point_name
+        )
+    )
+
+
 def _render_session() -> None:
     view = engine.view
     if view.phase in (Phase.GOAL_CONFIRM, Phase.EXPLAIN):
@@ -590,6 +685,14 @@ def _render_session() -> None:
             st.write(math_markdown(view.body))
             if view.notice:
                 st.info(f"{ICON_INFO} {view.notice}")
+            if engine.state.diagnosis is not None:
+                _render_error_localization(
+                    engine.card, engine.state.diagnosis
+                )
+            else:
+                _render_knowledge_context(
+                    engine.card, engine.current_exercise
+                )
             selected = st.radio(
                 "选择更贴近的错因",
                 view.options,
@@ -616,6 +719,16 @@ def _render_session() -> None:
         hint_block(engine.state.hint_level, math_markdown(view.body))
         if view.notice:
             st.caption(view.notice)
+        if engine.state.hint_level >= 4:
+            _render_explanation(engine.card, engine.current_exercise)
+        elif engine.state.diagnosis is not None:
+            _render_error_localization(
+                engine.card, engine.state.diagnosis
+            )
+        else:
+            _render_knowledge_context(
+                engine.card, engine.current_exercise
+            )
         if st.button("再试一次", key="retry", icon=ICON_RESTART):
             engine.retry()
             st.rerun()
@@ -664,6 +777,7 @@ def _render_session() -> None:
     if view.phase is Phase.WRAPUP:
         with card("本次闭环完成"):
             st.write(math_markdown(view.body))
+            _render_explanation(engine.card, engine.current_exercise)
             if st.button("重新开始", key="restart", icon=ICON_RESTART):
                 st.session_state.engine = SessionEngine(
                     card=engine.card,
