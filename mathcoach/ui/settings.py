@@ -383,6 +383,7 @@ def _render_review_ratio_form(
                 "0% 即保持到期 3 + 新卡 0 的 1+3+1 结构。"
             ),
         )
+        st.caption("范围 0–100，步长 5；0% 保持 1+3+1。")
         saved = st.form_submit_button("保存复习配比")
     if saved:
         new_settings = replace(settings, new_review_ratio=int(ratio))

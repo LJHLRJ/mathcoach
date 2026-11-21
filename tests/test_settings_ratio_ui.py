@@ -25,4 +25,6 @@ def test_review_ratio_has_independent_form_and_help(tmp_path, monkeypatch):
     assert "### 复习配比" in markdown
     assert slider.key == "settings_new_review_ratio"
     assert "先修缺口 1" in slider.help
+    captions = " ".join(element.value for element in at.caption)
+    assert "范围 0–100，步长 5" in captions
     assert any(button.label == "保存复习配比" for button in at.button)
