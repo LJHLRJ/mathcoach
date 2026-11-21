@@ -922,8 +922,13 @@ def _render_review_package() -> None:
         if gaps:
             _render_gap_diagnosis(gaps)
         priority = {gap.chain[-1] for gap in gaps}
+        new_ratio = current_settings(st.session_state.consent).new_review_ratio
         package = build_review_package(
-            repository, cards, now, priority_card_ids=priority
+            repository,
+            cards,
+            now,
+            priority_card_ids=priority,
+            new_ratio=new_ratio,
         )
         if not package.questions:
             st.info(f"{ICON_INFO} {package.reason}")

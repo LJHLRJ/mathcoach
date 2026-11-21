@@ -15,7 +15,7 @@ from .models import AuditEntry, MistakeEntry, Receipt, ReviewItem
 
 DEFAULT_DAILY_REVIEW_LIMIT = 0
 MAX_DAILY_REVIEW_LIMIT = 999
-DEFAULT_NEW_REVIEW_RATIO = 50
+DEFAULT_NEW_REVIEW_RATIO = 0
 SCHEDULER_MODES = frozenset({"fsrs", "sm2"})
 FONT_SIZES = frozenset({"small", "medium", "large"})
 THEME_MODES = frozenset({"light", "dark", "system"})

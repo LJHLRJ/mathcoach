@@ -1,4 +1,4 @@
-"""混合复习包纯函数：到期 3 + 先修缺口 1 + 拓展 1，缺口优先。"""
+"""混合复习包纯函数：先修缺口 1 + 错题变式 1 固定，其余按新卡占比分配。"""
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -17,10 +17,17 @@ def compose(
     gaps: Sequence[T],
     variants: Sequence[T],
     total: int = DEFAULT_TOTAL,
+    new: Sequence[T] = (),
+    new_ratio: int = 0,
 ) -> list[T]:
-    """按固定配额组合并去重；不足时依次用到到期、拓展、缺口补齐。"""
+    """按配额组合并去重；缺口/变式固定，剩余题位按新卡占比分配。"""
     if total <= 0:
         return []
+
+    ratio = max(0, min(100, int(new_ratio)))
+    flexible = max(total - GAP_QUOTA - VARIANT_QUOTA, 0)
+    new_quota = int(flexible * ratio / 100 + 0.5)
+    due_quota = flexible - new_quota
 
     result: list[T] = []
 
@@ -34,21 +41,29 @@ def compose(
     for item in gaps[:GAP_QUOTA]:
         add(item)
 
-    # 到期题固定 3 题
+    # 到期题优先占用复习配额
     due_added = 0
     for item in due:
-        if due_added >= DUE_QUOTA or len(result) >= total:
+        if due_added >= due_quota or len(result) >= total:
             break
         if add(item):
             due_added += 1
 
-    # 拓展固定 1 题
+    # 新卡占用剩余配额
+    new_added = 0
+    for item in new:
+        if new_added >= new_quota or len(result) >= total:
+            break
+        if add(item):
+            new_added += 1
+
+    # 错题变式固定 1 题
     if len(result) < total:
         for item in variants[:VARIANT_QUOTA]:
             add(item)
 
-    # 配额不足时用到期题优先补齐，再补拓展/缺口
-    for pool in (due, variants, gaps):
+    # 配额不足时用到期题优先补齐，再补变式/缺口/新卡
+    for pool in (due, variants, gaps, new):
         if len(result) >= total:
             break
         for item in pool:

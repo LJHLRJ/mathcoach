@@ -430,7 +430,10 @@ def render_settings_page(
             step=5,
             key="settings_new_review_ratio",
         )
-        st.caption("当前混合复习包固定为 1+3+1；该配比暂只保存，待后续接入。")
+        st.caption(
+            "先修缺口 1 + 错题变式 1 固定；其余题位按新卡占比分配，"
+            "0% 保持 1+3+1。"
+        )
         font_label = st.select_slider(
             "界面字号",
             options=list(FONT_SIZE_LABELS),
