@@ -172,13 +172,19 @@ jobs:
           Write-Host "---------------------------------"
 
           if ($joined -notmatch "Information") {
-            Write-Warning "Page title 'Information' not found in window text"
+            throw "Information page title not found"
           }
-          if ($joined -notmatch "MathCoach 安装前说明") {
-            throw "Chinese notice heading not found"
+          if ($joined -notmatch "TRichEditViewer") {
+            throw "Notice text control not found"
           }
-          if ($joined -notmatch "不会上传到任何服务器") {
-            throw "Data boundary text not found"
+          if ($joined -notmatch "SQLite") {
+            throw "Notice data boundary text not found"
+          }
+          if ($joined -notmatch "LOCALAPPDATA") {
+            throw "Notice data path text not found"
+          }
+          if ($joined -notmatch "github.com/LJHLRJ/mathcoach/releases") {
+            throw "Notice release URL text not found"
           }
 
           Add-Type -AssemblyName System.Drawing
