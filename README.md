@@ -178,7 +178,7 @@ python -m build
 
 ## 界面主题与交互
 
-主题使用 Streamlit 原生 `[theme]` 配置；局部常量样式、按钮层级、骨架占位与布局密度集中在 `mathcoach/ui/theme.py` 与 `mathcoach/ui/components.py`。完整说明、交互步骤与回退方式见 [docs/ui-polish.md](docs/ui-polish.md)。
+主题使用 Streamlit 原生 `[theme]` 配置；局部常量样式、按钮层级、骨架占位与布局密度集中在 `mathcoach/ui/theme.py` 与 `mathcoach/ui/components.py`。深浅色主题通过 `.streamlit/config.toml` 的 `base` 切换，修改后需重启；设置页“主题”只记录偏好，不会即时生效。完整说明、交互步骤与回退方式见 [docs/ui-polish.md](docs/ui-polish.md)。
 
 ## 免责声明
 

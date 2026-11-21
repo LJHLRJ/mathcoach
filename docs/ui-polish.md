@@ -32,6 +32,18 @@
 
 原值同时保留在 `.streamlit/config.toml` 注释中。
 
+## 深浅色主题切换
+
+- 主题由 `.streamlit/config.toml` 的 `[theme] base` 决定，可选 `light` 或 `dark`。
+- 切换步骤：
+  1. 修改 `base = "dark"`（或改回 `"light"`）。
+  2. 保存文件。
+  3. 重启 Streamlit：源码运行需 `Ctrl+C` 后重新执行 `streamlit run app.py`；桌面版关闭窗口后重新打开。
+- 设置页“主题”下拉只记录偏好，**不会即时改写 config**；不要把它当作运行时开关。
+- 背景 CSS 通过 `st.get_option("theme.base")` 自动选择浅/深变体；动态背景与 confetti 不受影响。
+- 当前视觉基线只覆盖浅色主题；切换深色后请人工检查对比度、背景图案与卡片阴影。
+- 回退：把 `base` 改回 `light` 并重启。
+
 ## 按钮层级
 
 | 角色 | 用途 | 示例 |
@@ -63,6 +75,7 @@
 | 目标确认 | 输入 + 点击确认（2 步） | 输入 + 点击确认（2 步） | 改为 form；输入不再触发整页 rerun；`enter_to_submit=False` 避免 Enter 误提交 |
 | 每日/挑战倒计时 | 静态文本 | 静态文本 + 每 5 秒局部刷新 | `@st.fragment(run_every=5)`；时间到提示提交后结算 |
 | 导出区域 | 3 步 | 未改造 | 目录/确认语句需要先看到摘要；form 化会增加一次“生成预览”点击 |
+| 设置页导出 | 直接下载（1 步） | 生成 / 刷新 + 下载（2 步） | 点击“生成 / 刷新导出数据”后才构建 4 个 payload；下载阶段不再重建 |
 | 并行 fragment | — | 未启用 | 当前没有互不依赖、可并行的独立区域 |
 
 ## 延迟与缓存
@@ -70,17 +83,19 @@
 | 位置 | 原时机 | 新时机 |
 |---|---|---|
 | 设置页审计日志 | 每次设置页渲染查询 200 条并构建 CSV/JSON | 展开“查看审计日志”后才查询；下载入口移到 expander 内 |
+| 设置页导出 | 每次设置页渲染查询并构建 4 个 payload | 点击“生成 / 刷新导出数据”后构建，缓存到 session；下载不再重建 |
 | 背景主题读取 | 每次 rerun 读 settings 表 | 首次读取后缓存到 `session_state`，保存时更新 |
 | 庆祝/减少动效读取 | 每次 rerun 读 settings 表 | 同上 |
 | 动态背景读取 | 每次渲染读 settings 表 | 同上 |
 | 错题本先修诊断 | 最多 10 条错题逐条全量查询 | 一次取统计与错题列表后复用 |
 
 - 审计日志下载从 1 次点击变为“展开 + 下载”2 次，这是本次明确的权衡。
+- 设置页导出从 1 次点击变为“生成 / 刷新 + 下载”2 步；生成后的下载不会重建 payload。
 - 缓存只在本会话内有效；外部修改数据库不会实时反映，重新保存或重启后更新。
 
 ## 验证
 
-- 全量测试：`454 passed, 1 skipped`
+- 全量测试：`455 passed, 1 skipped`
 - 新增测试：
   - `tests/test_ui_theme_config.py`
   - `tests/test_ui_theme_constants.py`
@@ -95,6 +110,7 @@
 - 主题颜色：`.streamlit/config.toml` 注释保留了原值。
 - 布局宽度/卡片/按钮 hover：移除 `app.py` 中的 `inject_theme()` 调用即可回退。
 - 按钮层级：`type="primary"` 可逐处移除。
+- 设置页导出：移除 `EXPORT_PAYLOAD_KEY` 的 session_state 缓存与生成按钮，恢复渲染时构建。
 - 缓存：删除 `*_CACHE_KEY` 的 session_state 读写即可恢复每次读库。
 - 审计延迟：恢复 `_render_audit` 的 eager 查询与 expander 外下载按钮。
 
@@ -103,5 +119,6 @@
 - 动态背景仍是组件区域装饰面板，不是浏览器全屏背景。
 - `st.skeleton` 高度是近似值，不能保证与最终内容完全等高。
 - 审计日志下载入口需要先展开 expander。
+- 设置页导出需要先点击“生成 / 刷新导出数据”；学习数据变化后需手动刷新。
 - 未引入第三方 UI 主题库，未新增前端依赖。
 - Linux 桌面产物仍缺少 GTK/Qt 后端，说明见 [install.md](install.md)。

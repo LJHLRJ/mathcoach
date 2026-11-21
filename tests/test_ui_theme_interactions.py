@@ -86,3 +86,38 @@ def test_mistake_gap_helper_reuses_precomputed_stats():
     assert "def _gaps_from_stats" in source
     assert "_gaps_from_stats(stats, active_mistakes, entry.card_id)" in source
     assert "gaps = _collect_gaps(repository, entry.card_id)" not in source
+
+
+def test_settings_export_is_generated_on_demand(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "export.sqlite3"))
+    at = AppTest.from_string(
+        "import streamlit as st\n"
+        "from mathcoach.domain.models import Consent\n"
+        "from mathcoach.ui.settings import _render_export\n"
+        "class Repo:\n"
+        "    def list_receipts(self, limit=None):\n"
+        "        return []\n"
+        "    def list_mistakes(self, limit=None, include_mastered=True):\n"
+        "        return []\n"
+        "    def list_review_items(self):\n"
+        "        return []\n"
+        "_render_export(Repo(), Consent(memory=True, mistake_book=True))\n"
+    )
+    at.run()
+
+    assert not at.exception
+    assert not [
+        button for button in at.download_button
+        if button.label == "下载完整 JSON"
+    ]
+    at.button(key="settings_prepare_export").click()
+    at.run()
+
+    assert not at.exception
+    assert [
+        button for button in at.download_button
+        if button.label == "下载完整 JSON"
+    ]
+    assert at.button(key="settings_prepare_export").label == (
+        "生成 / 刷新导出数据"
+    )

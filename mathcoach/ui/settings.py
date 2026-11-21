@@ -39,13 +39,14 @@ from .components import (
     DANGER,
     DANGER_KEY,
     PRIMARY,
+    SECONDARY,
     SKELETON_INLINE,
     SKELETON_PANEL,
     button_kwargs,
     loading_skeleton,
 )
 from .focus_audio import render_focus_audio
-from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .icons import ICON_CHECK, ICON_ERROR, ICON_EXPORT, ICON_INFO
 from .milestones import celebrate_mistakes_cleared
 from .motion import (
     load_celebration_settings,
@@ -72,6 +73,7 @@ from .theme_background import (
 )
 
 FONT_SIZE_LABELS = {"小": "small", "中": "medium", "大": "large"}
+EXPORT_PAYLOAD_KEY = "settings_export_payload"
 FONT_SIZE_CSS = {
     "small": "html{font-size:14px;}",
     "medium": "html{font-size:16px;}",
@@ -295,6 +297,36 @@ def _render_notices() -> None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
 
 
+def _build_export_payloads(
+    repository: Repository, consent: Consent
+) -> dict[str, str]:
+    """按需构建 4 个导出 payload；仅由用户点击触发。"""
+    receipts = repository.list_receipts(limit=None)
+    mistakes = repository.list_mistakes(limit=None)
+    review_items = repository.list_review_items()
+    now = datetime.now(UTC)
+    stamp = now.strftime("%Y%m%d-%H%M%S")
+    settings = current_settings(consent)
+    return {
+        "stamp": stamp,
+        "json": export_json(
+            receipts=receipts,
+            mistakes=mistakes,
+            review_items=review_items,
+            settings=settings,
+            now=now,
+        ),
+        "receipts": export_receipts_csv(receipts),
+        "mistakes": export_mistakes_csv(mistakes),
+        "markdown": export_markdown(
+            receipts=receipts,
+            mistakes=mistakes,
+            settings=settings,
+            now=now,
+        ),
+    }
+
+
 def _render_export(repository: Repository, consent: Consent) -> None:
     st.divider()
     st.markdown("### 导出学习数据")
@@ -302,32 +334,29 @@ def _render_export(repository: Repository, consent: Consent) -> None:
         st.info(f"{ICON_INFO} 游客模式没有持久学习数据可导出。")
         return
 
-    with loading_skeleton(SKELETON_PANEL):
-        receipts = repository.list_receipts(limit=None)
-        mistakes = repository.list_mistakes(limit=None)
-        review_items = repository.list_review_items()
-        now = datetime.now(UTC)
-        stamp = now.strftime("%Y%m%d-%H%M%S")
-        settings = current_settings(consent)
-        payload_json = export_json(
-            receipts=receipts,
-            mistakes=mistakes,
-            review_items=review_items,
-            settings=settings,
-            now=now,
-        )
-        payload_receipts = export_receipts_csv(receipts)
-        payload_mistakes = export_mistakes_csv(mistakes)
-        payload_markdown = export_markdown(
-            receipts=receipts,
-            mistakes=mistakes,
-            settings=settings,
-            now=now,
-        )
     st.caption("导出不包含 API 密钥、secrets 文件或审计日志。")
+    payload = st.session_state.get(EXPORT_PAYLOAD_KEY)
+    if not isinstance(payload, dict):
+        payload = None
+    label = "生成 / 刷新导出数据"
+    role = SECONDARY if payload is not None else PRIMARY
+    if st.button(
+        label,
+        key="settings_prepare_export",
+        icon=ICON_EXPORT,
+        **button_kwargs(role),
+    ):
+        with loading_skeleton(SKELETON_PANEL):
+            payload = _build_export_payloads(repository, consent)
+            st.session_state[EXPORT_PAYLOAD_KEY] = payload
+    if payload is None:
+        st.caption("按需生成：点击按钮后显示下载入口；学习数据变化后请刷新。")
+        return
+    stamp = payload["stamp"]
+    st.caption(f"导出数据生成于 {stamp}；如学习数据已变化，请刷新。")
     st.download_button(
         "下载完整 JSON",
-        data=payload_json,
+        data=payload["json"],
         file_name=f"mathcoach-{stamp}.json",
         mime="application/json",
         key="settings_export_json",
@@ -336,7 +365,7 @@ def _render_export(repository: Repository, consent: Consent) -> None:
     with left:
         st.download_button(
             "下载收据 CSV",
-            data=payload_receipts,
+            data=payload["receipts"],
             file_name=f"mathcoach-receipts-{stamp}.csv",
             mime="text/csv",
             key="settings_export_receipts",
@@ -344,14 +373,14 @@ def _render_export(repository: Repository, consent: Consent) -> None:
     with right:
         st.download_button(
             "下载错题 CSV",
-            data=payload_mistakes,
+            data=payload["mistakes"],
             file_name=f"mathcoach-mistakes-{stamp}.csv",
             mime="text/csv",
             key="settings_export_mistakes",
         )
     st.download_button(
         "下载 Markdown 报告",
-        data=payload_markdown,
+        data=payload["markdown"],
         file_name=f"mathcoach-report-{stamp}.md",
         mime="text/markdown",
         key="settings_export_markdown",
@@ -719,8 +748,8 @@ def render_settings_page(
             key="settings_theme",
         )
         st.caption(
-            "主题需重启应用或手动修改 .streamlit/config.toml 生效，"
-            "不做即时切换。"
+            "主题需重启应用或手动修改 .streamlit/config.toml 生效；"
+            "此选项只记录偏好，不做即时切换。"
         )
         reminder_enabled = st.toggle(
             "复习提醒",
