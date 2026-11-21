@@ -16,6 +16,9 @@ import yaml
 DEFAULT_TREE_PATH = (
     Path(__file__).resolve().parents[2] / "content" / "knowledge_tree.yaml"
 )
+LEARNING_CARDS_DIR = (
+    Path(__file__).resolve().parents[2] / "content" / "learning_cards"
+)
 UNMAPPED = "unmapped"
 
 
@@ -248,3 +251,31 @@ def load_knowledge_tree(path: Path | None = None) -> KnowledgeTree:
     nodes = _parse_nodes(data.get("nodes"))
     bindings = _parse_bindings(data.get("bindings"), nodes)
     return KnowledgeTree(nodes=nodes, bindings=bindings)
+
+
+def learning_card_path(knowledge_point_id: str) -> Path | None:
+    """返回知识点卡片路径；非法 ID 返回 None，避免路径穿越。"""
+    if (
+        not knowledge_point_id
+        or knowledge_point_id in {".", ".."}
+        or "/" in knowledge_point_id
+        or "\\" in knowledge_point_id
+    ):
+        return None
+    return LEARNING_CARDS_DIR / f"{knowledge_point_id}.md"
+
+
+def load_learning_card(knowledge_point_id: str) -> str | None:
+    """读取知识点学习卡片；缺失或不可读时返回 None，由 UI 显示占位。"""
+    path = learning_card_path(knowledge_point_id)
+    if path is None or not path.is_file():
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def learning_card_is_filled(text: str) -> bool:
+    """卡片是否已填充；模板卡片包含“待填充”标记。"""
+    return "状态：已填充" in text

@@ -84,6 +84,10 @@ from mathcoach.ui.icons import (
     ICON_SUBMIT,
     ICON_UPDATE,
 )
+from mathcoach.ui.knowledge_browser import (
+    load_learning_cards_enabled,
+    render_knowledge_browser,
+)
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
 from mathcoach.ui.milestones import (
     celebrate_five_correct,
@@ -463,6 +467,19 @@ def _render_hint_actions() -> None:
             st.rerun()
 
 
+def _render_knowledge_entry(card) -> None:
+    """答题前入口：打开当前卡片的学习卡片，不阻塞做题。"""
+    if not load_learning_cards_enabled(st.session_state.consent):
+        return
+    if st.button(
+        "先学习此知识点",
+        key=f"knowledge_entry_{card.id}",
+        icon=ICON_INFO,
+    ):
+        st.query_params["kp"] = card.id
+        st.rerun()
+
+
 def _render_session() -> None:
     view = engine.view
     if view.phase in (Phase.GOAL_CONFIRM, Phase.EXPLAIN):
@@ -521,6 +538,7 @@ def _render_session() -> None:
             ):
                 engine.begin_quiz()
                 st.rerun()
+            _render_knowledge_entry(engine.card)
         return
 
     if view.phase is Phase.QUIZ:
@@ -1220,6 +1238,18 @@ def _render_export() -> None:
 
 
 def _render_current_mode() -> None:
+    focus = st.query_params.get("kp")
+    if isinstance(focus, list):
+        focus = focus[0] if focus else None
+    if focus:
+        render_knowledge_browser(
+            cards=cards,
+            provider=provider,
+            repository=st.session_state.repository,
+            consent=st.session_state.consent,
+            focus_id=focus,
+        )
+        return
     mode = st.session_state.get("app_mode", MODE_SESSION)
     if mode == MODE_DASHBOARD:
         _render_dashboard()

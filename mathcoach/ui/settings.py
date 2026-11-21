@@ -47,6 +47,10 @@ from .components import (
 )
 from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_EXPORT, ICON_INFO
+from .knowledge_browser import (
+    load_learning_cards_enabled,
+    save_learning_cards_enabled,
+)
 from .milestones import celebrate_mistakes_cleared
 from .motion import (
     load_celebration_settings,
@@ -499,6 +503,7 @@ def _render_appearance_form(
     current = load_background(consent)
     current_dynamic = load_dynamic_background(consent)
     current_density = layout_density(consent)
+    current_cards = load_learning_cards_enabled(consent)
     labels = list(BACKGROUND_OPTIONS.values())
     keys = list(BACKGROUND_OPTIONS)
     index = keys.index(current) if current in keys else 0
@@ -521,6 +526,12 @@ def _render_appearance_form(
             key="settings_compact_layout",
             help="减少区块间距；保存后立即生效。",
         )
+        show_cards = st.toggle(
+            "显示学习卡片",
+            value=current_cards,
+            key="settings_learning_cards",
+            help="关闭后隐藏答题前的学习入口与卡片内容。",
+        )
         saved = st.form_submit_button(
             "保存外观设置", **button_kwargs(PRIMARY)
         )
@@ -533,7 +544,8 @@ def _render_appearance_form(
         consent,
         DENSITY_COMPACT if compact_layout else DENSITY_COMFORTABLE,
     )
-    if background_saved and motion_saved and density_saved:
+    cards_saved = save_learning_cards_enabled(consent, show_cards)
+    if background_saved and motion_saved and density_saved and cards_saved:
         repository.record_audit("settings_appearance", "ok")
         st.session_state["settings_appearance_saved"] = True
         st.rerun()
