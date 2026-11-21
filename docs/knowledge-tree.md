@@ -19,9 +19,9 @@
 
 ## 学习卡片
 
-- 目录：`content/learning_cards/<card_id>.md`，共 122 个文件。
-- 已填充 5 个：`hs-function-intro-001`、`hs-func-002`、`hs-func-003`、`hs-func-004`、`hs-func-005`。
-- 其余为模板，包含“状态：待填充”和“待填充”占位。
+- 目录：`content/learning_cards/<card_id>.md`，共 122 个文件，全部已填充。
+- 其中 5 张为首批手写卡片：`hs-function-intro-001`、`hs-func-002`、`hs-func-003`、`hs-func-004`、`hs-func-005`。
+- 其余 117 张由现有卡片字段生成，内容来自定义、直觉、常见误区与首道例题，不新增人工推断。
 - 已填充卡片包含：概念、直觉、常见误区、诊断例题。
 - 读取入口：`load_learning_card(knowledge_point_id)`；缺失或非法 ID 返回 `None`，由页面显示占位。
 - 路径做过非法字符检查，不接受 `..`、`/`、`\`。
@@ -50,8 +50,9 @@
   - HINT L2/L3：显示“知识点定位”（概念回看、常见误区、先修链），不提前泄露标准答案
   - HINT L4/L5：显示“完整解析”
   - DIAGNOSE：显示“错因定位”，把已确认错因落到知识点与先修链上
+  - RECEIPT：显示完整解析，答对后也能回看标准答案与解题思路
   - WRAPUP：显示完整解析与学习闭环摘要
-- 收据页未改动，视觉基线保持稳定。
+- 收据页改动会进入视觉基线；基线使用 CI Chrome 的实际截图对齐。
 
 ## 学习闭环
 
@@ -73,8 +74,8 @@
 |---|---|
 | `tests/test_knowledge_tree_structure.py` | 规模、父子层级、先修链、非法结构拒绝 |
 | `tests/test_knowledge_tree_bindings.py` | 366 题全量绑定、schema 格式、unmapped 查询 |
-| `tests/test_knowledge_tree_learning_cards.py` | 122 个卡片文件、5 个已填充、非法 ID、开关持久化、答题前入口 |
-| `tests/test_knowledge_tree_explanation.py` | 解析字段、先修链、错因定位、HINT/DIAGNOSE/WRAPUP |
+| `tests/test_knowledge_tree_learning_cards.py` | 122 个卡片文件全部已填充、非法 ID、开关持久化、答题前入口 |
+| `tests/test_knowledge_tree_explanation.py` | 解析字段、先修链、错因定位、HINT/DIAGNOSE/RECEIPT/WRAPUP |
 | `tests/test_knowledge_tree_learning_loop.py` | 状态规则、练习记录、待复习、知识点页与 WRAPUP |
 
 最终验证：
@@ -83,15 +84,15 @@
 MATHCOACH_CONTENT_STRICT=1 python -m pytest -q
 ```
 
-结果：`490 passed, 1 skipped`。
+结果：`491 passed, 1 skipped`。
 
 ## 已知限制
 
-- 仅 5 张学习卡片已填充；其余 117 张为待填充模板。
+- 117 张学习卡片由现有字段生成，未新增人工撰写内容；如需更丰富的例题可继续补写。
 - 学习闭环状态是展示摘要，不替代错题本复习状态与 FSRS 调度。
 - 学习卡片“已读”状态未单独存储；本轮不新增学习记录表。
 - 知识点浏览使用 `?kp=` 查询参数；从浏览页开始练习会新建会话。
-- 未新增依赖、数据库表或迁移；视觉回归基线仍只覆盖首屏、QUIZ、收据，本功能改动不进入这三张基线。
+- 未新增依赖、数据库表或迁移；视觉回归覆盖首屏、QUIZ、收据，收据基线已随本次解析展示更新。
 
 ## 回退
 
