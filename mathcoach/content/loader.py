@@ -24,10 +24,11 @@ def load_curriculum(root: Path) -> list[dict]:
 
 
 def load_raw_cards(root: Path) -> list[dict]:
+    root = Path(root)
     cards: list[dict] = []
-    for path in sorted(Path(root).rglob("*.yaml")):
-        # curriculum 与 prerequisites 是索引/关系文件，不是知识卡片
-        if path.name in (CURRICULUM_FILE, PREREQUISITES_FILE):
+    for path in sorted(root.rglob("*.yaml")):
+        # 顶层 YAML 是课程索引或参数配置；知识卡片必须放在学段子目录
+        if path.parent == root:
             continue
         data = _read_yaml(path)
         if isinstance(data, list):

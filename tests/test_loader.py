@@ -103,3 +103,17 @@ def test_multi_answer_is_canonicalized(tmp_path):
 
     cards, _ = load_content(tmp_path, strict=True)
     assert cards[0].exercises[0].answer == "A,B"
+
+
+def test_top_level_config_yaml_is_not_treated_as_card(tmp_path):
+    _write_tree(tmp_path)
+    # 顶层参数文件不是知识卡片，不能被 load_raw_cards 收集
+    (tmp_path / "fsrs_params.yaml").write_text(
+        "desired_retention: 0.9\n", encoding="utf-8"
+    )
+
+    cards, result = load_content(tmp_path, strict=True)
+
+    assert result.ok
+    assert len(cards) == 1
+
