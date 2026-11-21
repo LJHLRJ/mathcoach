@@ -1,0 +1,107 @@
+# 界面主题与交互优化
+
+本文记录本次 UI 美化与交互性能改造。范围仅限展示层，不改判定、诊断、收据、调度与安全逻辑。
+
+## 主题与样式
+
+- 运行时升级为 **Streamlit 1.59.0**：`st.skeleton` 与 `st.fragment(parallel=...)` 的最低可用版本。
+- 主题仍使用 `.streamlit/config.toml` 的原生 `[theme]` 键；本次未改颜色值，只补充原值注释与重启说明。
+- 常量样式集中在 `mathcoach/ui/theme.py`：
+  - 内容区最大宽度 `920px`
+  - 卡片极淡边框与阴影（`st-key-mc-card-*`）
+  - 主按钮 hover 过渡
+  - `prefers-reduced-motion` 降级
+  - 空 `<style>` 容器隐藏，避免布局位移
+- 布局密度：宽松（默认）/ 紧凑；在“设置 → 外观”切换，保存后立即生效。
+  - 持久化键：`layout_density`
+  - 宽松模式不注入额外 CSS；紧凑模式减少 `stVerticalBlock` 间距
+- 深色/浅色主题仍需修改 config 并重启，不提供运行时假切换。
+
+### 主题值与原值
+
+| 键 | 当前值 | 原值 |
+|---|---|---|
+| `base` | `light` | `light` |
+| `primaryColor` | `#4F8BF9` | `#4F8BF9` |
+| `backgroundColor` | `#FFFFFF` | `#FFFFFF` |
+| `secondaryBackgroundColor` | `#F0F2F6` | `#F0F2F6` |
+| `textColor` | `#262730` | `#262730` |
+| `font` | `sans serif` | `sans serif` |
+| `greenColor` | `#28a745` | `#28a745` |
+| `redColor` | `#dc3545` | `#dc3545` |
+
+原值同时保留在 `.streamlit/config.toml` 注释中。
+
+## 按钮层级
+
+| 角色 | 用途 | 示例 |
+|---|---|---|
+| primary | 主操作 | 确认目标、提交答案、保存设置 |
+| secondary | 次操作 | 提示、重试、检查更新、试听 |
+| danger | 不可恢复操作 | 永久清除学习数据 |
+
+- 通过 `mathcoach/ui/components.py` 的 `button_kwargs()` 复用，不在页面散落 CSS。
+- 危险按钮使用 `st-key-settings_clear_submit` 定向样式；仍需输入 `DELETE` 确认。
+- `st.button` 没有原生 `loading` 参数，耗时操作不使用假 loading。
+
+## 加载反馈
+
+- `st.skeleton` 固定高度占位：
+  - 确认目标：`SKELETON_CARD`（140px）
+  - 智能复习包：`SKELETON_CARD`
+  - 导出 artifact：`SKELETON_PANEL`（220px）
+  - 设置页导出：`SKELETON_PANEL`
+  - AI 连接测试：`SKELETON_INLINE`（56px）
+- `:shimmer[]`：检查更新时的纯文本状态。
+- 骨架占位实测可渲染为 `stSkeletonElement`，并保留固定高度。
+- 内容出现时页面会正常增长，但不会从空白直接跳到内容；未使用像素级骨架匹配。
+
+## form / fragment 改造
+
+| 区域 | 原交互 | 新交互 | 说明 |
+|---|---|---|---|
+| 目标确认 | 输入 + 点击确认（2 步） | 输入 + 点击确认（2 步） | 改为 form；输入不再触发整页 rerun；`enter_to_submit=False` 避免 Enter 误提交 |
+| 每日/挑战倒计时 | 静态文本 | 静态文本 + 每 5 秒局部刷新 | `@st.fragment(run_every=5)`；时间到提示提交后结算 |
+| 导出区域 | 3 步 | 未改造 | 目录/确认语句需要先看到摘要；form 化会增加一次“生成预览”点击 |
+| 并行 fragment | — | 未启用 | 当前没有互不依赖、可并行的独立区域 |
+
+## 延迟与缓存
+
+| 位置 | 原时机 | 新时机 |
+|---|---|---|
+| 设置页审计日志 | 每次设置页渲染查询 200 条并构建 CSV/JSON | 展开“查看审计日志”后才查询；下载入口移到 expander 内 |
+| 背景主题读取 | 每次 rerun 读 settings 表 | 首次读取后缓存到 `session_state`，保存时更新 |
+| 庆祝/减少动效读取 | 每次 rerun 读 settings 表 | 同上 |
+| 动态背景读取 | 每次渲染读 settings 表 | 同上 |
+| 错题本先修诊断 | 最多 10 条错题逐条全量查询 | 一次取统计与错题列表后复用 |
+
+- 审计日志下载从 1 次点击变为“展开 + 下载”2 次，这是本次明确的权衡。
+- 缓存只在本会话内有效；外部修改数据库不会实时反映，重新保存或重启后更新。
+
+## 验证
+
+- 全量测试：`454 passed, 1 skipped`
+- 新增测试：
+  - `tests/test_ui_theme_config.py`
+  - `tests/test_ui_theme_constants.py`
+  - `tests/test_ui_theme_layout.py`
+  - `tests/test_ui_theme_buttons.py`
+  - `tests/test_ui_theme_interactions.py`
+- 视觉回归：Chrome 155，1440×900，阈值 0.5%；基线已按 Streamlit 1.59.0 与主题改动刷新。
+- 视觉基线仅覆盖首屏、QUIZ、收据，不做像素级断言。
+
+## 回退
+
+- 主题颜色：`.streamlit/config.toml` 注释保留了原值。
+- 布局宽度/卡片/按钮 hover：移除 `app.py` 中的 `inject_theme()` 调用即可回退。
+- 按钮层级：`type="primary"` 可逐处移除。
+- 缓存：删除 `*_CACHE_KEY` 的 session_state 读写即可恢复每次读库。
+- 审计延迟：恢复 `_render_audit` 的 eager 查询与 expander 外下载按钮。
+
+## 已知限制
+
+- 动态背景仍是组件区域装饰面板，不是浏览器全屏背景。
+- `st.skeleton` 高度是近似值，不能保证与最终内容完全等高。
+- 审计日志下载入口需要先展开 expander。
+- 未引入第三方 UI 主题库，未新增前端依赖。
+- Linux 桌面产物仍缺少 GTK/Qt 后端，说明见 [install.md](install.md)。

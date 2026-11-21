@@ -176,6 +176,10 @@ python -m build
 - 未集成：css-doodle、weft-ui、matanim、handanim；许可证或依赖条件不满足。
 - 完整来源、版权声明与使用方式见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
+## 界面主题与交互
+
+主题使用 Streamlit 原生 `[theme]` 配置；局部常量样式、按钮层级、骨架占位与布局密度集中在 `mathcoach/ui/theme.py` 与 `mathcoach/ui/components.py`。完整说明、交互步骤与回退方式见 [docs/ui-polish.md](docs/ui-polish.md)。
+
 ## 免责声明
 
 本项目集成的背景图案、音效与环境音来自第三方开源项目，其许可证以各项目仓库声明为准。我们已尽力核实许可证信息，但**不对第三方资源的版权状态作任何法律保证**，也不构成法律建议。
