@@ -1,0 +1,175 @@
+"""按年级浏览卡片：筛选式切换，不隔离学习数据。"""
+from __future__ import annotations
+
+from collections import defaultdict
+
+import streamlit as st
+
+from ..domain.grade_index import (
+    DIFFICULTY_VALUES,
+    GRADE_VALUES,
+    UNCLASSIFIED,
+    GradeIndex,
+)
+from ..domain.models import KnowledgeCard
+from ..memory.repository import Repository
+
+GRADE_LABELS = {
+    "all": "全部年级",
+    "mixed": "mixed · 混合",
+    "unclassified": "未分类",
+}
+for _index in range(1, 13):
+    GRADE_LABELS[f"g{_index}"] = f"g{_index} · {_index} 年级"
+for _index in range(1, 5):
+    GRADE_LABELS[f"u{_index}"] = f"u{_index} · 本科 {_index} 年级"
+for _index in range(1, 4):
+    GRADE_LABELS[f"m{_index}"] = f"m{_index} · 研究生 {_index} 年级"
+
+DIFFICULTY_LABELS = {
+    "all": "全部难度",
+    "basic": "基础",
+    "intermediate": "进阶",
+    "advanced": "高级",
+    "challenge": "挑战",
+    "unclassified": "未分类",
+}
+GRADE_OPTIONS = ("all",) + GRADE_VALUES + (UNCLASSIFIED,)
+DIFFICULTY_OPTIONS = ("all",) + DIFFICULTY_VALUES + (UNCLASSIFIED,)
+STAGE_ORDER = {"highschool": 0, "undergraduate": 1, "graduate": 2}
+
+
+def _grade_label(value: str) -> str:
+    return GRADE_LABELS.get(value, value)
+
+
+def _difficulty_label(value: str) -> str:
+    return DIFFICULTY_LABELS.get(value, value)
+
+
+def _card_metadata(
+    index: GradeIndex,
+) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    grades: dict[str, set[str]] = defaultdict(set)
+    difficulties: dict[str, set[str]] = defaultdict(set)
+    for record in index.records.values():
+        grades[record.card_id].add(record.grade)
+        difficulties[record.card_id].add(record.difficulty)
+    return grades, difficulties
+
+
+def _sort_key(card: KnowledgeCard) -> tuple[int, str, str]:
+    return (
+        STAGE_ORDER.get(card.stage.value, 9),
+        card.course,
+        card.name,
+    )
+
+
+def _filtered_cards(
+    cards: list[KnowledgeCard],
+    index: GradeIndex,
+    grade: str,
+    difficulty: str,
+) -> list[KnowledgeCard]:
+    grades, difficulties = _card_metadata(index)
+    result: list[KnowledgeCard] = []
+    for card in cards:
+        if grade != "all" and grade not in grades.get(card.id, set()):
+            continue
+        if (
+            difficulty != "all"
+            and difficulty not in difficulties.get(card.id, set())
+        ):
+            continue
+        result.append(card)
+    return sorted(result, key=_sort_key)
+
+
+def _grouped_cards(
+    cards: list[KnowledgeCard], index: GradeIndex
+) -> dict[str, list[KnowledgeCard]]:
+    _, difficulties = _card_metadata(index)
+    groups: dict[str, list[KnowledgeCard]] = {
+        value: [] for value in DIFFICULTY_VALUES + (UNCLASSIFIED,)
+    }
+    for card in cards:
+        values = difficulties.get(card.id) or {UNCLASSIFIED}
+        for value in values:
+            groups.setdefault(value, []).append(card)
+    return groups
+
+
+@st.fragment
+def _render_filters_and_groups(
+    cards: list[KnowledgeCard], index: GradeIndex
+) -> None:
+    grade = st.selectbox(
+        "年级",
+        GRADE_OPTIONS,
+        format_func=_grade_label,
+        key="grade_filter",
+    )
+    st.session_state["grade_last_selected"] = grade
+    difficulty = st.selectbox(
+        "难度",
+        DIFFICULTY_OPTIONS,
+        format_func=_difficulty_label,
+        key="difficulty_filter",
+    )
+    filtered = _filtered_cards(cards, index, grade, difficulty)
+    exercise_count = sum(len(card.exercises) for card in filtered)
+    st.caption(
+        f"共 {len(filtered)} 张卡片 · {exercise_count} 道题"
+    )
+    if not filtered:
+        st.info("该年级/难度暂无卡片。")
+        return
+
+    groups = _grouped_cards(filtered, index)
+    first = True
+    for value in DIFFICULTY_VALUES + (UNCLASSIFIED,):
+        group = groups.get(value) or []
+        if not group:
+            continue
+        with st.expander(
+            f"{_difficulty_label(value)} · {len(group)} 张卡片",
+            expanded=first,
+        ):
+            for card in group:
+                st.markdown(
+                    f"- **{card.name}** · {card.course} · "
+                    f"{card.chapter}"
+                )
+        first = False
+
+
+def render_grade_page(
+    cards: list[KnowledgeCard],
+    index: GradeIndex,
+    repository: Repository,
+    initial_grade: str | None = None,
+) -> None:
+    """年级筛选页；学习数据保持全局共享。"""
+    st.subheader("按年级")
+    st.caption(
+        "按年级与难度筛选卡片；收据、错题本、复习队列仍全局共享，"
+        "不按年级隔离。"
+    )
+    review_items = repository.list_review_items()
+    st.metric("今日待复习（跨年级）", str(len(review_items)))
+    if review_items:
+        preview = "；".join(
+            item.mistake.stem for item in review_items[:3]
+        )
+        st.caption(f"跨年级已到期：{preview}")
+
+    if initial_grade in GRADE_OPTIONS:
+        if st.session_state.get("grade_filter") != initial_grade:
+            st.session_state["grade_filter"] = initial_grade
+    elif "grade_filter" not in st.session_state:
+        st.session_state["grade_filter"] = st.session_state.get(
+            "grade_last_selected", "all"
+        )
+
+    _render_filters_and_groups(cards, index)
