@@ -1,4 +1,5 @@
 """P1 设置：调度偏好、凭据文件与连接错误脱敏。"""
+import os
 from datetime import UTC, datetime
 
 from mathcoach.domain.models import (
@@ -64,7 +65,8 @@ def test_ai_credentials_round_trip_and_clear(tmp_path):
     save_ai_credentials("sk-secret", "https://example.test/v1", path=path)
 
     assert load_ai_credentials(path) == ("sk-secret", "https://example.test/v1")
-    assert (path.stat().st_mode & 0o777) == 0o600
+    if os.name != "nt":
+        assert (path.stat().st_mode & 0o777) == 0o600
 
     save_ai_credentials("", "", path=path)
     assert not path.exists()
