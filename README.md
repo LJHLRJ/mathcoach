@@ -140,7 +140,7 @@ python -m build
 | M16 | 桌面 CI 构建与 Release 资产 | 已完成 |
 | M17 | 界面优化与美化 + 截图视觉回归 | 已完成（v0.5.0） |
 
-当前发布：**v0.5.0**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
+当前发布：**v0.5.1**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
 
 ## 设计文档
 
