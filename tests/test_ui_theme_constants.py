@@ -14,6 +14,7 @@ def test_theme_css_is_constant_and_local():
     assert 'data-testid="stMainBlockContainer"' in css
     assert "st-key-mc-card-" in css
     assert 'button[kind="primary"]' in css
+    assert 'button[kind="primaryFormSubmit"]' in css
     assert "prefers-reduced-motion" in css
     assert "<script" not in css.lower()
     assert "http://" not in css.lower()

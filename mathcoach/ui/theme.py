@@ -12,6 +12,7 @@ import streamlit as st
 from ..config import db_path
 from ..domain.models import Consent
 from ..memory.settings_repo import SQLiteSettingsStore
+from .components import DANGER_CSS
 
 LAYOUT_DENSITY_KEY = "layout_density"
 DENSITY_COMFORTABLE = "comfortable"
@@ -36,10 +37,12 @@ THEME_CSS = """
   border-color: rgba(38, 39, 48, 0.10) !important;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
 }
-button[kind="primary"] {
+button[kind="primary"],
+button[kind="primaryFormSubmit"] {
   transition: transform .12s ease, box-shadow .12s ease;
 }
-button[kind="primary"]:hover {
+button[kind="primary"]:hover,
+button[kind="primaryFormSubmit"]:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(79, 139, 249, 0.18);
 }
@@ -127,8 +130,9 @@ def density_css(value: str) -> str:
 
 
 def inject_theme(consent: Consent | None = None) -> None:
-    """注入主题常量 CSS；重复调用不会改变视觉结果。"""
+    """注入主题与按钮常量 CSS；重复调用不会改变视觉结果。"""
     st.markdown(THEME_CSS, unsafe_allow_html=True)
+    st.markdown(DANGER_CSS, unsafe_allow_html=True)
     css = density_css(layout_density(consent))
     if css:
         st.markdown(css, unsafe_allow_html=True)
