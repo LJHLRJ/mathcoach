@@ -115,6 +115,7 @@ class Receipt:
     restatement_quality: str | None = None
     exercise_id: str = ""
     id: str = field(default_factory=lambda: uuid4().hex)
+    basis: str = ""  # 生成时写入的可复核依据，不在展示层补算
 
 
 @dataclass(frozen=True)
