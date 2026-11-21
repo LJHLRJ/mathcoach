@@ -308,6 +308,9 @@ def _render_session() -> None:
     st.write(view.body)
     if view.notice:
         st.info(view.notice)
+    # 收据页只在现有正文后追加依据，不改变判定与布局
+    if view.phase is Phase.RECEIPT and view.receipt and view.receipt.basis:
+        st.caption(f"依据：{view.receipt.basis}")
 
     if view.phase is Phase.GOAL_CONFIRM:
         goal = st.text_input("今天想练到什么？", key="goal_input")

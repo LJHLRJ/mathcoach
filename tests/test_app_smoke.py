@@ -44,6 +44,7 @@ def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
     at.button[0].click().run()
     assert not at.exception
     assert "收据已生成" in at.subheader[0].value
+    assert any("依据：" in caption.value for caption in at.caption)
 
 
 def test_app_rejects_injection_goal(tmp_path, monkeypatch):
