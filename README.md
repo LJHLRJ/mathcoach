@@ -31,7 +31,9 @@
 
 ## 桌面客户端
 
-Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。产物未签名，Windows SmartScreen / macOS Gatekeeper 可能提示。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+
+Windows 版 .exe 和 macOS 版 .dmg 未签名。首次运行时：Windows 可能弹出 SmartScreen 提示，点击“更多信息”→“仍要运行”；macOS 可能提示“无法打开”，需在“系统设置 → 隐私与安全性”中允许。这是未签名应用的正常行为，不影响功能。
 
 ## 目录
 

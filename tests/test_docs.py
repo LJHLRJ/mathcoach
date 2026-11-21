@@ -76,6 +76,15 @@ def test_readme_security_counts_match_test_files():
     assert f"{len(injected.value.elts)}/{len(injected.value.elts)}" in readme
 
 
+def test_readme_documents_unsigned_first_run_steps():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "未签名" in readme
+    assert "更多信息" in readme
+    assert "仍要运行" in readme
+    assert "系统设置 → 隐私与安全性" in readme
+
+
 def test_prompt_copies_match_runtime_constants():
     tutor = (ROOT / "prompts" / "tutor.md").read_text(encoding="utf-8")
     parser = (ROOT / "prompts" / "parser.md").read_text(encoding="utf-8")
