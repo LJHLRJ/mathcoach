@@ -63,3 +63,50 @@ def test_receipt_shows_three_metrics_after_full_loop(tmp_path, monkeypatch):
         "最高提示层级",
         "独立程度",
     ]
+
+
+def _start_quiz(at) -> None:
+    at.selectbox[0].select("hs-function-intro-001").run()
+    at.text_input[0].set_value("搞懂函数的概念")
+    at.button[0].click().run()
+    at.button[0].click().run()  # 开始小测
+
+
+def test_quiz_phase_shows_progress_between_zero_and_one(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    _start_quiz(at)
+
+    assert not at.exception
+    progress = at.get("progress")
+    assert progress
+    # AppTest 的 proto 用 0—100 表示百分比
+    assert 0.0 <= progress[0].proto.value / 100 <= 1.0
+
+
+def test_correct_answer_shows_success_feedback(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    _start_quiz(at)
+    at.radio[0].set_value("y = x²")
+    at.button[0].click().run()
+
+    assert not at.exception
+    assert any("答对了" in element.value for element in at.success)
+
+
+def test_wrong_answer_shows_error_feedback(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    _start_quiz(at)
+    at.radio[0].set_value("y² = x")
+    at.button[0].click().run()
+
+    assert not at.exception
+    assert any("再看一眼提示" in element.value for element in at.error)

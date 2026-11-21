@@ -105,7 +105,8 @@ def _load_cards():
     return cards
 
 
-cards = _load_cards()
+with st.spinner("正在准备讲解…"):
+    cards = _load_cards()
 prerequisites = load_prerequisites(CONTENT_ROOT)
 narrative_nodes = load_narrative(CONTENT_ROOT)
 
@@ -167,6 +168,13 @@ def _render_review_plan(repository) -> None:
         return
     st.markdown("**复习清单**")
     plan = build_plan(items, datetime.now(timezone.utc))
+    kpi_row(
+        [
+            ("今天", str(len(plan.today))),
+            ("明天", str(len(plan.tomorrow))),
+            ("三天后", str(len(plan.in_three_days))),
+        ]
+    )
     for label, group in (
         ("今天", plan.today),
         ("明天", plan.tomorrow),
@@ -199,12 +207,13 @@ def _render_card_selector() -> None:
     )
     if selected != current_id:
         selected_card = next(card for card in cards if card.id == selected)
-        st.session_state.engine = SessionEngine(
-            card=selected_card,
-            provider=st.session_state.provider,
-            repository=st.session_state.repository,
-            consent=st.session_state.consent,
-        )
+        with st.spinner("正在加载卡片…"):
+            st.session_state.engine = SessionEngine(
+                card=selected_card,
+                provider=st.session_state.provider,
+                repository=st.session_state.repository,
+                consent=st.session_state.consent,
+            )
         st.rerun()
 
 
@@ -308,6 +317,17 @@ def _render_mistake_tab() -> None:
     if not consent.mistake_book:
         st.info("错题本已关闭。")
         return
+    entries = repository.list_mistakes(limit=None)
+    pending = sum(
+        1 for entry in entries if entry.review_state is not ReviewState.MASTERED
+    )
+    kpi_row(
+        [
+            ("错题总数", str(len(entries))),
+            ("待复习", str(pending)),
+            ("今天到期", str(len(repository.list_review_items()))),
+        ]
+    )
     _render_mistake_book(repository)
     _render_review_plan(repository)
 
@@ -339,7 +359,8 @@ def _render_session() -> None:
             goal = st.text_input("今天想练到什么？", key="goal_input")
             if st.button("确认目标", key="confirm_goal"):
                 try:
-                    engine.confirm_goal(goal)
+                    with st.spinner("正在准备讲解…"):
+                        engine.confirm_goal(goal)
                 except Blocked:
                     st.error(REFUSAL_TEXT)
                 except ValueError as exc:
@@ -370,6 +391,19 @@ def _render_session() -> None:
 
     if view.phase is Phase.QUIZ:
         with card(view.title):
+            total = len(engine.card.exercises)
+            position = next(
+                (
+                    index + 1
+                    for index, exercise in enumerate(engine.card.exercises)
+                    if exercise.id == engine.state.exercise_id
+                ),
+                1,
+            )
+            st.progress(
+                position / total if total else 0.0,
+                text=f"第 {position} / {total} 题",
+            )
             if view.notice:
                 st.caption(view.notice)
             if render_visual(engine.card.id) == "failed":
@@ -383,6 +417,7 @@ def _render_session() -> None:
 
     if view.phase is Phase.DIAGNOSE:
         with card(view.title):
+            st.error(":material/error: 再看一眼提示")
             st.write(view.body)
             if view.notice:
                 st.info(view.notice)
@@ -397,6 +432,13 @@ def _render_session() -> None:
         return
 
     if view.phase is Phase.HINT:
+        current_id = engine.state.exercise_id
+        if any(
+            attempt["exercise_id"] == current_id
+            and attempt.get("correct") is False
+            for attempt in engine.state.attempts
+        ):
+            st.error(":material/error: 再看一眼提示")
         hint_block(engine.state.hint_level, view.body)
         if view.notice:
             st.caption(view.notice)
@@ -409,6 +451,7 @@ def _render_session() -> None:
     if view.phase is Phase.RECEIPT:
         receipt = view.receipt
         with card("收据已生成"):
+            st.success(":material/check_circle: 答对了")
             if receipt is not None:
                 st.caption(f"题型：{receipt.exercise_type.value}")
                 kpi_row(
