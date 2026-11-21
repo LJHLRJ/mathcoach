@@ -3,9 +3,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import mathcoach
 import streamlit as st
 
+import mathcoach
 from mathcoach.config import content_strict, resolve_content_root
 from mathcoach.content.loader import (
     ContentError,
@@ -41,6 +41,24 @@ from mathcoach.safety.redlines import (
     WriteBlocked,
     assert_write_allowed,
 )
+from mathcoach.session.challenge import (
+    build_challenge_state,
+    save_challenge_result,
+)
+from mathcoach.session.daily import (
+    DailyState,
+    build_daily_questions,
+    current_question,
+    elapsed_seconds,
+    finish_daily,
+    record_daily_mistake,
+    remaining_seconds,
+    save_daily_result,
+    submit_daily_answer,
+    time_is_up,
+)
+from mathcoach.session.engine import SessionEngine
+from mathcoach.timeutil import local_day, local_day_key
 from mathcoach.ui.first_run import (
     FirstRunError,
     initialize_consent,
@@ -81,25 +99,8 @@ from mathcoach.ui.settings import (
     render_settings_page,
 )
 from mathcoach.ui.sound import play_pending_feedback, queue_feedback
+from mathcoach.ui.theme import inject_theme
 from mathcoach.ui.visuals.registry import render_visual
-from mathcoach.session.challenge import (
-    build_challenge_state,
-    save_challenge_result,
-)
-from mathcoach.session.daily import (
-    DailyState,
-    build_daily_questions,
-    current_question,
-    elapsed_seconds,
-    finish_daily,
-    record_daily_mistake,
-    remaining_seconds,
-    save_daily_result,
-    submit_daily_answer,
-    time_is_up,
-)
-from mathcoach.session.engine import SessionEngine
-from mathcoach.timeutil import local_day, local_day_key
 from mathcoach.update_check import UpdateCheckError, check_for_update
 
 CONTENT_ROOT = resolve_content_root(Path(__file__))
@@ -212,6 +213,7 @@ if "onboarding_had_history" not in st.session_state:
     st.session_state["onboarding_had_history"] = repository_has_history(
         st.session_state.repository
     )
+inject_theme(st.session_state.consent)
 inject_font_size_css(st.session_state.settings.font_size)
 
 

@@ -49,6 +49,12 @@ from .sound import (
     load_sound_settings,
     save_sound_settings,
 )
+from .theme import (
+    DENSITY_COMFORTABLE,
+    DENSITY_COMPACT,
+    layout_density,
+    save_layout_density,
+)
 from .theme_background import (
     BACKGROUND_OPTIONS,
     inject_background_css,
@@ -439,6 +445,7 @@ def _render_appearance_form(
     )
     current = load_background(consent)
     current_dynamic = load_dynamic_background(consent)
+    current_density = layout_density(consent)
     labels = list(BACKGROUND_OPTIONS.values())
     keys = list(BACKGROUND_OPTIONS)
     index = keys.index(current) if current in keys else 0
@@ -455,13 +462,23 @@ def _render_appearance_form(
             key="settings_dynamic_background",
             help="仅在仪表盘和空状态显示；默认关闭。",
         )
+        compact_layout = st.toggle(
+            "紧凑布局",
+            value=current_density == DENSITY_COMPACT,
+            key="settings_compact_layout",
+            help="减少区块间距；保存后立即生效。",
+        )
         saved = st.form_submit_button("保存外观设置")
     if not saved:
         return
     choice = keys[labels.index(label)]
     background_saved = save_background(consent, choice)
     motion_saved = save_dynamic_background(consent, dynamic_background)
-    if background_saved and motion_saved:
+    density_saved = save_layout_density(
+        consent,
+        DENSITY_COMPACT if compact_layout else DENSITY_COMFORTABLE,
+    )
+    if background_saved and motion_saved and density_saved:
         repository.record_audit("settings_appearance", "ok")
         st.session_state["settings_appearance_saved"] = True
         st.rerun()
