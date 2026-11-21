@@ -400,38 +400,41 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
 def _render_audit(repository: Repository, consent: Consent) -> None:
     st.divider()
     st.markdown("### 安全审计日志（只读）")
-    entries = repository.list_audit(limit=200)
-    if not entries:
-        st.caption("暂无审计记录。")
-        return
-    rows = [
-        {
-            "id": entry.id,
-            "时间": entry.created_at.isoformat(),
-            "操作": sanitize_text(entry.op),
-            "结果": sanitize_text(entry.result),
-        }
-        for entry in entries
-    ]
-    with st.expander("查看审计日志", expanded=False):
-        st.dataframe(rows, hide_index=True)
-    now = datetime.now(UTC)
-    stamp = now.strftime("%Y%m%d-%H%M%S")
-    st.download_button(
-        "下载审计 CSV",
-        data=export_audit_csv(entries),
-        file_name=f"mathcoach-audit-{stamp}.csv",
-        mime="text/csv",
-        key="settings_audit_csv",
-    )
-    st.download_button(
-        "下载审计 JSON",
-        data=export_audit_json(entries, now),
-        file_name=f"mathcoach-audit-{stamp}.json",
-        mime="application/json",
-        key="settings_audit_json",
-    )
-    st.caption("审计日志只读；不包含 Token 或学习内容。")
+    with st.expander(
+        "查看审计日志", expanded=False, on_change="rerun"
+    ) as expander:
+        if expander.open:
+            entries = repository.list_audit(limit=200)
+            if not entries:
+                st.caption("暂无审计记录。")
+            else:
+                rows = [
+                    {
+                        "id": entry.id,
+                        "时间": entry.created_at.isoformat(),
+                        "操作": sanitize_text(entry.op),
+                        "结果": sanitize_text(entry.result),
+                    }
+                    for entry in entries
+                ]
+                st.dataframe(rows, hide_index=True)
+                now = datetime.now(UTC)
+                stamp = now.strftime("%Y%m%d-%H%M%S")
+                st.download_button(
+                    "下载审计 CSV",
+                    data=export_audit_csv(entries),
+                    file_name=f"mathcoach-audit-{stamp}.csv",
+                    mime="text/csv",
+                    key="settings_audit_csv",
+                )
+                st.download_button(
+                    "下载审计 JSON",
+                    data=export_audit_json(entries, now),
+                    file_name=f"mathcoach-audit-{stamp}.json",
+                    mime="application/json",
+                    key="settings_audit_json",
+                )
+    st.caption("审计日志只读；展开后加载最近 200 条记录与下载入口。")
 
 
 def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:

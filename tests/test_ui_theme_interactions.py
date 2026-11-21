@@ -31,3 +31,58 @@ def test_goal_form_and_countdown_are_configured():
     assert "enter_to_submit=False" in source
     assert "@st.fragment(run_every=5)" in source
     assert "_render_quiz_countdown(state)" in source
+
+
+def test_collapsed_audit_expander_skips_database_query():
+    at = AppTest.from_string(
+        "import streamlit as st\n"
+        "from mathcoach.domain.models import Consent\n"
+        "from mathcoach.ui.settings import _render_audit\n"
+        "class Repo:\n"
+        "    calls = 0\n"
+        "    def list_audit(self, limit=200):\n"
+        "        Repo.calls += 1\n"
+        "        return []\n"
+        "_render_audit(Repo(), Consent())\n"
+        "st.session_state['audit_calls'] = Repo.calls\n"
+    )
+    at.run()
+
+    assert not at.exception
+    assert at.session_state["audit_calls"] == 0
+
+
+def test_settings_reads_are_cached_per_session():
+    at = AppTest.from_string(
+        "import streamlit as st\n"
+        "from mathcoach.domain.models import Consent\n"
+        "from mathcoach.ui import motion, theme_background\n"
+        "class Store:\n"
+        "    opens = 0\n"
+        "    def __init__(self, path):\n"
+        "        Store.opens += 1\n"
+        "    def get_all(self):\n"
+        "        return {}\n"
+        "    def close(self):\n"
+        "        pass\n"
+        "theme_background.SQLiteSettingsStore = Store\n"
+        "motion.SQLiteSettingsStore = Store\n"
+        "consent = Consent(memory=True, mistake_book=True)\n"
+        "theme_background.load_background(consent)\n"
+        "theme_background.load_background(consent)\n"
+        "motion.load_celebration_settings(consent)\n"
+        "motion.load_celebration_settings(consent)\n"
+        "st.session_state['opens'] = Store.opens\n"
+    )
+    at.run()
+
+    assert not at.exception
+    assert at.session_state["opens"] == 2
+
+
+def test_mistake_gap_helper_reuses_precomputed_stats():
+    source = APP_PATH.read_text(encoding="utf-8")
+
+    assert "def _gaps_from_stats" in source
+    assert "_gaps_from_stats(stats, active_mistakes, entry.card_id)" in source
+    assert "gaps = _collect_gaps(repository, entry.card_id)" not in source

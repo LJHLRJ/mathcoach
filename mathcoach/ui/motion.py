@@ -21,8 +21,10 @@ from ..domain.models import Consent
 from ..memory.settings_repo import SQLiteSettingsStore
 
 DYNAMIC_BACKGROUND_KEY = "dynamic_background_enabled"
+DYNAMIC_BACKGROUND_CACHE_KEY = "_dynamic_background_cache"
 CELEBRATIONS_KEY = "celebrations_enabled"
 REDUCE_MOTION_KEY = "reduce_motion"
+CELEBRATION_CACHE_KEY = "_celebration_settings_cache"
 PENDING_CELEBRATION_KEY = "pending_celebration"
 
 CELEBRATION_IFRAME = (
@@ -868,6 +870,10 @@ def load_dynamic_background(
     """读取动态背景开关；默认关闭。"""
     if _is_guest(consent):
         return bool(st.session_state.get(DYNAMIC_BACKGROUND_KEY, False))
+    if path is None:
+        cached = st.session_state.get(DYNAMIC_BACKGROUND_CACHE_KEY)
+        if isinstance(cached, bool):
+            return cached
     try:
         store = SQLiteSettingsStore(path or db_path())
         try:
@@ -876,7 +882,10 @@ def load_dynamic_background(
             store.close()
     except (OSError, sqlite3.Error):
         return False
-    return bool(values.get(DYNAMIC_BACKGROUND_KEY, False))
+    value = bool(values.get(DYNAMIC_BACKGROUND_KEY, False))
+    if path is None:
+        st.session_state[DYNAMIC_BACKGROUND_CACHE_KEY] = value
+    return value
 
 
 def save_dynamic_background(
@@ -895,6 +904,8 @@ def save_dynamic_background(
     except (OSError, sqlite3.Error):
         return False
     st.session_state[DYNAMIC_BACKGROUND_KEY] = bool(enabled)
+    if path is None:
+        st.session_state[DYNAMIC_BACKGROUND_CACHE_KEY] = bool(enabled)
     return True
 
 
@@ -940,6 +951,10 @@ def load_celebration_settings(
                 st.session_state.get(REDUCE_MOTION_KEY, False)
             ),
         )
+    if path is None:
+        cached = st.session_state.get(CELEBRATION_CACHE_KEY)
+        if isinstance(cached, CelebrationSettings):
+            return cached
     try:
         store = SQLiteSettingsStore(path or db_path())
         try:
@@ -948,10 +963,13 @@ def load_celebration_settings(
             store.close()
     except (OSError, sqlite3.Error):
         return CelebrationSettings()
-    return CelebrationSettings(
+    settings = CelebrationSettings(
         enabled=bool(values.get(CELEBRATIONS_KEY, True)),
         reduce_motion=bool(values.get(REDUCE_MOTION_KEY, False)),
     )
+    if path is None:
+        st.session_state[CELEBRATION_CACHE_KEY] = settings
+    return settings
 
 
 def save_celebration_settings(
@@ -978,6 +996,11 @@ def save_celebration_settings(
     except (OSError, sqlite3.Error):
         return False
     st.session_state.update(values)
+    if path is None:
+        st.session_state[CELEBRATION_CACHE_KEY] = CelebrationSettings(
+            enabled=bool(enabled),
+            reduce_motion=bool(reduce_motion),
+        )
     return True
 
 

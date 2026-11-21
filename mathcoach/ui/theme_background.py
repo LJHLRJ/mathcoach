@@ -16,6 +16,7 @@ from ..domain.models import Consent
 from ..memory.settings_repo import SQLiteSettingsStore
 
 BACKGROUND_KEY = "background_theme"
+BACKGROUND_CACHE_KEY = "_background_theme_cache"
 BACKGROUND_OPTIONS = {
     "none": "无背景",
     "paper": "纸张纹理",
@@ -107,9 +108,14 @@ def load_background(
     consent: Consent, path: Path | None = None
 ) -> str:
     """读取背景选择；游客用会话状态，持久模式读 settings 表。"""
-    if _is_guest(consent):
+    guest = _is_guest(consent)
+    if guest:
         value = st.session_state.get(BACKGROUND_KEY, "none")
     else:
+        if path is None:
+            cached = st.session_state.get(BACKGROUND_CACHE_KEY)
+            if isinstance(cached, str) and cached in BACKGROUND_OPTIONS:
+                return cached
         try:
             store = SQLiteSettingsStore(path or db_path())
             try:
@@ -117,9 +123,11 @@ def load_background(
             finally:
                 store.close()
         except (OSError, sqlite3.Error):
-            value = "none"
+            return "none"
     if not isinstance(value, str) or value not in BACKGROUND_OPTIONS:
-        return "none"
+        value = "none"
+    if not guest and path is None:
+        st.session_state[BACKGROUND_CACHE_KEY] = value
     return value
 
 
@@ -141,6 +149,8 @@ def save_background(
     except (OSError, sqlite3.Error):
         return False
     st.session_state[BACKGROUND_KEY] = choice
+    if not _is_guest(consent):
+        st.session_state[BACKGROUND_CACHE_KEY] = choice
     return True
 
 

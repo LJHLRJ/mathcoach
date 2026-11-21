@@ -157,10 +157,10 @@ prerequisites = load_prerequisites(CONTENT_ROOT)
 narrative_nodes = load_narrative(CONTENT_ROOT)
 
 
-def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
-    """汇总未掌握错题的先修缺口；同一链路只保留一次。"""
-    stats = build_mistake_stats(repository.list_mistakes(limit=None))
-    entries = repository.list_mistakes(limit=None, include_mastered=False)
+def _gaps_from_stats(
+    stats, entries, card_id: str | None = None
+) -> list[Gap]:
+    """用已取好的统计与错题列表计算先修缺口。"""
     if card_id is not None:
         entries = [entry for entry in entries if entry.card_id == card_id]
     gaps: list[Gap] = []
@@ -171,6 +171,13 @@ def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
                 seen.add(gap.chain)
                 gaps.append(gap)
     return gaps
+
+
+def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
+    """汇总未掌握错题的先修缺口；同一链路只保留一次。"""
+    stats = build_mistake_stats(repository.list_mistakes(limit=None))
+    entries = repository.list_mistakes(limit=None, include_mastered=False)
+    return _gaps_from_stats(stats, entries, card_id)
 
 
 def _render_gap_diagnosis(gaps: list[Gap]) -> None:
@@ -229,13 +236,17 @@ def _render_mistake_book(repository) -> None:
     if not entries:
         st.caption("还没有错题。")
         return
+    stats = build_mistake_stats(repository.list_mistakes(limit=None))
+    active_mistakes = repository.list_mistakes(
+        limit=None, include_mastered=False
+    )
     for entry in entries:
         st.markdown(f"**{entry.stem}**")
         st.caption(
             f"你的答案：{entry.user_answer} · 正确答案：{entry.correct_answer} · "
             f"{entry.error_type.value} · {entry.review_state.value}"
         )
-        gaps = _collect_gaps(repository, entry.card_id)
+        gaps = _gaps_from_stats(stats, active_mistakes, entry.card_id)
         if gaps:
             _render_gap_diagnosis(gaps)
 
