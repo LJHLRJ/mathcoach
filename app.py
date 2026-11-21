@@ -10,6 +10,7 @@ from mathcoach.config import content_strict, resolve_content_root
 from mathcoach.content.loader import (
     ContentError,
     load_content,
+    load_narrative,
     load_prerequisites,
 )
 from mathcoach.content.validator import ValidationError, validate_prerequisites
@@ -17,6 +18,7 @@ from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
 from mathcoach.domain.learning_path import Recommendation, recommend
 from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase, ReviewState
+from mathcoach.domain.narrative import build_progress, next_node
 from mathcoach.domain.prerequisites import Gap, trace_gap
 from mathcoach.export.package import (
     build_export_artifact,
@@ -104,6 +106,7 @@ def _load_cards():
 
 cards = _load_cards()
 prerequisites = load_prerequisites(CONTENT_ROOT)
+narrative_nodes = load_narrative(CONTENT_ROOT)
 
 
 def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
@@ -267,6 +270,7 @@ def _render_sidebar() -> None:
         mistake_book = st.toggle(
             "记录错题本（本机）", value=consent.mistake_book, key="consent_book"
         )
+        st.toggle("显示叙事层", value=True, key="narrative_enabled")
         new_consent = Consent(memory=memory, mistake_book=mistake_book)
         if new_consent != consent:
             repository.save_consent(new_consent)
@@ -315,6 +319,18 @@ def _render_session() -> None:
     # 收据页只在现有正文后追加依据，不改变判定与布局
     if view.phase is Phase.RECEIPT and view.receipt and view.receipt.basis:
         st.caption(f"依据：{view.receipt.basis}")
+    # 叙事层可关闭；关闭后只隐藏展示，不影响收据与统计
+    if (
+        view.phase is Phase.RECEIPT
+        and st.session_state.get("narrative_enabled", True)
+        and narrative_nodes
+    ):
+        progress = _narrative_progress(st.session_state.repository)
+        upcoming = next_node(progress, narrative_nodes)
+        if upcoming is None:
+            st.caption("叙事：本段旅程已全部点亮。")
+        else:
+            st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
     # 可视化是可选增强：失败时只提示，不阻断讲解/小测
     if view.phase in (Phase.EXPLAIN, Phase.QUIZ):
         status = render_visual(engine.card.id)
@@ -406,6 +422,12 @@ def _mastery_rows(repository) -> list[tuple[str, str]]:
     return rows
 
 
+def _narrative_progress(repository):
+    receipts = repository.list_receipts(limit=None)
+    completed_cards = {receipt.card_id for receipt in receipts}
+    return build_progress(narrative_nodes, completed_cards)
+
+
 def _next_recommendations(repository, cards, prerequisites) -> list[Recommendation]:
     """按先修复拓扑顺序推荐 3 张未掌握卡片，错题卡优先。"""
     receipts = repository.list_receipts(limit=None)
@@ -463,6 +485,18 @@ def _render_dashboard() -> None:
                 f"- {recommendation.card_id}：{recommendation.reason}"
                 f"（依据：{recommendation.basis}）"
             )
+    if st.session_state.get("narrative_enabled", True) and narrative_nodes:
+        progress = _narrative_progress(st.session_state.repository)
+        st.markdown("**叙事进度**")
+        unlocked = set(progress.unlocked)
+        for node in narrative_nodes:
+            if node.id in unlocked:
+                st.markdown(f"- **{node.name}**：{node.description}")
+        upcoming = next_node(progress, narrative_nodes)
+        if upcoming is None:
+            st.caption("叙事线已完成。")
+        else:
+            st.caption(f"下一节点：{upcoming.name}")
     if summary.top_errors:
         st.markdown(
             "**高频错因**："
