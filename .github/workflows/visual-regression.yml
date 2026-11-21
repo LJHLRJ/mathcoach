@@ -39,6 +39,7 @@ jobs:
 
       - name: Run screenshot regression
         env:
+          MATHCOACH_CONTENT_STRICT: "1"
           VISUAL_REQUIRE_BROWSER: "1"
           VISUAL_MAX_DIFF_RATIO: "0.005"
         run: >-
