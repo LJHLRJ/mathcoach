@@ -24,3 +24,14 @@ def test_build_workflow_is_valid_yaml():
     assert "jobs" in data
     assert "windows-latest" in str(data)
     assert "macos-latest" in str(data)
+
+
+def test_packaging_docs_cover_artifact_workflow():
+    text = (ROOT / "docs/packaging/desktop-packaging-plan.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "build-desktop.yml" in text
+    assert "workflow_dispatch" in text
+    assert "需在仓库中验证一次 workflow" in text
+

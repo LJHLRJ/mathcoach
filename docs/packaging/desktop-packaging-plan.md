@@ -168,6 +168,19 @@ python scripts/build_desktop.py --console
 
 产物不进入 git 仓库，只作为 Release 资产分发。构建机架构以 GitHub Runner 为准；未做代码签名，Windows SmartScreen 与 macOS Gatekeeper 可能提示。
 
+## 7.1 手动/标签构建（仅 artifact，不创建 Release）
+
+`.github/workflows/build-desktop.yml` 用于构建桌面产物并上传 artifact：
+
+- 触发方式：Actions 页面的 `workflow_dispatch` 手动触发，或推送 `v*` tag。
+- 矩阵：`windows-latest` 与 `macos-latest`，Python 3.12。
+- 步骤：checkout → setup-python → 安装 `requirements.txt` 与 `requirements-packaging.txt` → `python scripts/build_desktop.py --output-dir dist` → `actions/upload-artifact@v4`。
+- 不执行 `git push`，不创建 Release，不对 macOS 签名；产物只作为 workflow artifact 保存。
+- 下载：打开对应 Actions run，在页面底部 Artifacts 下载 `MathCoach-windows-latest` 或 `MathCoach-macos-latest`；解压后 Windows 运行 `MathCoach/MathCoach.exe`，macOS 打开 `MathCoach.app`。
+- macOS 产物未签名：首次打开需右键“打开”，或在“系统设置 → 隐私与安全性”中仅对该应用选择“仍要打开”；不要全局关闭 Gatekeeper。
+- `--output-dir` 会映射到 PyInstaller 的 `--distpath`，默认 `dist/`；该路径行为需在本机验证一次。
+- 需在仓库中验证一次 workflow：手动触发或推送 `v*` tag，确认两个 job 成功且 artifact 可下载。本仓库沙箱未执行真实 runner 构建。
+
 ## 8. 更新检查
 
 - `mathcoach/update_check.py` 只读 GitHub Releases latest API，3 秒超时，无 Token。
