@@ -97,8 +97,10 @@ from mathcoach.ui.icons import (
     ICON_UPDATE,
 )
 from mathcoach.ui.knowledge_browser import (
+    learning_status_for,
     load_learning_cards_enabled,
     render_knowledge_browser,
+    render_learning_status,
 )
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
 from mathcoach.ui.milestones import (
@@ -778,6 +780,15 @@ def _render_session() -> None:
         with card("本次闭环完成"):
             st.write(math_markdown(view.body))
             _render_explanation(engine.card, engine.current_exercise)
+            tree = _load_knowledge_tree()
+            if tree is not None:
+                render_learning_status(
+                    learning_status_for(
+                        st.session_state.repository,
+                        engine.card.id,
+                        tree,
+                    )
+                )
             if st.button("重新开始", key="restart", icon=ICON_RESTART):
                 st.session_state.engine = SessionEngine(
                     card=engine.card,

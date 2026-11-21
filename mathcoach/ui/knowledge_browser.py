@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
 
 import streamlit as st
@@ -14,7 +15,7 @@ from ..domain.knowledge_tree import (
     load_knowledge_tree,
     load_learning_card,
 )
-from ..domain.models import Consent, KnowledgeCard
+from ..domain.models import Consent, KnowledgeCard, ReviewState
 from ..memory.repository import Repository
 from ..memory.settings_repo import SQLiteSettingsStore
 from ..session.engine import SessionEngine
@@ -22,6 +23,110 @@ from .components import PRIMARY, button_kwargs
 from .icons import ICON_PLAY
 
 LEARNING_CARDS_ENABLED_KEY = "learning_cards_enabled"
+READY_THRESHOLD = 0.6
+
+
+@dataclass(frozen=True)
+class LearningStatus:
+    state: str
+    mastery: float | None
+    receipt_count: int
+    mistake_count: int
+    pending_review: int
+    suggestion: str
+
+
+def summarize_learning(
+    *,
+    mastery: float | None,
+    receipt_count: int,
+    mistake_count: int,
+    pending_review: int,
+    prerequisites: tuple[str, ...] = (),
+    ready_threshold: float = READY_THRESHOLD,
+) -> LearningStatus:
+    """把练习与掌握度汇总成闭环状态；只做展示，不参与调度。"""
+    if pending_review > 0:
+        state = "待复习"
+        suggestion = (
+            f"先复习 {pending_review} 道待复习错题，再继续本知识点。"
+        )
+    elif receipt_count == 0 and mistake_count == 0:
+        state = "未开始"
+        suggestion = "先看学习卡片，再点“开始练习此知识点”。"
+        if prerequisites:
+            suggestion += f"若卡住，先复习「{prerequisites[0]}」。"
+    elif mastery is not None and mastery >= ready_threshold:
+        state = "已熟练"
+        suggestion = "可以继续下一个知识点，或回到学习路径查看推荐。"
+    else:
+        state = "学习中"
+        if (
+            mastery is not None
+            and mastery < 0.3
+            and prerequisites
+        ):
+            suggestion = (
+                f"建议先复习「{prerequisites[0]}」，再继续本知识点。"
+            )
+        else:
+            suggestion = "继续练习本知识点，必要时回看学习卡片。"
+    return LearningStatus(
+        state=state,
+        mastery=mastery,
+        receipt_count=receipt_count,
+        mistake_count=mistake_count,
+        pending_review=pending_review,
+        suggestion=suggestion,
+    )
+
+
+def learning_status_for(
+    repository: Repository, card_id: str, tree: KnowledgeTree
+) -> LearningStatus:
+    receipts = [
+        receipt
+        for receipt in repository.list_receipts(limit=None)
+        if receipt.card_id == card_id
+    ]
+    mistakes = [
+        mistake
+        for mistake in repository.list_mistakes(limit=None)
+        if mistake.card_id == card_id
+    ]
+    pending = sum(
+        1
+        for mistake in mistakes
+        if mistake.review_state is not ReviewState.MASTERED
+    )
+    prerequisites = tuple(
+        node.name
+        for node_id in tree.prerequisite_chain(card_id, max_depth=2)
+        if (node := tree.node(node_id)) is not None
+    )
+    return summarize_learning(
+        mastery=repository.get_mastery(card_id),
+        receipt_count=len(receipts),
+        mistake_count=len(mistakes),
+        pending_review=pending,
+        prerequisites=prerequisites,
+    )
+
+
+def render_learning_status(status: LearningStatus) -> None:
+    """在知识点页与练习结束页复用同一闭环摘要。"""
+    st.markdown("**学习闭环**")
+    if status.mastery is None:
+        st.caption(f"掌握度：暂无记录 · {status.state}")
+    else:
+        st.progress(status.mastery)
+        st.caption(f"掌握度：{status.mastery:.0%} · {status.state}")
+    st.caption(
+        f"练习记录：{status.receipt_count} 张收据 · "
+        f"{status.mistake_count} 道错题 · "
+        f"{status.pending_review} 道待复习"
+    )
+    st.caption(f"下一步：{status.suggestion}")
 
 
 def _is_guest(consent: Consent) -> bool:
@@ -198,6 +303,11 @@ def render_knowledge_browser(
                 st.markdown(_strip_leading_title(text))
             else:
                 st.info("该知识点的学习卡片尚未填充。")
+
+        if card is not None:
+            render_learning_status(
+                learning_status_for(repository, card.id, tree)
+            )
 
         if card is not None and st.button(
             "开始练习此知识点",
