@@ -11,14 +11,14 @@
   example: A={1,2,3}，则 1∈A，4∉A。
   exercises:
   - id: hs-set-001-e1
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: fill
     stem: 集合 A={x∈N | x<3} 的元素为（用逗号分隔）
     answer: "0,1,2"
     solution_outline: 自然数中满足 x<3 的是 0、1、2。
   - id: hs-set-001-e2
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: choice
     stem: 下列对象中，属于集合 {1,2,3} 的是（ ）
@@ -26,7 +26,7 @@
     answer: "1"
     solution_outline: 逐个比较，只有 1 在集合中。
   - id: hs-set-001-e3
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: truefalse
     stem: 空集是任何集合的子集。
@@ -47,7 +47,7 @@
   example: 若 A={1,2}，B={2,3}，则 A∩B={2}，A∪B={1,2,3}。
   exercises:
   - id: hs-set-002-e1
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: choice
     stem: 已知 A={1,2}，B={2,3}，则 A∩B=（ ）
@@ -55,7 +55,7 @@
     answer: "{2}"
     solution_outline: 同时属于 A 和 B 的元素只有 2。
   - id: hs-set-002-e2
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: multi
     stem: 已知 A={1,2}，B={2,3}，则 A∪B 中的元素有（ ）
@@ -63,7 +63,7 @@
     answer: ["1", "2", "3"]
     solution_outline: 并集包含两边的全部元素。
   - id: hs-set-002-e3
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: fill
     stem: 已知 A={1,2}，B={2,3}，则 A\B=（ ）
@@ -84,7 +84,7 @@
   example: x>0 是 x²>0 的充分不必要条件。
   exercises:
   - id: hs-set-003-e1
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: choice
     stem: “x>0”是“x²>0”的（ ）
@@ -92,14 +92,14 @@
     answer: "充分不必要条件"
     solution_outline: x>0 一定能推出 x²>0，但 x²>0 还可能 x<0。
   - id: hs-set-003-e2
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: truefalse
     stem: 若 p 是 q 的充分条件，则 q 是 p 的必要条件。
     answer: true
     solution_outline: 这正是充分条件与必要条件的对应定义。
   - id: hs-set-003-e3
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: proof_order
     stem: 把“若 p 则 q”的充分性证明排成正确顺序（步骤编号用逗号分隔）
@@ -120,7 +120,7 @@
   example: “所有实数都满足 x²≥0”的否定是“存在实数 x 使 x²<0”。
   exercises:
   - id: hs-set-004-e1
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: choice
     stem: 命题“∀x>0，x²>0”的否定是（ ）
@@ -128,14 +128,14 @@
     answer: "∃x>0，x²≤0"
     solution_outline: 全称量词换存在量词，同时否定结论。
   - id: hs-set-004-e2
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: fill
     stem: “至少有一个”的否定是（ ）
     answer: "一个都没有"
     solution_outline: 至少一个的反面是数量为零。
   - id: hs-set-004-e3
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: find_error
     stem: 否定“∀x∈R，x²≥0”时，下列哪一步错了（ ）
@@ -157,7 +157,7 @@
   example: "{a,b} 的子集有 ∅、{a}、{b}、{a,b} 共 4 个。"
   exercises:
   - id: hs-set-005-e1
-    grade: mixed
+    grade: g10
     difficulty: challenge
     kind: choice
     stem: 若 |A|=3，|B|=4，则 |A∪B| 的最大值为（ ）
@@ -165,14 +165,14 @@
     answer: "7"
     solution_outline: 两集合不相交时并集元素最多，为 3+4=7。
   - id: hs-set-005-e2
-    grade: mixed
+    grade: g10
     difficulty: challenge
     kind: fill
     stem: 含 3 个元素的集合共有（ ）个子集
     answer: "8"
     solution_outline: 每个元素选或不选，共 2³=8 个。
   - id: hs-set-005-e3
-    grade: mixed
+    grade: g10
     difficulty: challenge
     kind: match
     stem: 把左侧概念与右侧数量配对（写成 A=1;B=2 的形式）

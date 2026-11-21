@@ -11,7 +11,7 @@
   example: f(x)=√(x−2) 的定义域是 [2,+∞)。
   exercises:
   - id: hs-func-002-e1
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: choice
     stem: 函数 f(x)=√(x−2) 的定义域是（ ）
@@ -19,14 +19,14 @@
     answer: "x ≥ 2"
     solution_outline: 根号内非负，即 x−2≥0。
   - id: hs-func-002-e2
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: fill
     stem: 函数 f(x)=1/(x−1) 的定义域是（ ）
     answer: "x≠1"
     solution_outline: 分母不能为零，所以 x−1≠0。
   - id: hs-func-002-e3
-    grade: mixed
+    grade: g10
     difficulty: basic
     kind: truefalse
     stem: f(x)=x² 与 g(x)=x 的定义域相同。
@@ -47,7 +47,7 @@
   example: f(x)=x² 在 [0,+∞) 上单调递增，在 (−∞,0] 上单调递减。
   exercises:
   - id: hs-func-003-e1
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: choice
     stem: 函数 f(x)=x² 在区间 [0,+∞) 上（ ）
@@ -55,14 +55,14 @@
     answer: "单调递增"
     solution_outline: x1<x2 时 x2²−x1²=(x2−x1)(x2+x1)>0。
   - id: hs-func-003-e2
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: fill
     stem: 一次函数 f(x)=2x+1 的斜率为（ ）
     answer: "2"
     solution_outline: 一次函数 y=kx+b 的斜率就是 k。
   - id: hs-func-003-e3
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: find_error
     stem: 判断 f(x)=x² 在 [−1,1] 上的单调性，哪一步错了（ ）
@@ -84,7 +84,7 @@
   example: y=x² 在 x=1 处的导数为 2，切线斜率为 2。
   exercises:
   - id: hs-func-004-e1
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: choice
     stem: f′(x0) 的几何意义是（ ）
@@ -92,14 +92,14 @@
     answer: "曲线在 x0 处的切线斜率"
     solution_outline: 导数的定义就是割线斜率的极限，即切线斜率。
   - id: hs-func-004-e2
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: fill
     stem: 函数 f(x)=x³ 在 x=1 处的导数为（ ）
     answer: "3"
     solution_outline: f′(x)=3x²，代入 x=1 得 3。
   - id: hs-func-004-e3
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: expr
     stem: 用 x 表示 f(x)=x³ 的导函数（如 3*x**2）
@@ -120,7 +120,7 @@
   example: f(x)=x³ 在 x=0 处导数为 0，但函数单调递增，没有极值。
   exercises:
   - id: hs-func-005-e1
-    grade: mixed
+    grade: g10
     difficulty: challenge
     kind: choice
     stem: 函数 f(x)=x³ 在 x=0 处（ ）
@@ -128,14 +128,14 @@
     answer: "不是极值点"
     solution_outline: 导数为 0，但两侧导数都为正，函数单调递增。
   - id: hs-func-005-e2
-    grade: mixed
+    grade: g10
     difficulty: challenge
     kind: fill
     stem: 函数 f(x)=x²−2x 取得最小值的 x 为（ ）
     answer: "1"
     solution_outline: f′(x)=2x−2，令其为 0 得 x=1。
   - id: hs-func-005-e3
-    grade: mixed
+    grade: g10
     difficulty: challenge
     kind: proof_order
     stem: 把求可导函数极值的步骤排成正确顺序（用逗号分隔）
@@ -156,7 +156,7 @@
   example: f(x)=x² 在 [−1,2] 上的最小值为 0，最大值为 4。
   exercises:
   - id: hs-func-006-e1
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: choice
     stem: 求闭区间上函数最值时，必须比较（ ）
@@ -164,14 +164,14 @@
     answer: "驻点和端点"
     solution_outline: 最值可能出现在驻点或区间端点。
   - id: hs-func-006-e2
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: fill
     stem: f(x)=x² 在 [−1,2] 上的最大值为（ ）
     answer: "4"
     solution_outline: 比较 f(−1)=1、f(0)=0、f(2)=4，最大值为 4。
   - id: hs-func-006-e3
-    grade: mixed
+    grade: g10
     difficulty: intermediate
     kind: truefalse
     stem: 函数的极大值一定大于极小值。

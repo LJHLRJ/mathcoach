@@ -11,7 +11,7 @@
   example: 3+4i 的实部为 3，虚部为 4。
   exercises:
   - id: hs-complex-001-e1
-    grade: mixed
+    grade: g12
     difficulty: basic
     kind: choice
     stem: 下列等式正确的是（ ）
@@ -19,14 +19,14 @@
     answer: "i²=−1"
     solution_outline: 这是虚数单位 i 的定义。
   - id: hs-complex-001-e2
-    grade: mixed
+    grade: g12
     difficulty: basic
     kind: fill
     stem: 复数 3+4i 的实部是（ ）
     answer: "3"
     solution_outline: a+bi 中 a 为实部。
   - id: hs-complex-001-e3
-    grade: mixed
+    grade: g12
     difficulty: basic
     kind: truefalse
     stem: 所有实数都可以看成复数。
@@ -47,7 +47,7 @@
   example: (1+i)+(2−i)=3。
   exercises:
   - id: hs-complex-002-e1
-    grade: mixed
+    grade: g12
     difficulty: basic
     kind: choice
     stem: (1+i)+(2−i)=（ ）
@@ -55,14 +55,14 @@
     answer: "3"
     solution_outline: 实部 1+2=3，虚部 1−1=0。
   - id: hs-complex-002-e2
-    grade: mixed
+    grade: g12
     difficulty: basic
     kind: fill
     stem: (1+i)(1−i)=（ ）
     answer: "2"
     solution_outline: 用平方差公式得 1−i²=2。
   - id: hs-complex-002-e3
-    grade: mixed
+    grade: g12
     difficulty: basic
     kind: expr
     stem: 计算 sqrt(1**2 + 1**2)（即 |1+i|）
@@ -83,7 +83,7 @@
   example: 3+4i 的模为 5，共轭为 3−4i。
   exercises:
   - id: hs-complex-003-e1
-    grade: mixed
+    grade: g12
     difficulty: intermediate
     kind: choice
     stem: 复数 3+4i 的模是（ ）
@@ -91,14 +91,14 @@
     answer: "5"
     solution_outline: √(3²+4²)=5。
   - id: hs-complex-003-e2
-    grade: mixed
+    grade: g12
     difficulty: intermediate
     kind: fill
     stem: 复数 2−3i 的共轭是（ ）
     answer: "2+3i"
     solution_outline: 虚部变号。
   - id: hs-complex-003-e3
-    grade: mixed
+    grade: g12
     difficulty: intermediate
     kind: truefalse
     stem: 对任意复数 z，都有 |z|²=z·z̄。
@@ -119,7 +119,7 @@
   example: 1+i 对应第一象限的点 (1,1)。
   exercises:
   - id: hs-complex-004-e1
-    grade: mixed
+    grade: g12
     difficulty: intermediate
     kind: choice
     stem: 复数 1+i 对应的点位于（ ）
@@ -127,14 +127,14 @@
     answer: "第一象限"
     solution_outline: 横纵坐标都为正。
   - id: hs-complex-004-e2
-    grade: mixed
+    grade: g12
     difficulty: intermediate
     kind: fill
     stem: 复数 1+i 的模是（ ）
     answer: "√2"
     solution_outline: √(1²+1²)=√2。
   - id: hs-complex-004-e3
-    grade: mixed
+    grade: g12
     difficulty: intermediate
     kind: match
     stem: 把复数与所在象限配对（写成 A=1;B=2 的形式）
@@ -156,7 +156,7 @@
   example: z²+1=0 的解为 z=±i。
   exercises:
   - id: hs-complex-005-e1
-    grade: mixed
+    grade: g12
     difficulty: challenge
     kind: choice
     stem: 方程 z²+1=0 的根是（ ）
@@ -164,14 +164,14 @@
     answer: "z=±i"
     solution_outline: z²=−1，所以 z=±i。
   - id: hs-complex-005-e2
-    grade: mixed
+    grade: g12
     difficulty: challenge
     kind: fill
     stem: 方程 z²=−1 的一个根是（ ）
     answer: "i"
     solution_outline: i²=−1。
   - id: hs-complex-005-e3
-    grade: mixed
+    grade: g12
     difficulty: challenge
     kind: find_error
     stem: 解方程 z²=−4，哪一步错了（ ）

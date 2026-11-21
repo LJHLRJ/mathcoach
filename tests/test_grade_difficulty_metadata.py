@@ -72,7 +72,16 @@ def test_every_loaded_exercise_has_metadata():
     assert len(loaded_ids) == 366
     assert set(index.records) == loaded_ids
     assert {record.grade for record in index.records.values()} == {
-        "mixed"
+        "g10",
+        "g11",
+        "g12",
+        "u1",
+        "u2",
+        "u3",
+        "u4",
+        "m1",
+        "m2",
+        "m3",
     }
     assert index.difficulty_counts() == {
         "basic": 138,
@@ -81,21 +90,37 @@ def test_every_loaded_exercise_has_metadata():
         "challenge": 87,
         "unclassified": 0,
     }
-    assert index.grade_counts()["mixed"] == 366
+    counts = index.grade_counts()
+    assert counts["g10"] == 63
+    assert counts["g11"] == 60
+    assert counts["g12"] == 45
+    assert counts["u1"] == 30
+    assert counts["u2"] == 30
+    assert counts["u3"] == 15
+    assert counts["u4"] == 15
+    assert counts["m1"] == 36
+    assert counts["m2"] == 36
+    assert counts["m3"] == 36
+    assert counts["g1"] == 0
+    assert counts["mixed"] == 0
+    assert counts["unclassified"] == 0
+    assert sum(counts.values()) == 366
 
 
 def test_index_filters_by_grade_and_difficulty():
     index = load_grade_index(CONTENT_ROOT)
 
-    assert len(index.by_grade("mixed")) == 366
+    assert len(index.by_grade("g10")) == 63
     assert index.by_grade("g1") == ()
     assert len(index.by_difficulty("basic")) == 138
-    assert len(index.filter("mixed", "challenge")) == 87
+    assert len(index.filter("g10", "basic")) == 24
+    assert len(index.filter("g10", "challenge")) == 12
     assert index.filter("g1") == ()
 
-    card_ids = index.card_ids("mixed")
-    assert len(card_ids) == 122
-    assert len(set(card_ids)) == 122
+    card_ids = index.card_ids("g10")
+    assert len(card_ids) == 21
+    assert len(set(card_ids)) == 21
+    assert index.card_ids("g1") == ()
 
 
 def test_missing_metadata_falls_back_to_unclassified():
@@ -129,8 +154,16 @@ def test_grade_spans_cover_every_tree_node():
     spans = load_grade_spans(TREE_PATH)
 
     assert len(spans) == 148
-    assert set(spans.values()) == {("mixed",)}
-    assert len(node_ids_for_grade(spans, "mixed")) == 148
+    assert spans["stage-highschool"] == ("g10", "g11", "g12")
+    assert spans["stage-undergraduate"] == ("u1", "u2", "u3", "u4")
+    assert spans["stage-graduate"] == ("m1", "m2", "m3")
+    assert spans["hs-function-intro-001"] == ("g10",)
+    assert spans["ug-calculus-001"] == ("u1",)
+    assert spans["grad-functional-001"] == ("m1",)
+    assert "stage-highschool" in node_ids_for_grade(spans, "g10")
+    assert "hs-function-intro-001" in node_ids_for_grade(
+        spans, "g10"
+    )
     assert node_ids_for_grade(spans, "g1") == ()
 
 

@@ -190,7 +190,7 @@ python -m build
 
 ## 按年级与难度
 
-题目级 `grade`/`difficulty` 与知识点 `grade_span` 已接入；侧边栏“按年级”提供年级/难度筛选、难度分组与“先学习本年级知识点”。当前所有题目年级统一标为 `mixed`，收据、错题本与复习队列保持全局共享。完整说明、分布与回退方式见 [docs/grade-navigation.md](docs/grade-navigation.md)。
+题目级 `grade`/`difficulty` 与知识点 `grade_span` 已接入；侧边栏“按年级”提供年级/难度筛选、难度分组与“先学习本年级知识点”。当前按课程映射到 g10–g12、u1–u4、m1–m3；g1–g9 无对应内容。收据、错题本与复习队列保持全局共享。完整说明、分布与回退方式见 [docs/grade-navigation.md](docs/grade-navigation.md)。
 
 ## 免责声明
 

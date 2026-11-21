@@ -52,16 +52,16 @@ def test_grade_page_renders_and_filters(tmp_path, monkeypatch):
     grade = _selectbox(at, "年级")
     assert grade.value == "all"
 
-    grade.select("mixed").run()
+    grade.select("g10").run()
     assert not at.exception
     assert any(
-        "共 122 张卡片" in caption.value for caption in at.caption
+        "共 21 张卡片" in caption.value for caption in at.caption
     )
 
     difficulty = _selectbox(at, "难度")
     difficulty.select("basic").run()
     assert any(
-        "共 46 张卡片" in caption.value for caption in at.caption
+        "共 8 张卡片" in caption.value for caption in at.caption
     )
 
     grade = _selectbox(at, "年级")
@@ -81,13 +81,13 @@ def test_grade_selection_persists_across_modes(tmp_path, monkeypatch):
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
     _open_grade_page(at)
-    _selectbox(at, "年级").select("mixed").run()
+    _selectbox(at, "年级").select("g10").run()
 
     _select_mode(at, "仪表盘")
     _select_mode(at, "按年级")
 
     assert not at.exception
-    assert _selectbox(at, "年级").value == "mixed"
+    assert _selectbox(at, "年级").value == "g10"
 
 
 def test_today_review_counts_all_stages(tmp_path, monkeypatch):
@@ -138,17 +138,17 @@ def test_difficulty_groups_and_learning_entry(tmp_path, monkeypatch):
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
     _open_grade_page(at)
-    _selectbox(at, "年级").select("mixed").run()
+    _selectbox(at, "年级").select("g10").run()
 
     assert not at.exception
     expanders = {item.label for item in at.expander}
     assert "先学习本年级知识点" in expanders
-    assert "基础 · 46 张卡片" in expanders
-    assert "进阶 · 47 张卡片" in expanders
-    assert "挑战 · 29 张卡片" in expanders
+    assert "基础 · 8 张卡片" in expanders
+    assert "进阶 · 9 张卡片" in expanders
+    assert "挑战 · 4 张卡片" in expanders
 
     _selectbox(at, "难度").select("basic").run()
-    assert _selectbox(at, "年级").value == "mixed"
+    assert _selectbox(at, "年级").value == "g10"
 
     knowledge = _selectbox(at, "选择知识点")
     knowledge.select("hs-function-intro-001").run()
@@ -183,17 +183,17 @@ def test_default_grade_persists_in_settings_store(tmp_path):
     path = tmp_path / "grade-default.sqlite3"
 
     assert load_default_grade(PERSISTENT, path) == "all"
-    assert save_default_grade(PERSISTENT, "mixed", path) is True
-    assert load_default_grade(PERSISTENT, path) == "mixed"
+    assert save_default_grade(PERSISTENT, "g10", path) is True
+    assert load_default_grade(PERSISTENT, path) == "g10"
     assert save_default_grade(PERSISTENT, "unknown", path) is False
-    assert load_default_grade(PERSISTENT, path) == "mixed"
+    assert load_default_grade(PERSISTENT, path) == "g10"
 
 
 def test_default_grade_applied_to_grade_page(tmp_path, monkeypatch):
     path = tmp_path / "grade-default-ui.sqlite3"
     store = SQLiteSettingsStore(path)
     try:
-        store.set_many({"default_grade": "mixed"})
+        store.set_many({"default_grade": "g10"})
     finally:
         store.close()
     monkeypatch.setenv("MATHCOACH_DB", str(path))
@@ -203,7 +203,7 @@ def test_default_grade_applied_to_grade_page(tmp_path, monkeypatch):
     _open_grade_page(at)
 
     assert not at.exception
-    assert _selectbox(at, "年级").value == "mixed"
+    assert _selectbox(at, "年级").value == "g10"
 
 
 def test_settings_page_shows_default_grade_control(

@@ -11,7 +11,7 @@
   example: 两条平行直线可以确定一个平面。
   exercises:
   - id: hs-solid-001-e1
-    grade: mixed
+    grade: g11
     difficulty: basic
     kind: choice
     stem: 下列结论正确的是（ ）
@@ -19,14 +19,14 @@
     answer: "两点确定一条直线"
     solution_outline: 这是空间几何的基本公理。
   - id: hs-solid-001-e2
-    grade: mixed
+    grade: g11
     difficulty: basic
     kind: fill
     stem: 过两点有且只有（ ）条直线
     answer: "1"
     solution_outline: 两点确定唯一一条直线。
   - id: hs-solid-001-e3
-    grade: mixed
+    grade: g11
     difficulty: basic
     kind: truefalse
     stem: 两条平行直线确定一个平面。
@@ -47,7 +47,7 @@
   example: 若 a∥b，b⊂α，a⊄α，则 a∥α。
   exercises:
   - id: hs-solid-002-e1
-    grade: mixed
+    grade: g11
     difficulty: basic
     kind: choice
     stem: 判定直线 a 平行于平面 α 的条件是（ ）
@@ -55,7 +55,7 @@
     answer: "a 在 α 外，且 a 平行于 α 内一条直线"
     solution_outline: 这是线面平行的判定定理。
   - id: hs-solid-002-e2
-    grade: mixed
+    grade: g11
     difficulty: basic
     kind: match
     stem: 把定理与内容配对（写成 A=1;B=2 的形式）
@@ -63,7 +63,7 @@
     answer: "A=1;B=2"
     solution_outline: 判定是由线线平行推出线面平行，性质反过来给出交线平行。
   - id: hs-solid-002-e3
-    grade: mixed
+    grade: g11
     difficulty: basic
     kind: truefalse
     stem: 平行于同一平面的两条直线一定平行。
@@ -84,7 +84,7 @@
   example: 长方体中侧棱垂直于底面。
   exercises:
   - id: hs-solid-003-e1
-    grade: mixed
+    grade: g11
     difficulty: intermediate
     kind: choice
     stem: 直线 l 垂直于平面 α 的判定条件是（ ）
@@ -92,14 +92,14 @@
     answer: "l 垂直于 α 内两条相交直线"
     solution_outline: 线面垂直判定定理要求两条相交直线。
   - id: hs-solid-003-e2
-    grade: mixed
+    grade: g11
     difficulty: intermediate
     kind: proof_order
     stem: 证明线面垂直的步骤排序（用逗号分隔）
     answer: "1,2,3"
     solution_outline: 找到面内两条相交直线，分别证明垂直，再下结论。
   - id: hs-solid-003-e3
-    grade: mixed
+    grade: g11
     difficulty: intermediate
     kind: fill
     stem: 正方体棱长为 2，则体对角线长为（ ）
@@ -120,7 +120,7 @@
   example: 正方体中，斜线与底面所成角可通过射影确定。
   exercises:
   - id: hs-solid-004-e1
-    grade: mixed
+    grade: g11
     difficulty: intermediate
     kind: choice
     stem: 正方体 ABCD-A1B1C1D1 中，A1B 与底面 ABCD 所成角为（ ）
@@ -128,14 +128,14 @@
     answer: "45°"
     solution_outline: A1B 在底面的射影是 AB，且 A1A=AB，所以夹角为 45°。
   - id: hs-solid-004-e2
-    grade: mixed
+    grade: g11
     difficulty: intermediate
     kind: fill
     stem: 正方体中，异面直线 AB 与 CC1 所成角为（ ）度
     answer: "90"
     solution_outline: CC1 垂直于底面，因此垂直于 AB。
   - id: hs-solid-004-e3
-    grade: mixed
+    grade: g11
     difficulty: intermediate
     kind: truefalse
     stem: 异面直线所成角的范围是 (0°,90°]。
@@ -156,7 +156,7 @@
   example: 棱长为 2 的正方体体积为 8。
   exercises:
   - id: hs-solid-005-e1
-    grade: mixed
+    grade: g11
     difficulty: challenge
     kind: choice
     stem: 半径为 r 的球体积公式是（ ）
@@ -164,14 +164,14 @@
     answer: "4πr³/3"
     solution_outline: 球的体积公式为 4/3πr³。
   - id: hs-solid-005-e2
-    grade: mixed
+    grade: g11
     difficulty: challenge
     kind: fill
     stem: 棱长为 2 的正方体体积为（ ）
     answer: "8"
     solution_outline: V=2³=8。
   - id: hs-solid-005-e3
-    grade: mixed
+    grade: g11
     difficulty: challenge
     kind: find_error
     stem: 求半径 2、高 3 的圆柱体积，哪一步错了（ ）

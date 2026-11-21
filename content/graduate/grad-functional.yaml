@@ -11,7 +11,7 @@
   example: R^n 上的欧氏距离构成度量。
   exercises:
   - id: grad-functional-001-e1
-    grade: mixed
+    grade: m1
     difficulty: basic
     kind: choice
     stem: 度量 d 必须满足（ ）
@@ -19,14 +19,14 @@
     answer: "三角不等式"
     solution_outline: 三角不等式是度量公理之一。
   - id: grad-functional-001-e2
-    grade: mixed
+    grade: m1
     difficulty: basic
     kind: fill
     stem: 度量空间中 d(x,y)=0 当且仅当（ ）
     answer: "x=y"
     solution_outline: 同一性公理。
   - id: grad-functional-001-e3
-    grade: mixed
+    grade: m1
     difficulty: basic
     kind: truefalse
     stem: 度量必须是对称的。
@@ -47,7 +47,7 @@
   example: R^n 在欧氏范数下是巴拿赫空间。
   exercises:
   - id: grad-functional-002-e1
-    grade: mixed
+    grade: m1
     difficulty: basic
     kind: choice
     stem: 巴拿赫空间是（ ）
@@ -55,14 +55,14 @@
     answer: "完备的赋范空间"
     solution_outline: 巴拿赫空间的定义是完备赋范空间。
   - id: grad-functional-002-e2
-    grade: mixed
+    grade: m1
     difficulty: basic
     kind: fill
     stem: 在完备空间中，柯西列一定（ ）
     answer: "收敛"
     solution_outline: 完备性的定义。
   - id: grad-functional-002-e3
-    grade: mixed
+    grade: m1
     difficulty: basic
     kind: truefalse
     stem: 有理数集 Q 在通常度量下是完备的。
@@ -83,7 +83,7 @@
   example: L² 空间在平方可积函数上构成希尔伯特空间。
   exercises:
   - id: grad-functional-003-e1
-    grade: mixed
+    grade: m1
     difficulty: intermediate
     kind: choice
     stem: 由内积诱导的范数是（ ）
@@ -91,14 +91,14 @@
     answer: "||x||=√⟨x,x⟩"
     solution_outline: 内积诱导范数的标准定义。
   - id: grad-functional-003-e2
-    grade: mixed
+    grade: m1
     difficulty: intermediate
     kind: fill
     stem: 柯西-施瓦茨不等式为 |⟨x,y⟩|≤（ ）
     answer: "||x||·||y||"
     solution_outline: 内积空间的基本不等式。
   - id: grad-functional-003-e3
-    grade: mixed
+    grade: m1
     difficulty: intermediate
     kind: truefalse
     stem: 希尔伯特空间一定是巴拿赫空间。
@@ -119,7 +119,7 @@
   example: 矩阵乘法在有限维空间上是有界线性算子。
   exercises:
   - id: grad-functional-004-e1
-    grade: mixed
+    grade: m1
     difficulty: intermediate
     kind: choice
     stem: 线性算子有界等价于（ ）
@@ -127,14 +127,14 @@
     answer: "连续"
     solution_outline: 线性算子有界与连续等价。
   - id: grad-functional-004-e2
-    grade: mixed
+    grade: m1
     difficulty: intermediate
     kind: fill
     stem: 有界线性算子 T 的算子范数定义为 sup_{x≠0}（ ）
     answer: "||Tx||/||x||"
     solution_outline: 算子范数衡量最大伸缩比例。
   - id: grad-functional-004-e3
-    grade: mixed
+    grade: m1
     difficulty: intermediate
     kind: find_error
     stem: 判断线性算子是否有界，哪一步错了（ ）
@@ -156,7 +156,7 @@
   example: R^n 上的线性泛函都可以写成与某个向量的内积。
   exercises:
   - id: grad-functional-005-e1
-    grade: mixed
+    grade: m1
     difficulty: challenge
     kind: choice
     stem: 对偶空间 X* 中的元素是（ ）
@@ -164,14 +164,14 @@
     answer: "有界线性泛函"
     solution_outline: 对偶空间由连续线性泛函构成。
   - id: grad-functional-005-e2
-    grade: mixed
+    grade: m1
     difficulty: challenge
     kind: fill
     stem: 希尔伯特空间的自对偶性通过（ ）定理给出
     answer: "Riesz"
     solution_outline: Riesz 表示定理。
   - id: grad-functional-005-e3
-    grade: mixed
+    grade: m1
     difficulty: challenge
     kind: truefalse
     stem: 有限维空间中每个线性泛函都是有界的。
@@ -192,7 +192,7 @@
   example: 闭图像定理要求定义域与值域都是巴拿赫空间。
   exercises:
   - id: grad-functional-006-e1
-    grade: mixed
+    grade: m1
     difficulty: challenge
     kind: choice
     stem: 保证线性泛函可延拓的定理是（ ）
@@ -200,14 +200,14 @@
     answer: "Hahn-Banach 定理"
     solution_outline: Hahn-Banach 定理处理延拓问题。
   - id: grad-functional-006-e2
-    grade: mixed
+    grade: m1
     difficulty: challenge
     kind: fill
     stem: 开映射定理说明满射有界线性算子把开集映为（ ）
     answer: "开集"
     solution_outline: 这正是开映射定理的结论。
   - id: grad-functional-006-e3
-    grade: mixed
+    grade: m1
     difficulty: challenge
     kind: match
     stem: 把定理与结论配对（写成 A=1;B=2 的形式）
