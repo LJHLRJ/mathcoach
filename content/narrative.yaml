@@ -1,0 +1,98 @@
+# 叙事线：按顺序点亮，每张卡片一个节点
+nodes:
+  - id: n01
+    card_id: hs-set-001
+    name: 集合的边界
+    description: 你第一次学会用集合描述“属于”与“不属于”。
+  - id: n02
+    card_id: hs-set-002
+    name: 交并之间
+    description: 两个集合相遇，交集与并集照亮了新的关系。
+  - id: n03
+    card_id: hs-set-003
+    name: 数轴上的区间
+    description: 把集合画到数轴上，边界开始变得可见。
+  - id: n04
+    card_id: hs-set-004
+    name: 补集与空集
+    description: 你看见了“什么都没有”也是一种结构。
+  - id: n05
+    card_id: hs-set-005
+    name: 集合的回响
+    description: 集合的语言已经能描述更复杂的对象。
+  - id: n06
+    card_id: hs-func-002
+    name: 函数之门
+    description: 输入与输出之间，第一次出现确定的对应。
+  - id: n07
+    card_id: hs-func-003
+    name: 定义域与值域
+    description: 你学会先问“允许什么”，再问“得到什么”。
+  - id: n08
+    card_id: hs-func-004
+    name: 切线的斜率
+    description: 曲线在某一点的速度，被一条切线捕捉。
+  - id: n09
+    card_id: hs-func-005
+    name: 单调与极值
+    description: 函数开始讲述自己的起伏。
+  - id: n10
+    card_id: hs-func-006
+    name: 函数的合奏
+    description: 多个性质合在一起，函数有了完整的性格。
+  - id: n11
+    card_id: hs-ineq-001
+    name: 不等式的天平
+    description: 你在不等式两边寻找可以同时进行的操作。
+  - id: n12
+    card_id: hs-ineq-002
+    name: 抛物线之间
+    description: 二次不等式的解集在图像上显形。
+  - id: n13
+    card_id: hs-ineq-003
+    name: 绝对值的距离
+    description: 绝对值把“远近”变成可以计算的量。
+  - id: n14
+    card_id: hs-ineq-004
+    name: 恒成立的边界
+    description: 你开始追问“对所有情况都成立”意味着什么。
+  - id: n15
+    card_id: hs-ineq-005
+    name: 不等式的回廊
+    description: 多种不等式方法在同一条路上汇合。
+  - id: n16
+    card_id: hs-seq-001
+    name: 数列的节拍
+    description: 一串数按顺序出现，节奏第一次被记录。
+  - id: n17
+    card_id: hs-seq-002
+    name: 等差数列
+    description: 每一步都迈出相同的距离。
+  - id: n18
+    card_id: hs-seq-003
+    name: 等比数列
+    description: 每一步都按相同的比例生长。
+  - id: n19
+    card_id: hs-seq-004
+    name: 求和的阶梯
+    description: 你把许多项压缩成一个结果。
+  - id: n20
+    card_id: hs-seq-005
+    name: 数列的远方
+    description: 数列开始指向极限与更远的地方。
+  - id: n21
+    card_id: hs-analytic-001
+    name: 直线的斜率
+    description: 坐标系里的直线第一次有了方向。
+  - id: n22
+    card_id: hs-analytic-002
+    name: 圆的方程
+    description: 到定点等距的点，画出一个完整的圆。
+  - id: n23
+    card_id: hs-analytic-003
+    name: 直线与圆
+    description: 两种图形相遇，位置关系被方程解开。
+  - id: n24
+    card_id: hs-analytic-004
+    name: 解析几何的合奏
+    description: 代数与几何在同一张图上握手。

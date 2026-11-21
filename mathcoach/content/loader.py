@@ -4,10 +4,12 @@ from pathlib import Path
 import yaml
 
 from ..domain.models import Difficulty, Exercise, ExerciseKind, KnowledgeCard, Stage
+from ..domain.narrative import NarrativeNode
 from .validator import ValidationResult, validate
 
 CURRICULUM_FILE = "curriculum.yaml"
 PREREQUISITES_FILE = "prerequisites.yaml"
+NARRATIVE_FILE = "narrative.yaml"
 
 
 class ContentError(RuntimeError):
@@ -50,6 +52,29 @@ def load_prerequisites(root: Path) -> dict[str, list[str]]:
         str(child): [str(parent) for parent in (parents or [])]
         for child, parents in data.items()
     }
+
+
+def load_narrative(root: Path) -> list[NarrativeNode]:
+    """读取叙事线；文件不存在时返回空列表，叙事层可关闭。"""
+    path = Path(root) / NARRATIVE_FILE
+    if not path.exists():
+        return []
+    data = _read_yaml(path)
+    raw_nodes = data.get("nodes", []) if isinstance(data, dict) else data
+    try:
+        return [
+            NarrativeNode(
+                id=str(item["id"]),
+                card_id=str(item["card_id"]),
+                name=str(item["name"]),
+                description=str(item["description"]),
+            )
+            for item in raw_nodes
+        ]
+    except (KeyError, TypeError) as exc:
+        raise ContentError(
+            "narrative.yaml 节点必须包含 id/card_id/name/description"
+        ) from exc
 
 
 def _canonical_answer(value) -> str:
