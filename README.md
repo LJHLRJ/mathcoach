@@ -94,6 +94,8 @@ MATHCOACH_CONTENT_STRICT=1 python -m pytest -q
 
 `MATHCOACH_CONTENT_STRICT=1` 会强制校验 `curriculum.yaml` 与卡片双向一致、每道 `expr` 题通过 AST 白名单。
 
+视觉回归测试：通过 `.github/workflows/visual-regression.yml` 在 CI 中运行，基线图位于 `tests/visual/baselines/`。
+
 ## 打包（仅记录命令，不在仓库内自动执行）
 
 ```bash
