@@ -136,13 +136,45 @@ python scripts/build_desktop.py --console
 - **体积**：Streamlit + SymPy + PyWebview 的 onedir 产物通常在数百 MB 量级；具体大小需在本机构建后确认。
 - **启动速度**：onedir 一般数秒；onefile 需要先解压到临时目录，启动明显更慢。
 - **Windows 运行时**：缺少 .NET Framework > 4.0 或 WebView2 Runtime 时，原生窗口无法创建；这不是 PyInstaller 能完全内嵌的。
+- **Linux GUI 后端**：PyWebview 在 Linux 依赖 GTK 或 Qt；`requirements-packaging.txt` 不包含任一后端，因此自行构建的 Linux 产物只能启动本地服务，无法创建窗口。详见 5.1。
 - **macOS 签名**：本方案不包含代码签名与公证，首次启动会触发 Gatekeeper 提示。
 - **Python 3.13/3.14**：3.13 被 streamlit-desktop-app 明确排除；3.14 未在其分类器中声明。路线 B 也需在本机验证 PyInstaller/PyWebview 兼容性，推荐使用 3.11/3.12。
 - **PyInstaller 收集项**：`--collect-all streamlit --copy-metadata streamlit` 是必须项；若升级 Streamlit 后出现静态资源 404，需要重新验证收集项。
 - **数据位置**：SQLite 默认仍在用户数据目录（`platformdirs`），不会打进客户端，也不会随客户端复制；卸载客户端不会自动删除学习数据。
 - **安全边界**：本地服务只绑定 `127.0.0.1`，不对外网开放；仍建议在受信任的本机环境运行。
 - **更新检查**：只读 GitHub Releases API，需联网；不会自动下载或执行安装器。
-- 以上“构建后大小、启动时间、双击行为”均标记为**需在本机验证**，本仓库未实际执行打包。
+- 以上“构建后大小、启动时间、双击行为”仍以目标平台本机验证为准；本仓库已在 Linux 沙箱执行过打包与静态资源验证。
+
+### 5.1 Linux 打包产物的 GUI 后端限制
+
+现状：
+
+- GitHub Actions 发布矩阵仅包含 `windows-latest` 与 `macos-latest`，Linux 不提供官方桌面产物。
+- `requirements-packaging.txt` 只包含 PyInstaller 与 pywebview。pywebview 在 Linux 没有内置渲染后端，需要系统级 GTK（PyGObject + WebKit2GTK）或 Qt（PySide6/PyQt + qtpy + QtWebEngine）。
+- 若在 Linux 上直接运行自行构建的产物，启动器会先启动本地 Streamlit，然后在创建窗口时失败。`--windowed` 会隐藏标准输出，需用 `--console` 构建或从终端运行才能看到完整错误：
+
+```text
+[pywebview] GTK cannot be loaded
+[pywebview] QT cannot be loaded
+webview.errors.WebViewException: You must have either QT or GTK with Python extensions installed in order to use pywebview.
+```
+
+规避方式（按推荐顺序）：
+
+1. **从源码运行（推荐）**：按 README“从源码安装”执行 `streamlit run app.py`，不依赖原生窗口。
+2. **使用打包产物的服务模式**：`./MathCoach --streamlit-server 8501`，然后在浏览器打开 `http://127.0.0.1:8501`。该模式不创建原生窗口；启动器会设置 `STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true`，`static/` 静态资源仍可正常访问。
+3. **补齐 Qt 后端后重新构建（需自行验证）**：在构建环境安装 `PySide6` 与 `qtpy`，并确认 PyInstaller 收集了 `qtpy`、`PySide6.QtWebEngineWidgets` 及其 Qt 资源；产物会显著增大。
+4. **补齐 GTK 后端后重新构建（需自行验证）**：安装 PyGObject 与 WebKit2GTK 4.1 运行/开发库，并确保构建用 Python 能 `import gi`；冻结产物还需携带 GTK/WebKit 动态库与 typelib，维护成本通常高于 Qt。
+
+无头或 CI 环境可用 Xvfb + Qt WebEngine 复核；以 root 运行时需设置：
+
+```bash
+export QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox --disable-gpu"
+export QTWEBENGINE_DISABLE_SANDBOX=1
+xvfb-run -a ./MathCoach
+```
+
+以上 Linux 方案不属于官方发布路径；Windows 使用 WebView2，macOS 使用 Cocoa/WebKit，不受此限制。
 
 ## 6. 验证清单（需在本机执行）
 
