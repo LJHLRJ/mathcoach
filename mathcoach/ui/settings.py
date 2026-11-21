@@ -74,10 +74,13 @@ THEME_LABELS = {
 }
 RESOURCE_NOTICE = (
     "- 背景：Pattern Craft（MIT）\n"
+    "- 动效背景：Radiant（MIT）\n"
+    "- 庆祝动效：canvas-confetti（ISC）\n"
     "- 反馈音：uisfx（音频 CC0 1.0）\n"
     "- 专注音频：Noisekun / Moodist / Open Lo-Fi（仅外部链接）\n"
     "- CozyPixels：仅参考配色，未使用任何图片\n"
-    "- 未使用：bgvault、Quiz and Game Show Sound Effects、"
+    "- 未集成：css-doodle、streamlit-animate、weft-ui、matanim、"
+    "handanim、bgvault、Quiz and Game Show Sound Effects、"
     "math-pattern-gen、tiks"
 )
 DISCLAIMER_TEXT = """## 免责声明
@@ -91,6 +94,18 @@ DISCLAIMER_TEXT = """## 免责声明
 若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
 
 用户自行选择的外部曲库与外部链接，其许可证与使用条款由对应项目负责，本项目仅提供入口，不承担相关责任。
+
+### 动效与微交互
+
+本项目的动态背景、庆祝动效与微交互参考了第三方开源资源，其许可证以各项目仓库声明为准。我们已尽力核实许可证信息，但**不对第三方资源的版权状态作任何法律保证**，也不构成法律建议。
+
+- MIT / ISC / CC0 / 公有领域资源：按对应许可证使用；需要保留版权声明的，已在 THIRD_PARTY_NOTICES.md 中保留。
+- 仅参考设计模式、未引入代码的资源：已注明“仅参考”。
+- 来源不明或许可证不清的资源：一律不集成。
+
+若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
+
+用户自行启用的动效与背景，其性能表现可能因设备而异，本项目不对特定设备上的帧率或耗电作保证。
 """
 
 

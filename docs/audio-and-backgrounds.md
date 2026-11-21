@@ -65,6 +65,8 @@
 ## 许可证与第三方资源
 
 - 背景：Pattern Craft（MIT，Copyright 2025 Megh Bari）。
+- 动态背景：Radiant（MIT，Copyright 2025 Paul Bakaus）。
+- 庆祝动效：canvas-confetti（ISC，Copyright 2020 Kiril Vatev）；许可证文件位于 `static/overlay/canvas-confetti.LICENSE.txt`。
 - 反馈音：uisfx（代码 MIT，音频 CC0 1.0）。
 - 专注音频：Noisekun（代码 MIT，音源逐项许可）、Moodist（代码 MIT，音源 Pixabay/CC0 等）、Open Lo-Fi（CC0 1.0）。
 - 完整来源、许可证与免责声明见仓库根目录 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)。
