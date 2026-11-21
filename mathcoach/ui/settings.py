@@ -35,7 +35,19 @@ from ..memory.settings_repo import (
     secrets_path,
 )
 from ..safety.redlines import sanitize_text
+from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .sound import (
+    cue_bytes,
+    load_sound_settings,
+    save_sound_settings,
+)
+from .theme_background import (
+    BACKGROUND_OPTIONS,
+    inject_background_css,
+    load_background,
+    save_background,
+)
 
 FONT_SIZE_LABELS = {"小": "small", "中": "medium", "大": "large"}
 FONT_SIZE_CSS = {
@@ -52,6 +64,26 @@ THEME_LABELS = {
     "深色": "dark",
     "跟随系统": "system",
 }
+RESOURCE_NOTICE = (
+    "- 背景：Pattern Craft（MIT）\n"
+    "- 反馈音：uisfx（音频 CC0 1.0）\n"
+    "- 专注音频：Noisekun / Moodist / Open Lo-Fi（仅外部链接）\n"
+    "- CozyPixels：仅参考配色，未使用任何图片\n"
+    "- 未使用：bgvault、Quiz and Game Show Sound Effects、"
+    "math-pattern-gen、tiks"
+)
+DISCLAIMER_TEXT = """## 免责声明
+
+本项目集成的背景图案、音效与环境音来自第三方开源项目，其许可证以各项目仓库声明为准。我们已尽力核实许可证信息，但**不对第三方资源的版权状态作任何法律保证**，也不构成法律建议。
+
+- CC0 / 公有领域资源：无需署名，但我们仍在 THIRD_PARTY_NOTICES.md 中列出来源以示尊重。
+- MIT 资源：保留原版权声明与许可声明。
+- 来源不明或许可证不清的资源：一律不使用。
+
+若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
+
+用户自行选择的外部曲库与外部链接，其许可证与使用条款由对应项目负责，本项目仅提供入口，不承担相关责任。
+"""
 
 
 def _is_guest(consent: Consent) -> bool:
@@ -114,12 +146,14 @@ def apply_runtime_settings(
 
 
 def inject_font_size_css(size: str) -> None:
-    """注入常量字号 CSS；默认字号不注入，避免无谓的布局变化。"""
-    if size == "medium":
-        return
-    css = FONT_SIZE_CSS.get(size)
-    if css:
-        st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    """注入常量字号与背景 CSS；默认字号不注入，避免无谓的布局变化。"""
+    if size != "medium":
+        css = FONT_SIZE_CSS.get(size)
+        if css:
+            st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    consent = st.session_state.get("consent")
+    if consent is not None:
+        inject_background_css(consent)
 
 
 def sanitized_connection_error(exc: Exception, api_key: str) -> str:
@@ -208,6 +242,12 @@ def _render_notices() -> None:
         st.success("设置已保存。")
     if st.session_state.pop("settings_ratio_saved", False):
         st.success("复习配比已保存。")
+    if st.session_state.pop("settings_appearance_saved", False):
+        st.success("外观设置已保存。")
+    if st.session_state.pop("settings_sound_saved", False):
+        st.success("声音设置已保存。")
+    if st.session_state.pop("settings_focus_audio_saved", False):
+        st.success("专注音频设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
     if cleared is not None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
@@ -364,6 +404,101 @@ def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
         st.caption("本面板只读，不提供写入口。")
 
 
+def _render_appearance_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.markdown("### 外观")
+    st.caption(
+        "背景默认关闭；仅使用常量 CSS，不加载外部图片。"
+        "背景随实际生效的浅色/深色主题切换，主题变更需重启。"
+    )
+    current = load_background(consent)
+    labels = list(BACKGROUND_OPTIONS.values())
+    keys = list(BACKGROUND_OPTIONS)
+    index = keys.index(current) if current in keys else 0
+    with st.form("settings_appearance_form"):
+        label = st.selectbox(
+            "背景",
+            labels,
+            index=index,
+            key="settings_background",
+        )
+        saved = st.form_submit_button("保存外观设置")
+    if not saved:
+        return
+    choice = keys[labels.index(label)]
+    if save_background(consent, choice):
+        repository.record_audit("settings_background", "ok")
+        st.session_state["settings_appearance_saved"] = True
+        st.rerun()
+    else:
+        st.error(f"{ICON_ERROR} 背景设置保存失败，请重试。")
+
+
+def _render_sound_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.markdown("### 声音")
+    st.caption(
+        "默认关闭；音量由浏览器原生播放器控制。"
+        "首次播放需要你点击；不会在进入应用时自动播放。"
+    )
+    current = load_sound_settings(consent)
+    with st.form("settings_sound_form"):
+        enabled = st.toggle(
+            "启用声音",
+            value=current.enabled,
+            key="settings_sound_enabled",
+        )
+        feedback = st.toggle(
+            "答题反馈音",
+            value=current.feedback_enabled,
+            key="settings_feedback_enabled",
+        )
+        saved = st.form_submit_button("保存声音设置")
+    if saved:
+        if save_sound_settings(
+            consent,
+            enabled=enabled,
+            feedback_enabled=feedback,
+        ):
+            repository.record_audit("settings_sound", "ok")
+            st.session_state["settings_sound_saved"] = True
+            st.rerun()
+        else:
+            st.error(f"{ICON_ERROR} 声音设置保存失败，请重试。")
+    st.caption("试听使用原生播放器；浏览器可能拦截自动播放。")
+    if st.button("试听正确音", key="sound_preview_correct"):
+        if not current.enabled:
+            st.info("请先启用声音并保存。")
+        else:
+            st.audio(
+                cue_bytes("correct"),
+                format="audio/mpeg",
+                autoplay=True,
+            )
+    if st.button("试听点击音", key="sound_preview_click"):
+        if not current.enabled:
+            st.info("请先启用声音并保存。")
+        else:
+            st.audio(
+                cue_bytes("click"),
+                format="audio/mpeg",
+                autoplay=True,
+            )
+
+
+def _render_about() -> None:
+    with st.expander("关于 / 致谢", expanded=False):
+        st.markdown("**第三方资源**")
+        st.markdown(RESOURCE_NOTICE)
+        st.caption(
+            "完整清单见仓库根目录 THIRD_PARTY_NOTICES.md；"
+            "核实人：待人工复核。"
+        )
+        st.markdown(DISCLAIMER_TEXT)
+
+
 def _render_review_ratio_form(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
@@ -515,8 +650,12 @@ def render_settings_page(
     elif offline:
         st.caption("未配置 API Key 时使用离线模板，判分逻辑不变。")
 
+    _render_appearance_form(repository, consent)
+    _render_sound_form(repository, consent)
+    render_focus_audio(repository, consent)
     _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)
     _render_clear(repository, consent)
     _render_audit(repository, consent)
     _render_dev_panel(consent, settings)
+    _render_about()
