@@ -460,13 +460,22 @@ def _render_session() -> None:
     if view.phase is Phase.GOAL_CONFIRM:
         with card(view.title):
             st.write(math_markdown(view.body))
-            goal = st.text_input("今天想练到什么？", key="goal_input")
-            if st.button(
-                "确认目标",
-                key="confirm_goal",
-                icon=ICON_PLAY,
-                **button_kwargs(PRIMARY),
+            with st.form(
+                "goal_form",
+                clear_on_submit=False,
+                enter_to_submit=False,
+                border=False,
             ):
+                goal = st.text_input(
+                    "今天想练到什么？", key="goal_input"
+                )
+                submitted = st.form_submit_button(
+                    "确认目标",
+                    key="confirm_goal",
+                    icon=ICON_PLAY,
+                    **button_kwargs(PRIMARY),
+                )
+            if submitted:
                 try:
                     with loading_skeleton(SKELETON_CARD):
                         engine.confirm_goal(goal)
@@ -772,6 +781,19 @@ def _render_quiz_summary(state: DailyState, now: datetime, title: str) -> None:
         st.info(f"{ICON_INFO} {state.feedback}")
 
 
+@st.fragment(run_every=5)
+def _render_quiz_countdown(state: DailyState) -> None:
+    """只刷新倒计时文本，避免整页周期性重跑。"""
+    now = datetime.now(timezone.utc)
+    if time_is_up(state, now):
+        st.caption("时间到，提交当前答案后结算。")
+        return
+    st.caption(
+        f"剩余 {remaining_seconds(state, now)} 秒 · "
+        f"第 {state.index + 1}/{len(state.questions)} 题"
+    )
+
+
 def _render_active_quiz(
     state: DailyState,
     *,
@@ -794,10 +816,7 @@ def _render_active_quiz(
             queue_feedback("complete", st.session_state.consent)
         return
 
-    st.caption(
-        f"剩余 {remaining_seconds(state, now)} 秒 · "
-        f"第 {state.index + 1}/{len(state.questions)} 题"
-    )
+    _render_quiz_countdown(state)
     if state.feedback:
         st.info(f"{ICON_INFO} {state.feedback}")
     question = current_question(state)
