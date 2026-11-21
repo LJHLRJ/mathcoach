@@ -19,6 +19,15 @@
 - 尊重 `prefers-reduced-motion: reduce`：该模式下隐藏 canvas 并停止动画循环。
 - 不新增 Python 依赖，不加载外部图片或脚本。
 
+### 庆祝动效与微交互
+
+- 庆祝动效默认开启，可在“设置 → 动效”关闭；“减少动效”优先于庆祝开关。
+- 仅在明确里程碑触发：完成一次复习包、连续答对 5 题、清除错题本。
+- 庆祝使用 canvas-confetti（ISC）；静态文件位于 `static/overlay/confetti.html`，通过固定定位 iframe 覆盖浏览器视口，`pointer-events:none`，不阻塞交互。
+- `prefers-reduced-motion: reduce` 时 iframe 内直接跳过 confetti；“减少动效”开启时不会注入 iframe。
+- 微交互为自写常量 CSS（按钮 hover、expander hover），随“减少动效”与 `prefers-reduced-motion` 禁用；未引入 streamlit-animate 工具链。
+- 静态服务已在 `.streamlit/config.toml` 开启；桌面启动器设置 `STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true`，PyInstaller 打包包含 `static/`。
+
 ## 答题反馈音
 
 - 默认关闭。总开关为“启用声音”，另有“答题反馈音”开关。

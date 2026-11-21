@@ -78,6 +78,8 @@ def _pyinstaller_command(
         f"app.py{sep}.",
         "--add-data",
         f"content{sep}content",
+        "--add-data",
+        f"static{sep}static",
         str(ROOT / "scripts" / "launch_desktop.py"),
     ]
 

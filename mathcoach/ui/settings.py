@@ -37,7 +37,14 @@ from ..memory.settings_repo import (
 from ..safety.redlines import sanitize_text
 from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
-from .motion import load_dynamic_background, save_dynamic_background
+from .milestones import celebrate_mistakes_cleared
+from .motion import (
+    inject_micro_interactions,
+    load_celebration_settings,
+    load_dynamic_background,
+    save_celebration_settings,
+    save_dynamic_background,
+)
 from .sound import (
     cue_bytes,
     load_sound_settings,
@@ -155,6 +162,7 @@ def inject_font_size_css(size: str) -> None:
     consent = st.session_state.get("consent")
     if consent is not None:
         inject_background_css(consent)
+        inject_micro_interactions(consent)
 
 
 def sanitized_connection_error(exc: Exception, api_key: str) -> str:
@@ -247,6 +255,8 @@ def _render_notices() -> None:
         st.success("外观设置已保存。")
     if st.session_state.pop("settings_sound_saved", False):
         st.success("声音设置已保存。")
+    if st.session_state.pop("settings_motion_saved", False):
+        st.success("动效设置已保存。")
     if st.session_state.pop("settings_focus_audio_saved", False):
         st.success("专注音频设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
@@ -341,6 +351,7 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
         counts = store.clear_learning_data(keep_audit=not purge_audit)
     finally:
         store.close()
+    celebrate_mistakes_cleared(consent, counts.get("mistakes", 0))
     repository.record_audit("settings_clear", "ok")
     st.session_state["settings_cleared"] = sum(counts.values())
     st.rerun()
@@ -509,6 +520,40 @@ def _render_about() -> None:
         st.markdown(DISCLAIMER_TEXT)
 
 
+def _render_motion_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.markdown("### 动效")
+    st.caption(
+        "庆祝动效默认开启；减少动效优先；动态背景默认关闭。"
+        "浏览器 prefers-reduced-motion 也会禁用动画。"
+    )
+    current = load_celebration_settings(consent)
+    with st.form("settings_motion_form"):
+        celebrations = st.toggle(
+            "庆祝动效",
+            value=current.enabled,
+            key="settings_celebrations",
+        )
+        reduce_motion = st.toggle(
+            "减少动效",
+            value=current.reduce_motion,
+            key="settings_reduce_motion",
+        )
+        saved = st.form_submit_button("保存动效设置")
+    if saved:
+        if save_celebration_settings(
+            consent,
+            enabled=celebrations,
+            reduce_motion=reduce_motion,
+        ):
+            repository.record_audit("settings_motion", "ok")
+            st.session_state["settings_motion_saved"] = True
+            st.rerun()
+        else:
+            st.error(f"{ICON_ERROR} 动效设置保存失败，请重试。")
+
+
 def _render_review_ratio_form(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
@@ -662,6 +707,7 @@ def render_settings_page(
 
     _render_appearance_form(repository, consent)
     _render_sound_form(repository, consent)
+    _render_motion_form(repository, consent)
     render_focus_audio(repository, consent)
     _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)

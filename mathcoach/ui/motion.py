@@ -11,6 +11,7 @@ static/topographic.html（16,179 字节）
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
 
 import streamlit as st
@@ -20,6 +21,41 @@ from ..domain.models import Consent
 from ..memory.settings_repo import SQLiteSettingsStore
 
 DYNAMIC_BACKGROUND_KEY = "dynamic_background_enabled"
+CELEBRATIONS_KEY = "celebrations_enabled"
+REDUCE_MOTION_KEY = "reduce_motion"
+PENDING_CELEBRATION_KEY = "pending_celebration"
+
+CELEBRATION_IFRAME = (
+    '<iframe title="motion-confetti" '
+    'src="/app/static/overlay/confetti.html" '
+    'sandbox="allow-scripts" '
+    'style="position:fixed;inset:0;width:100vw;height:100vh;'
+    'border:0;z-index:9999;pointer-events:none;"></iframe>'
+)
+
+MICRO_INTERACTIONS_CSS = """
+<style>
+button {
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+[data-testid="stExpander"] details {
+  transition: background-color .18s ease;
+}
+[data-testid="stExpander"] summary:hover {
+  background-color: rgba(79, 139, 249, .06);
+}
+@media (prefers-reduced-motion: reduce) {
+  button, [data-testid="stExpander"] details {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+</style>
+"""
 
 _PRELUDE = """
 <style>
@@ -873,8 +909,98 @@ def render_dynamic_background(
     """在仪表盘/空状态渲染动态背景；关闭时不注入 iframe。"""
     if not load_dynamic_background(consent):
         return
+    if load_celebration_settings(consent).reduce_motion:
+        return
     st.components.v1.html(
         shader_html(variant),
         height=180,
         scrolling=False,
     )
+
+
+@dataclass(frozen=True)
+class CelebrationSettings:
+    """庆祝与减少动效设置；庆祝默认开启，减少动效优先。"""
+
+    enabled: bool = True
+    reduce_motion: bool = False
+
+
+def load_celebration_settings(
+    consent: Consent, path: Path | None = None
+) -> CelebrationSettings:
+    """读取庆祝/减少动效设置；失败时回落到安全默认值。"""
+    if _is_guest(consent):
+        return CelebrationSettings(
+            enabled=bool(st.session_state.get(CELEBRATIONS_KEY, True)),
+            reduce_motion=bool(
+                st.session_state.get(REDUCE_MOTION_KEY, False)
+            ),
+        )
+    try:
+        store = SQLiteSettingsStore(path or db_path())
+        try:
+            values = store.get_all()
+        finally:
+            store.close()
+    except (OSError, sqlite3.Error):
+        return CelebrationSettings()
+    return CelebrationSettings(
+        enabled=bool(values.get(CELEBRATIONS_KEY, True)),
+        reduce_motion=bool(values.get(REDUCE_MOTION_KEY, False)),
+    )
+
+
+def save_celebration_settings(
+    consent: Consent,
+    *,
+    enabled: bool,
+    reduce_motion: bool,
+    path: Path | None = None,
+) -> bool:
+    """保存庆祝/减少动效设置；失败时不阻断主流程。"""
+    values = {
+        CELEBRATIONS_KEY: bool(enabled),
+        REDUCE_MOTION_KEY: bool(reduce_motion),
+    }
+    if _is_guest(consent):
+        st.session_state.update(values)
+        return True
+    try:
+        store = SQLiteSettingsStore(path or db_path())
+        try:
+            store.set_many(values)
+        finally:
+            store.close()
+    except (OSError, sqlite3.Error):
+        return False
+    st.session_state.update(values)
+    return True
+
+
+def queue_celebration(kind: str, consent: Consent) -> None:
+    """在庆祝开启且未减少动效时登记一次局部全屏庆祝。"""
+    if kind not in {"five-correct", "review-complete", "mistakes-cleared"}:
+        return
+    settings = load_celebration_settings(consent)
+    if settings.reduce_motion or not settings.enabled:
+        return
+    st.session_state[PENDING_CELEBRATION_KEY] = kind
+
+
+def play_pending_celebration(consent: Consent) -> None:
+    """播放并清除待处理的庆祝 iframe；关闭时不渲染任何内容。"""
+    kind = st.session_state.pop(PENDING_CELEBRATION_KEY, None)
+    if kind is None:
+        return
+    settings = load_celebration_settings(consent)
+    if settings.reduce_motion or not settings.enabled:
+        return
+    st.markdown(CELEBRATION_IFRAME, unsafe_allow_html=True)
+
+
+def inject_micro_interactions(consent: Consent) -> None:
+    """注入常量微交互 CSS；减少动效时不注入。"""
+    if load_celebration_settings(consent).reduce_motion:
+        return
+    st.markdown(MICRO_INTERACTIONS_CSS, unsafe_allow_html=True)
