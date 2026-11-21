@@ -29,7 +29,7 @@ from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.dashboard import build_dashboard
 from mathcoach.memory.path import build_learning_path
 from mathcoach.memory.report import build_mistake_stats, build_weekly_report
-from mathcoach.memory.repository import build_repository, load_consent
+from mathcoach.memory.repository import build_repository
 from mathcoach.memory.review_package import (
     REVIEW_PACKAGE_LIMIT_S,
     build_review_package,
@@ -40,6 +40,12 @@ from mathcoach.safety.redlines import (
     ConfirmationRequired,
     WriteBlocked,
     assert_write_allowed,
+)
+from mathcoach.ui.first_run import (
+    FirstRunError,
+    initialize_consent,
+    initialize_repository,
+    initialize_settings,
 )
 from mathcoach.ui.icons import (
     ICON_CHECK,
@@ -160,22 +166,30 @@ def _render_gap_diagnosis(gaps: list[Gap]) -> None:
             st.caption(f"依据：{gap.basis}")
 
 
-if "consent" not in st.session_state:
-    st.session_state.consent = load_consent()
-if "settings" not in st.session_state:
-    st.session_state.settings = current_settings(st.session_state.consent)
-apply_runtime_settings(st.session_state.settings)
-if "provider" not in st.session_state:
-    st.session_state.provider = build_provider()
-if "repository" not in st.session_state:
-    st.session_state.repository = build_repository(st.session_state.consent)
-if "engine" not in st.session_state:
-    st.session_state.engine = SessionEngine(
-        card=cards[0],
-        provider=st.session_state.provider,
-        repository=st.session_state.repository,
-        consent=st.session_state.consent,
-    )
+try:
+    if "consent" not in st.session_state:
+        st.session_state.consent = initialize_consent()
+    if "settings" not in st.session_state:
+        st.session_state.settings = initialize_settings(
+            st.session_state.consent
+        )
+    apply_runtime_settings(st.session_state.settings)
+    if "provider" not in st.session_state:
+        st.session_state.provider = build_provider()
+    if "repository" not in st.session_state:
+        st.session_state.repository = initialize_repository(
+            st.session_state.consent
+        )
+    if "engine" not in st.session_state:
+        st.session_state.engine = SessionEngine(
+            card=cards[0],
+            provider=st.session_state.provider,
+            repository=st.session_state.repository,
+            consent=st.session_state.consent,
+        )
+except FirstRunError as exc:
+    st.error(f"{ICON_ERROR} {exc}")
+    st.stop()
 
 provider = st.session_state.provider
 engine: SessionEngine = st.session_state.engine
