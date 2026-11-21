@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from datetime import UTC, datetime
 from datetime import time as dt_time
 from typing import Any
@@ -205,6 +206,8 @@ def _render_ai_config(
 def _render_notices() -> None:
     if st.session_state.pop("settings_saved", False):
         st.success("设置已保存。")
+    if st.session_state.pop("settings_ratio_saved", False):
+        st.success("复习配比已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
     if cleared is not None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
@@ -361,6 +364,34 @@ def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
         st.caption("本面板只读，不提供写入口。")
 
 
+def _render_review_ratio_form(
+    repository: Repository, consent: Consent, settings: AppSettings
+) -> None:
+    st.markdown("### 复习配比")
+    st.caption("先修缺口 1 + 错题变式 1 固定；其余题位按新卡占比分配。")
+    with st.form("settings_review_ratio_form"):
+        ratio = st.slider(
+            "新卡占比（%）",
+            min_value=0,
+            max_value=100,
+            value=settings.new_review_ratio,
+            step=5,
+            key="settings_new_review_ratio",
+            help=(
+                "新卡占比越高，复习包中新卡越多；"
+                "先修缺口 1 与错题变式 1 固定，其余题位按比例分配。"
+                "0% 即保持到期 3 + 新卡 0 的 1+3+1 结构。"
+            ),
+        )
+        saved = st.form_submit_button("保存复习配比")
+    if saved:
+        new_settings = replace(settings, new_review_ratio=int(ratio))
+        _save_settings(consent, new_settings)
+        repository.record_audit("settings_review_ratio", "ok")
+        st.session_state["settings_ratio_saved"] = True
+        st.rerun()
+
+
 def render_settings_page(
     repository: Repository, consent: Consent, provider
 ) -> None:
@@ -422,18 +453,6 @@ def render_settings_page(
             key="settings_scheduler",
         )
         st.caption("仅影响后续复习调度，不改写历史收据。")
-        new_review_ratio = st.slider(
-            "新卡占比（%）",
-            min_value=0,
-            max_value=100,
-            value=settings.new_review_ratio,
-            step=5,
-            key="settings_new_review_ratio",
-        )
-        st.caption(
-            "先修缺口 1 + 错题变式 1 固定；其余题位按新卡占比分配，"
-            "0% 保持 1+3+1。"
-        )
         font_label = st.select_slider(
             "界面字号",
             options=list(FONT_SIZE_LABELS),
@@ -472,7 +491,7 @@ def render_settings_page(
         new_settings = AppSettings(
             ai_enabled=ai_enabled,
             daily_review_limit=int(daily_limit),
-            new_review_ratio=int(new_review_ratio),
+            new_review_ratio=settings.new_review_ratio,
             scheduler=SCHEDULER_LABELS[scheduler_label],
             font_size=FONT_SIZE_LABELS[font_label],
             theme=THEME_LABELS[theme_label],
@@ -495,6 +514,7 @@ def render_settings_page(
     elif offline:
         st.caption("未配置 API Key 时使用离线模板，判分逻辑不变。")
 
+    _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)
     _render_clear(repository, consent)
     _render_audit(repository, consent)
