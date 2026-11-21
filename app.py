@@ -60,6 +60,15 @@ from mathcoach.ui.icons import (
     ICON_UPDATE,
 )
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
+from mathcoach.ui.milestones import (
+    celebrate_five_correct,
+    celebrate_review_complete,
+)
+from mathcoach.ui.motion import (
+    inject_micro_interactions,
+    play_pending_celebration,
+    render_dynamic_background,
+)
 from mathcoach.ui.onboarding import (
     mark_first_use_done,
     render_onboarding,
@@ -432,6 +441,8 @@ def _render_hint_actions() -> None:
 
 def _render_session() -> None:
     view = engine.view
+    if view.phase in (Phase.GOAL_CONFIRM, Phase.EXPLAIN):
+        render_dynamic_background(st.session_state.consent, "empty")
 
     if view.phase is Phase.GOAL_CONFIRM:
         with card(view.title):
@@ -500,6 +511,9 @@ def _render_session() -> None:
                     Phase.WRAPUP,
                 ):
                     queue_feedback("wrong", st.session_state.consent)
+                celebrate_five_correct(
+                    engine, st.session_state.consent
+                )
                 st.rerun()
         _render_hint_actions()
         return
@@ -645,6 +659,7 @@ def _next_recommendations(repository, cards, prerequisites) -> list[Recommendati
 
 
 def _render_dashboard() -> None:
+    render_dynamic_background(st.session_state.consent)
     summary = build_dashboard(
         st.session_state.repository, datetime.now(timezone.utc)
     )
@@ -1005,6 +1020,7 @@ def _render_review_package() -> None:
     )
     if state.finished:
         mark_first_use_done()
+        celebrate_review_complete(state, st.session_state.consent)
     if state.finished and st.button(
         "再来一组", key="restart_review", icon=ICON_RESTART
     ):
@@ -1158,3 +1174,5 @@ with tabs[3]:
         _render_settings_tab()
 
 play_pending_feedback(st.session_state.consent)
+play_pending_celebration(st.session_state.consent)
+inject_micro_interactions(st.session_state.consent)

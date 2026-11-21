@@ -55,6 +55,9 @@ def streamlit_argv(port: int) -> list[str]:
 
 
 def run_streamlit_server(port: int) -> None:
+    os.environ.setdefault(
+        "STREAMLIT_SERVER_ENABLE_STATIC_SERVING", "true"
+    )
     from streamlit.web import cli as stcli
 
     sys.argv = streamlit_argv(port)

@@ -37,6 +37,13 @@ from ..memory.settings_repo import (
 from ..safety.redlines import sanitize_text
 from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .milestones import celebrate_mistakes_cleared
+from .motion import (
+    load_celebration_settings,
+    load_dynamic_background,
+    save_celebration_settings,
+    save_dynamic_background,
+)
 from .sound import (
     cue_bytes,
     load_sound_settings,
@@ -66,10 +73,13 @@ THEME_LABELS = {
 }
 RESOURCE_NOTICE = (
     "- 背景：Pattern Craft（MIT）\n"
+    "- 动效背景：Radiant（MIT）\n"
+    "- 庆祝动效：canvas-confetti（ISC）\n"
     "- 反馈音：uisfx（音频 CC0 1.0）\n"
     "- 专注音频：Noisekun / Moodist / Open Lo-Fi（仅外部链接）\n"
     "- CozyPixels：仅参考配色，未使用任何图片\n"
-    "- 未使用：bgvault、Quiz and Game Show Sound Effects、"
+    "- 未集成：css-doodle、streamlit-animate、weft-ui、matanim、"
+    "handanim、bgvault、Quiz and Game Show Sound Effects、"
     "math-pattern-gen、tiks"
 )
 DISCLAIMER_TEXT = """## 免责声明
@@ -83,6 +93,18 @@ DISCLAIMER_TEXT = """## 免责声明
 若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
 
 用户自行选择的外部曲库与外部链接，其许可证与使用条款由对应项目负责，本项目仅提供入口，不承担相关责任。
+
+### 动效与微交互
+
+本项目的动态背景、庆祝动效与微交互参考了第三方开源资源，其许可证以各项目仓库声明为准。我们已尽力核实许可证信息，但**不对第三方资源的版权状态作任何法律保证**，也不构成法律建议。
+
+- MIT / ISC / CC0 / 公有领域资源：按对应许可证使用；需要保留版权声明的，已在 THIRD_PARTY_NOTICES.md 中保留。
+- 仅参考设计模式、未引入代码的资源：已注明“仅参考”。
+- 来源不明或许可证不清的资源：一律不集成。
+
+若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
+
+用户自行启用的动效与背景，其性能表现可能因设备而异，本项目不对特定设备上的帧率或耗电作保证。
 """
 
 
@@ -246,6 +268,8 @@ def _render_notices() -> None:
         st.success("外观设置已保存。")
     if st.session_state.pop("settings_sound_saved", False):
         st.success("声音设置已保存。")
+    if st.session_state.pop("settings_motion_saved", False):
+        st.success("动效设置已保存。")
     if st.session_state.pop("settings_focus_audio_saved", False):
         st.success("专注音频设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
@@ -340,6 +364,7 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
         counts = store.clear_learning_data(keep_audit=not purge_audit)
     finally:
         store.close()
+    celebrate_mistakes_cleared(consent, counts.get("mistakes", 0))
     repository.record_audit("settings_clear", "ok")
     st.session_state["settings_cleared"] = sum(counts.values())
     st.rerun()
@@ -413,6 +438,7 @@ def _render_appearance_form(
         "背景随实际生效的浅色/深色主题切换，主题变更需重启。"
     )
     current = load_background(consent)
+    current_dynamic = load_dynamic_background(consent)
     labels = list(BACKGROUND_OPTIONS.values())
     keys = list(BACKGROUND_OPTIONS)
     index = keys.index(current) if current in keys else 0
@@ -423,16 +449,24 @@ def _render_appearance_form(
             index=index,
             key="settings_background",
         )
+        dynamic_background = st.toggle(
+            "动态背景（实验性）",
+            value=current_dynamic,
+            key="settings_dynamic_background",
+            help="仅在仪表盘和空状态显示；默认关闭。",
+        )
         saved = st.form_submit_button("保存外观设置")
     if not saved:
         return
     choice = keys[labels.index(label)]
-    if save_background(consent, choice):
-        repository.record_audit("settings_background", "ok")
+    background_saved = save_background(consent, choice)
+    motion_saved = save_dynamic_background(consent, dynamic_background)
+    if background_saved and motion_saved:
+        repository.record_audit("settings_appearance", "ok")
         st.session_state["settings_appearance_saved"] = True
         st.rerun()
     else:
-        st.error(f"{ICON_ERROR} 背景设置保存失败，请重试。")
+        st.error(f"{ICON_ERROR} 外观设置保存失败，请重试。")
 
 
 def _render_sound_form(
@@ -497,6 +531,40 @@ def _render_about() -> None:
             "核实人：待人工复核。"
         )
         st.markdown(DISCLAIMER_TEXT)
+
+
+def _render_motion_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.markdown("### 动效")
+    st.caption(
+        "庆祝动效默认开启；减少动效优先；动态背景默认关闭。"
+        "浏览器 prefers-reduced-motion 也会禁用动画。"
+    )
+    current = load_celebration_settings(consent)
+    with st.form("settings_motion_form"):
+        celebrations = st.toggle(
+            "庆祝动效",
+            value=current.enabled,
+            key="settings_celebrations",
+        )
+        reduce_motion = st.toggle(
+            "减少动效",
+            value=current.reduce_motion,
+            key="settings_reduce_motion",
+        )
+        saved = st.form_submit_button("保存动效设置")
+    if saved:
+        if save_celebration_settings(
+            consent,
+            enabled=celebrations,
+            reduce_motion=reduce_motion,
+        ):
+            repository.record_audit("settings_motion", "ok")
+            st.session_state["settings_motion_saved"] = True
+            st.rerun()
+        else:
+            st.error(f"{ICON_ERROR} 动效设置保存失败，请重试。")
 
 
 def _render_review_ratio_form(
@@ -652,6 +720,7 @@ def render_settings_page(
 
     _render_appearance_form(repository, consent)
     _render_sound_form(repository, consent)
+    _render_motion_form(repository, consent)
     render_focus_audio(repository, consent)
     _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)
