@@ -2,6 +2,8 @@
 from collections import deque
 from dataclasses import dataclass
 
+from .basis import basis_for_gap
+
 
 @dataclass(frozen=True)
 class MistakeStat:
@@ -13,6 +15,7 @@ class MistakeStat:
 class Gap:
     chain: tuple[str, ...]
     reason: str
+    basis: str = ""  # 生成时写入的依据，供视图直接展示
 
 
 def _is_gap(stat: MistakeStat) -> bool:
@@ -41,6 +44,7 @@ def trace_gap(
                     Gap(
                         chain=new_chain,
                         reason=f"前置知识点概念错 {stat.concept_wrong}/{stat.total} 次",
+                        basis=basis_for_gap(stat),
                     )
                 )
             queue.append((parent, new_chain, depth + 1))

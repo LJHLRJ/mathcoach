@@ -10,4 +10,6 @@ def render_gaps(gaps: list[Gap]) -> str:
         chain = " → ".join(gap.chain)
         target = gap.chain[-1]
         lines.append(f"- 当前卡点：{chain}\n  原因：{gap.reason}\n  建议先复习：{target}")
+        if gap.basis:
+            lines.append(f"  依据：{gap.basis}")
     return "\n".join(lines)
