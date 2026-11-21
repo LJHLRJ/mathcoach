@@ -27,7 +27,8 @@ def test_bucket_grouping_uses_interval(tmp_path):
     assert set(queue.keys()) <= {Bucket.TODAY, Bucket.TOMORROW, Bucket.THREE_DAYS}
 
 
-def test_update_after_review_persists_new_schedule(tmp_path):
+def test_update_after_review_persists_new_schedule(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_SCHEDULER", "sm2")
     repo = SQLiteRepository(tmp_path / "s.db")
     mid = repo.add_mistake(card_id="hs-001", error_type="概念不清", now=NOW)
     repo.record_review(mid, Quality.INDEPENDENT, now=NOW)

@@ -8,17 +8,39 @@
 """
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from functools import lru_cache
+from pathlib import Path
 from typing import Iterable
 
+import yaml
+
+from ..domain.fsrs import DEFAULT_PARAMS, FsrsParams, params_from_mapping
 from ..domain.models import MistakeEntry, ReviewItem, ReviewState
 from ..domain.spaced_repetition import Bucket, bucket_for
 from ..timeutil import end_of_local_day, start_of_local_day_after
 
 REVIEW_LIMIT = 3
 MASTERY_STREAK = 2
+
+
+def scheduler_mode() -> str:
+    """读取调度器实现；只有显式 sm2 才回退，其余情况默认 FSRS。"""
+    value = os.environ.get("MATHCOACH_SCHEDULER", "fsrs").strip().lower()
+    return "sm2" if value == "sm2" else "fsrs"
+
+
+@lru_cache(maxsize=1)
+def fsrs_params() -> FsrsParams:
+    """读取 content/fsrs_params.yaml；文件缺失时回落到内置默认参数。"""
+    path = Path(__file__).resolve().parents[2] / "content" / "fsrs_params.yaml"
+    if not path.exists():
+        return DEFAULT_PARAMS
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return params_from_mapping(data)
 
 
 @dataclass(frozen=True)

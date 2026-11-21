@@ -147,6 +147,10 @@ class MistakeEntry:
     ease: float = DEFAULT_EASE  # SM-2 难度因子，默认 2.5
     interval_days: int = DEFAULT_INTERVAL  # 当前复习间隔，默认 1 天
     next_review_at: datetime | None = None  # 下次到期时间；None 表示按 created_at 立即到期
+    stability: float = 0.0  # FSRS 记忆稳定性；0 表示尚未初始化
+    difficulty: float = 5.0  # FSRS 难度 1..10
+    reps: int = 0  # FSRS 累计复习次数
+    lapses: int = 0  # FSRS 累计遗忘次数
 
 
 @dataclass(frozen=True)

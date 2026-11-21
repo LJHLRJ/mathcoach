@@ -5,10 +5,17 @@ import json
 import sqlite3
 import threading
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from ..domain.fsrs import (
+    MemoryState,
+    Rating,
+    initial_state,
+    interval_from_retrievability,
+    review as fsrs_review,
+)
 from ..domain.models import (
     AuditEntry,
     ChallengeResult,
@@ -25,7 +32,7 @@ from ..domain.models import (
 )
 from ..domain.spaced_repetition import Quality, update_schedule
 from .repository import DEFAULT_CONSENT
-from .scheduler import next_review
+from .scheduler import fsrs_params, next_review, scheduler_mode
 
 SCHEMA_VERSION = 3
 
@@ -165,6 +172,15 @@ def _datetime(value: str) -> datetime:
     return datetime.fromisoformat(value)
 
 
+def _rating_for_quality(quality: Quality) -> Rating:
+    """把三档 Quality 映射到 FSRS 四档 Rating。"""
+    if quality is Quality.WRONG:
+        return Rating.AGAIN
+    if quality is Quality.HINTED:
+        return Rating.HARD
+    return Rating.GOOD
+
+
 class SQLiteRepository:
     def __init__(
         self, path: Path | str, consent: Consent | None = None
@@ -274,8 +290,9 @@ class SQLiteRepository:
                         stem, user_answer, correct_answer, error_type,
                         max_hint_level, created_at, review_state, review_count,
                         consecutive_correct, receipt_ids, exercise_snapshot,
-                        ease, interval_days, next_review_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ease, interval_days, next_review_at,
+                        stability, difficulty, reps, lapses
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         stored.id,
@@ -298,6 +315,10 @@ class SQLiteRepository:
                         stored.ease,
                         stored.interval_days,
                         _text(stored.next_review_at or stored.created_at),
+                        stored.stability,
+                        stored.difficulty,
+                        stored.reps,
+                        stored.lapses,
                     ),
                 )
             else:
@@ -405,9 +426,22 @@ class SQLiteRepository:
     def record_review(
         self, exercise_id: str, independent: bool | Quality, now: datetime
     ) -> MistakeEntry | None:
-        # 兼容两种调用：旧路径传 bool，新 SM-2 路径传 Quality
+        # bool 与 Quality 两种调用都映射到统一评分，再按环境变量选择调度器
         if isinstance(independent, Quality):
-            return self.record_sm2_review(exercise_id, independent, now)
+            quality = independent
+        else:
+            quality = Quality.INDEPENDENT if independent else Quality.WRONG
+
+        if scheduler_mode() == "sm2":
+            if isinstance(independent, Quality):
+                return self.record_sm2_review(exercise_id, quality, now)
+            return self._record_legacy_review(exercise_id, independent, now)
+        return self.record_fsrs_review(exercise_id, quality, now)
+
+    def _record_legacy_review(
+        self, exercise_id: str, independent: bool, now: datetime
+    ) -> MistakeEntry | None:
+        """M1—M8 的旧状态机路径，仅在 MATHCOACH_SCHEDULER=sm2 时使用。"""
         with self._lock, self._connection:
             row = self._connection.execute(
                 "SELECT * FROM mistakes WHERE exercise_id = ?", (exercise_id,)
@@ -449,13 +483,111 @@ class SQLiteRepository:
                 consecutive_correct=streak,
             )
 
+    def record_fsrs_review(
+        self, exercise_id: str, quality: Quality, now: datetime
+    ) -> MistakeEntry | None:
+        """按 FSRS 更新稳定性/难度/间隔，同时保留旧状态机的掌握计数。"""
+        params = fsrs_params()
+        rating = _rating_for_quality(quality)
+        with self._lock, self._connection:
+            row = self._connection.execute(
+                "SELECT * FROM mistakes WHERE exercise_id = ?", (exercise_id,)
+            ).fetchone()
+            if row is None:
+                return None
+            entry = self._to_mistake(row)
+            if entry.stability <= 0:
+                # 旧数据首次评分：用当前评分初始化，不猜测历史
+                state = initial_state(rating, params)
+                interval = interval_from_retrievability(
+                    state.stability,
+                    params.desired_retention,
+                    params.max_interval_days,
+                )
+            else:
+                # 用“到期日 - 上次间隔”还原上次复习时间，避免到期当天复习被算成 0 天
+                anchor = (
+                    entry.next_review_at - timedelta(days=entry.interval_days)
+                    if entry.next_review_at
+                    else entry.created_at
+                )
+                elapsed_days = max(0.0, (now - anchor).total_seconds() / 86400)
+                state, interval = fsrs_review(
+                    MemoryState(
+                        stability=entry.stability,
+                        difficulty=entry.difficulty,
+                        reps=entry.reps,
+                        lapses=entry.lapses,
+                    ),
+                    rating,
+                    elapsed_days,
+                    params,
+                )
+            # 掌握状态和连续独立次数仍由旧状态机决定，FSRS 只负责间隔
+            review_state, review_count, streak, _ = next_review(
+                entry, quality is Quality.INDEPENDENT, now
+            )
+            due_at = now + timedelta(days=interval)
+            self._connection.execute(
+                """
+                UPDATE mistakes SET
+                    stability = ?, difficulty = ?, reps = ?, lapses = ?,
+                    interval_days = ?, next_review_at = ?,
+                    review_state = ?, review_count = ?, consecutive_correct = ?
+                WHERE exercise_id = ?
+                """,
+                (
+                    state.stability,
+                    state.difficulty,
+                    state.reps,
+                    state.lapses,
+                    interval,
+                    _text(due_at),
+                    review_state.value,
+                    review_count,
+                    streak,
+                    exercise_id,
+                ),
+            )
+            if review_state is ReviewState.MASTERED:
+                self._connection.execute(
+                    "UPDATE review_queue SET completed = 1 "
+                    "WHERE mistake_id = ? AND completed = 0",
+                    (entry.id,),
+                )
+            else:
+                cursor = self._connection.execute(
+                    "UPDATE review_queue SET due_at = ? "
+                    "WHERE mistake_id = ? AND completed = 0",
+                    (_text(due_at), entry.id),
+                )
+                if cursor.rowcount == 0:
+                    self._connection.execute(
+                        "INSERT INTO review_queue(mistake_id, due_at, completed) "
+                        "VALUES (?, ?, 0)",
+                        (entry.id, _text(due_at)),
+                    )
+            return replace(
+                entry,
+                stability=state.stability,
+                difficulty=state.difficulty,
+                reps=state.reps,
+                lapses=state.lapses,
+                interval_days=interval,
+                next_review_at=due_at,
+                review_state=review_state,
+                review_count=review_count,
+                consecutive_correct=streak,
+            )
+
     def record_sm2_review(
         self, mistake_id: str, quality: Quality, now: datetime
     ) -> MistakeEntry | None:
         """按 SM-2 更新难度因子与间隔；不改动旧状态机的掌握计数。"""
         with self._lock, self._connection:
             row = self._connection.execute(
-                "SELECT * FROM mistakes WHERE id = ?", (mistake_id,)
+                "SELECT * FROM mistakes WHERE id = ? OR exercise_id = ?",
+                (mistake_id, mistake_id),
             ).fetchone()
             if row is None:
                 return None
@@ -472,20 +604,20 @@ class SQLiteRepository:
                     schedule.ease,
                     schedule.interval_days,
                     _text(schedule.next_review_at),
-                    mistake_id,
+                    entry.id,
                 ),
             )
             # 同步旧复习队列，避免复习清单与 SM-2 到期时间分叉
             cursor = self._connection.execute(
                 "UPDATE review_queue SET due_at = ? "
                 "WHERE mistake_id = ? AND completed = 0",
-                (_text(schedule.next_review_at), mistake_id),
+                (_text(schedule.next_review_at), entry.id),
             )
             if cursor.rowcount == 0:
                 self._connection.execute(
                     "INSERT INTO review_queue(mistake_id, due_at, completed) "
                     "VALUES (?, ?, 0)",
-                    (mistake_id, _text(schedule.next_review_at)),
+                    (entry.id, _text(schedule.next_review_at)),
                 )
             return replace(
                 entry,
@@ -651,4 +783,8 @@ class SQLiteRepository:
             next_review_at=(
                 _datetime(row["next_review_at"]) if row["next_review_at"] else None
             ),
+            stability=row["stability"],
+            difficulty=row["difficulty"],
+            reps=row["reps"],
+            lapses=row["lapses"],
         )
