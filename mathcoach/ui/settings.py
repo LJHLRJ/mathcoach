@@ -37,6 +37,7 @@ from ..memory.settings_repo import (
 from ..safety.redlines import sanitize_text
 from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .motion import load_dynamic_background, save_dynamic_background
 from .sound import (
     cue_bytes,
     load_sound_settings,
@@ -413,6 +414,7 @@ def _render_appearance_form(
         "背景随实际生效的浅色/深色主题切换，主题变更需重启。"
     )
     current = load_background(consent)
+    current_dynamic = load_dynamic_background(consent)
     labels = list(BACKGROUND_OPTIONS.values())
     keys = list(BACKGROUND_OPTIONS)
     index = keys.index(current) if current in keys else 0
@@ -423,16 +425,24 @@ def _render_appearance_form(
             index=index,
             key="settings_background",
         )
+        dynamic_background = st.toggle(
+            "动态背景（实验性）",
+            value=current_dynamic,
+            key="settings_dynamic_background",
+            help="仅在仪表盘和空状态显示；默认关闭。",
+        )
         saved = st.form_submit_button("保存外观设置")
     if not saved:
         return
     choice = keys[labels.index(label)]
-    if save_background(consent, choice):
-        repository.record_audit("settings_background", "ok")
+    background_saved = save_background(consent, choice)
+    motion_saved = save_dynamic_background(consent, dynamic_background)
+    if background_saved and motion_saved:
+        repository.record_audit("settings_appearance", "ok")
         st.session_state["settings_appearance_saved"] = True
         st.rerun()
     else:
-        st.error(f"{ICON_ERROR} 背景设置保存失败，请重试。")
+        st.error(f"{ICON_ERROR} 外观设置保存失败，请重试。")
 
 
 def _render_sound_form(

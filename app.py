@@ -60,6 +60,7 @@ from mathcoach.ui.icons import (
     ICON_UPDATE,
 )
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
+from mathcoach.ui.motion import render_dynamic_background
 from mathcoach.ui.onboarding import (
     mark_first_use_done,
     render_onboarding,
@@ -432,6 +433,8 @@ def _render_hint_actions() -> None:
 
 def _render_session() -> None:
     view = engine.view
+    if view.phase in (Phase.GOAL_CONFIRM, Phase.EXPLAIN):
+        render_dynamic_background(st.session_state.consent, "empty")
 
     if view.phase is Phase.GOAL_CONFIRM:
         with card(view.title):
@@ -645,6 +648,7 @@ def _next_recommendations(repository, cards, prerequisites) -> list[Recommendati
 
 
 def _render_dashboard() -> None:
+    render_dynamic_background(st.session_state.consent)
     summary = build_dashboard(
         st.session_state.repository, datetime.now(timezone.utc)
     )
