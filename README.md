@@ -47,7 +47,7 @@
 
 Windows 版 .exe 和 macOS 版 .dmg 未签名。首次运行时：Windows 可能弹出 SmartScreen 提示，点击“更多信息”→“仍要运行”；macOS 可能提示“无法验证开发者”或“已损坏”，前者可在“系统设置 → 隐私与安全性”中允许，后者需执行 `xattr -cr /Applications/MathCoach.app`。这是未签名应用的正常行为，不影响功能。
 
-完整安装步骤、SHA256 校验、安装器行为与版本更新说明见 [docs/install.md](docs/install.md)。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+完整安装步骤、安装向导页面与当前限制、SHA256 校验、版本更新说明见 [docs/install.md](docs/install.md)。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
 
 ## 目录
 

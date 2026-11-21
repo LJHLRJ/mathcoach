@@ -21,6 +21,8 @@ OutputBaseFilename=MathCoachSetup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+DisableWelcomePage=yes
+InfoBeforeFile=scripts\installer\install-before.txt
 CloseApplications=yes
 RestartApplications=no
 UninstallDisplayIcon={app}\MathCoach.exe
@@ -29,8 +31,12 @@ SourceDir=..\..
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Messages]
+ExitSetupMessage=Setup is not complete. If you exit now, any changes already made will be rolled back.%n%nYou may run Setup again at another time to complete the installation.%n%nExit Setup?
+
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "autostart"; Description: "Start MathCoach when Windows starts"; GroupDescription: "Startup options:"; Flags: unchecked
 
 [Files]
 Source: "dist\MathCoach\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
@@ -38,6 +44,9 @@ Source: "dist\MathCoach\*"; DestDir: "{app}"; Flags: recursesubdirs createallsub
 [Icons]
 Name: "{userprograms}\{#MyAppName}"; Filename: "{app}\MathCoach.exe"
 Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\MathCoach.exe"; Tasks: desktopicon
+
+[Registry]
+Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "MathCoach"; ValueData: """{app}\MathCoach.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
 Filename: "{app}\MathCoach.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
