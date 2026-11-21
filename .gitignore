@@ -26,8 +26,8 @@ build/
 *.egg-info/
 *.spec
 
-# Streamlit
-.streamlit/
+# Streamlit（主题配置需要入库，仅忽略密钥）
+.streamlit/secrets.toml
 
 # 系统
 .DS_Store
