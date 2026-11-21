@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Protocol
 
 from ..config import db_path as default_db_path
+from ..domain.bkt import bkt_params, initial_mastery, update_mastery
 from ..domain.models import (
     AuditEntry,
     ChallengeResult,
@@ -49,6 +50,8 @@ class Repository(Protocol):
 
     def set_mastery(self, card_id: str, probability: float, now: datetime) -> None: ...
 
+    def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float: ...
+
     def record_audit(
         self, op: str, result: str, now: datetime | None = None
     ) -> None: ...
@@ -87,6 +90,8 @@ class InMemoryRepository:
 
     def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
         self._receipts.append(receipt)
+        # 收据代表一次通过观察，同步推进 BKT 掌握概率
+        self.record_mastery(receipt.card_id, correct=True, now=receipt.created_at)
 
     def list_receipts(self, limit: int | None = 50) -> list[Receipt]:
         receipts = list(reversed(self._receipts))
@@ -106,6 +111,8 @@ class InMemoryRepository:
             )
         self._mistakes[entry.exercise_id] = entry
         self._due_at[entry.id] = entry.created_at
+        # 错题代表一次未通过观察，同步推进 BKT 掌握概率
+        self.record_mastery(entry.card_id, correct=False, now=entry.created_at)
         return entry
 
     def find_mistake(self, exercise_id: str) -> MistakeEntry | None:
@@ -127,6 +134,14 @@ class InMemoryRepository:
 
     def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
         self._mastery[card_id] = max(0.0, min(1.0, float(probability)))
+
+    def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float:
+        prior = self.get_mastery(card_id)
+        if prior is None:
+            prior = initial_mastery(bkt_params())
+        updated = update_mastery(prior, correct, bkt_params())
+        self.set_mastery(card_id, updated, now)
+        return updated
 
     def record_review(
         self, exercise_id: str, independent: bool, now: datetime

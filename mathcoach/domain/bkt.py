@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 from typing import Mapping
+
+import yaml
 
 
 def _clamp(value: float, lower: float, upper: float) -> float:
@@ -56,3 +60,13 @@ def params_from_mapping(data: Mapping[str, object]) -> BKTParams:
         p_guess=float(data.get("p_guess", DEFAULT_BKT_PARAMS.p_guess)),
         p_slip=float(data.get("p_slip", DEFAULT_BKT_PARAMS.p_slip)),
     )
+
+
+@lru_cache(maxsize=1)
+def bkt_params() -> BKTParams:
+    """读取 content/bkt_params.yaml；缺失时回落到内置默认参数。"""
+    path = Path(__file__).resolve().parents[2] / "content" / "bkt_params.yaml"
+    if not path.exists():
+        return DEFAULT_BKT_PARAMS
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return params_from_mapping(data)

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from ..domain.bkt import bkt_params, initial_mastery, update_mastery
 from ..domain.fsrs import (
     MemoryState,
     Rating,
@@ -270,6 +271,14 @@ class SQLiteRepository:
                 (card_id, value, _text(now)),
             )
 
+    def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float:
+        prior = self.get_mastery(card_id)
+        if prior is None:
+            prior = initial_mastery(bkt_params())
+        updated = update_mastery(prior, correct, bkt_params())
+        self.set_mastery(card_id, updated, now)
+        return updated
+
     def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
         with self._lock, self._connection:
             self._connection.execute(
@@ -295,6 +304,8 @@ class SQLiteRepository:
                     _text(receipt.created_at),
                 ),
             )
+        # 收据代表一次通过观察，同步推进 BKT 掌握概率
+        self.record_mastery(receipt.card_id, correct=True, now=receipt.created_at)
 
     def list_receipts(self, limit: int | None = 50) -> list[Receipt]:
         query = "SELECT * FROM receipts ORDER BY created_at DESC"
@@ -391,6 +402,8 @@ class SQLiteRepository:
                 "INSERT INTO review_queue(mistake_id, due_at, completed) VALUES (?, ?, 0)",
                 (stored.id, _text(stored.created_at)),
             )
+        # 错题代表一次未通过观察，同步推进 BKT 掌握概率
+        self.record_mastery(stored.card_id, correct=False, now=stored.created_at)
         return stored
 
     def find_mistake(self, exercise_id: str) -> MistakeEntry | None:
@@ -465,9 +478,17 @@ class SQLiteRepository:
 
         if scheduler_mode() == "sm2":
             if isinstance(independent, Quality):
-                return self.record_sm2_review(exercise_id, quality, now)
-            return self._record_legacy_review(exercise_id, independent, now)
-        return self.record_fsrs_review(exercise_id, quality, now)
+                result = self.record_sm2_review(exercise_id, quality, now)
+            else:
+                result = self._record_legacy_review(exercise_id, independent, now)
+        else:
+            result = self.record_fsrs_review(exercise_id, quality, now)
+        if result is not None:
+            # 复习结果只更新掌握概率，不改变提示层级或难度规则
+            self.record_mastery(
+                result.card_id, correct=quality is not Quality.WRONG, now=now
+            )
+        return result
 
     def _record_legacy_review(
         self, exercise_id: str, independent: bool, now: datetime

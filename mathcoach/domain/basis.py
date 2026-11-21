@@ -34,8 +34,18 @@ def basis_for_gap(stat: GapStat) -> str:
     )
 
 
-def basis_for_mastery(receipt_count: int, wrong_count: int, total: int) -> str:
-    """掌握度依据：收据数 + 错题占比；首期只做可解释分档。"""
+def basis_for_mastery(
+    receipt_count: int,
+    wrong_count: int,
+    total: int,
+    probability: float | None = None,
+) -> str:
+    """掌握度依据：BKT 概率 + 收据数 + 错题占比。"""
+    if probability is not None:
+        return (
+            f"掌握概率 {probability:.0%}；收据 {receipt_count} 次，"
+            f"错题 {wrong_count}/{total}"
+        )
     if total <= 0:
         return f"收据 {receipt_count} 次，暂无错题记录"
     return (

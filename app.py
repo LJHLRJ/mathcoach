@@ -13,6 +13,8 @@ from mathcoach.content.loader import (
     load_prerequisites,
 )
 from mathcoach.content.validator import ValidationError, validate_prerequisites
+from mathcoach.domain.basis import basis_for_mastery
+from mathcoach.domain.bkt import initial_mastery
 from mathcoach.domain.models import Consent, Exercise, ExerciseKind, Phase
 from mathcoach.domain.prerequisites import Gap, trace_gap
 from mathcoach.export.package import (
@@ -374,6 +376,35 @@ def _render_session() -> None:
             st.rerun()
 
 
+def _mastery_rows(repository) -> list[tuple[str, str]]:
+    """把 BKT 概率整理成现有仪表盘上的掌握度列表。"""
+    receipts = repository.list_receipts(limit=None)
+    mistakes = repository.list_mistakes(limit=None)
+    card_ids = sorted(
+        {receipt.card_id for receipt in receipts}
+        | {mistake.card_id for mistake in mistakes}
+    )
+    rows: list[tuple[str, str]] = []
+    for card_id in card_ids:
+        probability = repository.get_mastery(card_id)
+        if probability is None:
+            probability = initial_mastery()
+        receipt_count = sum(1 for receipt in receipts if receipt.card_id == card_id)
+        wrong_count = sum(1 for mistake in mistakes if mistake.card_id == card_id)
+        rows.append(
+            (
+                card_id,
+                basis_for_mastery(
+                    receipt_count,
+                    wrong_count,
+                    receipt_count + wrong_count,
+                    probability,
+                ),
+            )
+        )
+    return rows
+
+
 def _render_dashboard() -> None:
     summary = build_dashboard(
         st.session_state.repository, datetime.now(timezone.utc)
@@ -392,6 +423,11 @@ def _render_dashboard() -> None:
         f"复习状态：未复习 {summary.unreviewed} · "
         f"复习中 {summary.reviewing} · 已掌握 {summary.mastered}"
     )
+    mastery_rows = _mastery_rows(st.session_state.repository)
+    if mastery_rows:
+        st.markdown("**掌握概率**")
+        for card_id, text in mastery_rows:
+            st.markdown(f"- {card_id}：{text}")
     if summary.top_errors:
         st.markdown(
             "**高频错因**："
