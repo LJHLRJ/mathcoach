@@ -107,7 +107,7 @@
 - Firefox 151（Playwright，1280×800）：动态背景面板 1120×180 且 canvas 持续变化；庆祝 iframe 固定覆盖全视口、`pointer-events: none`；点击穿透成功
 - WebKit 2311（Playwright，Safari 同源引擎；Linux 无法运行 Safari 本体）：动态背景与庆祝 iframe 同样通过；点击穿透成功
 - pywebview 5.4 + Qt WebEngine（Xvfb，1280×700 真实窗口）：打开打包产物的本地服务并正常渲染主界面
-- Linux 打包产物未内置 GTK/Qt 后端，直接双击启动会提示缺少 Qt/GTK；Linux 不在发布矩阵（仅 Windows/macOS），不影响发布产物
+- Linux 打包产物未内置 GTK/Qt 后端，直接启动会提示缺少 Qt/GTK；规避方式见 [安装指南](install.md#linux从源码运行) 与 [桌面打包方案](packaging/desktop-packaging-plan.md#51-linux-打包产物的-gui-后端限制)。Linux 不在发布矩阵（仅 Windows/macOS）。
 - 应用内“减少动效”：不注入 shader 面板与庆祝 iframe；浏览器 `prefers-reduced-motion`：canvas `display: none`、checksum 0、不创建 confetti canvas
 - 静态服务：源码与打包产物 `confetti.html` / `confetti.browser.js` 均 200；打包产物在 cwd 无 `.streamlit/config.toml`、且未预设环境变量时仍为 200，验证启动器设置 `STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true`
 - PyInstaller onedir 构建成功：`dist/MathCoach` 574MB，入口 50MB；`static/` 位于 `_internal/static/`；health=200，打包应用页面正常渲染

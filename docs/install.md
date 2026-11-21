@@ -235,7 +235,19 @@ Linux 从源码运行时，数据库由 `platformdirs` 决定，通常为 `~/.lo
 
 ## Linux：从源码运行
 
-Linux 当前没有桌面安装包。按 README 的“从源码安装”章节操作：
+Linux 当前没有官方桌面安装包，发布矩阵仅包含 Windows 与 macOS。若你自行用 PyInstaller 构建了 Linux 产物，直接运行可能只启动本地服务而不出现窗口，并提示缺少 Qt/GTK：
+
+```text
+[pywebview] GTK cannot be loaded
+[pywebview] QT cannot be loaded
+webview.errors.WebViewException: You must have either QT or GTK with Python extensions installed in order to use pywebview.
+```
+
+原因：pywebview 在 Linux 需要 GTK（PyGObject + WebKit2GTK）或 Qt（PySide6/PyQt + qtpy + QtWebEngine），而 `requirements-packaging.txt` 只包含 PyInstaller 与 pywebview，不包含 GUI 后端。`--windowed` 产物会隐藏标准输出，需用 `--console` 构建或从终端运行才能看到上述错误。
+
+规避方式：
+
+1. 推荐从源码运行：
 
 ```bash
 python -m venv .venv
@@ -243,5 +255,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+2. 复用打包产物的服务模式，无需 GUI 后端：
+
+```bash
+./MathCoach --streamlit-server 8501
+```
+
+然后在浏览器打开 <http://127.0.0.1:8501>。启动器会设置 `STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true`，`static/` 下的庆祝动效资源仍可正常访问。
+
+3. 若必须在 Linux 使用原生窗口，需要在构建环境安装 Qt 或 GTK 后端后重新构建，并自行验证 PyInstaller 是否收集了后端依赖。Qt 路线需 `PySide6` 与 `qtpy`；GTK 路线需 PyGObject 与 WebKit2GTK 4.1。详见 [桌面打包方案](packaging/desktop-packaging-plan.md#51-linux-打包产物的-gui-后端限制)。
+
+无头或 CI 环境可用 Xvfb + Qt WebEngine；以 root 运行时需设置 `QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox --disable-gpu"` 与 `QTWEBENGINE_DISABLE_SANDBOX=1`。
 
 更多背景见 [README](../README.md) 与 [桌面打包方案](packaging/desktop-packaging-plan.md)。
