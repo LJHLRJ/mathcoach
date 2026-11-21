@@ -11,17 +11,23 @@
   example: R³ 按通常的向量加法与数乘构成线性空间。
   exercises:
   - id: grad-matrix-001-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 线性空间必须对下列哪种运算封闭（ ）
     options: ["加法与数乘", "加法与乘法", "只有加法", "只有数乘"]
     answer: "加法与数乘"
     solution_outline: 线性空间的定义要求对加法与数乘封闭。
   - id: grad-matrix-001-e2
+    grade: mixed
+    difficulty: basic
     kind: fill
     stem: R³ 的维数是（ ）
     answer: "3"
     solution_outline: 标准基含 3 个向量。
   - id: grad-matrix-001-e3
+    grade: mixed
+    difficulty: basic
     kind: truefalse
     stem: 线性空间中零向量是唯一的。
     answer: true
@@ -41,17 +47,23 @@
   example: "{(1,0),(0,1)} 是 R² 的一组基。"
   exercises:
   - id: grad-matrix-002-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 成为基的条件是（ ）
     options: ["线性无关且能生成空间", "线性相关且能生成空间", "只线性无关", "只含零向量"]
     answer: "线性无关且能生成空间"
     solution_outline: 基必须同时满足线性无关与生成性。
   - id: grad-matrix-002-e2
+    grade: mixed
+    difficulty: basic
     kind: fill
     stem: 次数不超过 2 的多项式空间维数是（ ）
     answer: "3"
     solution_outline: 基为 1、x、x²。
   - id: grad-matrix-002-e3
+    grade: mixed
+    difficulty: basic
     kind: multi
     stem: 下列向量组中能作为 R² 的基的是（ ）
     options: ["(1,0),(0,1)", "(1,1),(2,2)", "(1,0),(1,1)", "(0,0),(1,1)"]
@@ -72,17 +84,23 @@
   example: 旋转变换在标准基下对应旋转矩阵。
   exercises:
   - id: grad-matrix-003-e1
+    grade: mixed
+    difficulty: intermediate
     kind: choice
     stem: 线性变换必须满足（ ）
     options: ["T(αx+βy)=αT(x)+βT(y)", "T(x+y)=T(x)T(y)", "T(0)=1", "T 必须是常数"]
     answer: "T(αx+βy)=αT(x)+βT(y)"
     solution_outline: 这是线性性的定义。
   - id: grad-matrix-003-e2
+    grade: mixed
+    difficulty: intermediate
     kind: fill
     stem: 线性变换在不同基下的矩阵之间的关系是（ ）
     answer: "相似"
     solution_outline: 同一线性变换在不同基下的矩阵相似。
   - id: grad-matrix-003-e3
+    grade: mixed
+    difficulty: intermediate
     kind: truefalse
     stem: 线性变换把零向量映为零向量。
     answer: true
@@ -102,17 +120,23 @@
   example: 对角矩阵本身已经对角化。
   exercises:
   - id: grad-matrix-004-e1
+    grade: mixed
+    difficulty: intermediate
     kind: choice
     stem: n 阶矩阵 A 可对角化的充要条件是（ ）
     options: ["有 n 个线性无关的特征向量", "特征值互不相同", "A 对称", "det A≠0"]
     answer: "有 n 个线性无关的特征向量"
     solution_outline: 特征向量构成可逆矩阵即可对角化。
   - id: grad-matrix-004-e2
+    grade: mixed
+    difficulty: intermediate
     kind: fill
     stem: 矩阵 diag(2,2,3) 的特征值是（ ）
     answer: "2,2,3"
     solution_outline: 对角矩阵的特征值即对角元。
   - id: grad-matrix-004-e3
+    grade: mixed
+    difficulty: intermediate
     kind: find_error
     stem: 判断矩阵 [[1,1],[0,1]] 是否可对角化，哪一步错了（ ）
     options: ["第 1 步：特征值为 1（二重）", "第 2 步：特征空间维数为 1", "第 3 步：所以有 2 个线性无关特征向量，可对角化"]
@@ -133,17 +157,23 @@
   example: "[[1,1],[0,1]] 本身就是一个 2 阶 Jordan 块。"
   exercises:
   - id: grad-matrix-005-e1
+    grade: mixed
+    difficulty: challenge
     kind: choice
     stem: 与矩阵 [[1,1],[0,1]] 相似的 Jordan 标准形是（ ）
     options: ["一个 2 阶 Jordan 块", "两个 1 阶 Jordan 块", "对角矩阵 diag(1,1)", "零矩阵"]
     answer: "一个 2 阶 Jordan 块"
     solution_outline: 该矩阵本身即为 2 阶 Jordan 块。
   - id: grad-matrix-005-e2
+    grade: mixed
+    difficulty: challenge
     kind: fill
     stem: Jordan 块的个数等于特征值的（ ）重数
     answer: "几何"
     solution_outline: 每个 Jordan 块对应一个线性无关特征向量。
   - id: grad-matrix-005-e3
+    grade: mixed
+    difficulty: challenge
     kind: truefalse
     stem: 任意复矩阵都相似于一个 Jordan 标准形。
     answer: true
@@ -163,17 +193,23 @@
   example: 可逆矩阵在适当条件下可做 LU 分解。
   exercises:
   - id: grad-matrix-006-e1
+    grade: mixed
+    difficulty: challenge
     kind: choice
     stem: 奇异值分解的形式是（ ）
     options: ["A=UΣV^T", "A=LU", "A=QR", "A=U+V"]
     answer: "A=UΣV^T"
     solution_outline: SVD 将矩阵分解为两个正交矩阵与对角矩阵。
   - id: grad-matrix-006-e2
+    grade: mixed
+    difficulty: challenge
     kind: fill
     stem: QR 分解把一个矩阵分解为正交矩阵与（ ）矩阵的乘积
     answer: "上三角"
     solution_outline: Q 为正交矩阵，R 为上三角矩阵。
   - id: grad-matrix-006-e3
+    grade: mixed
+    difficulty: challenge
     kind: match
     stem: 把分解与形式配对（写成 A=1;B=2 的形式）
     options: ["A LU 分解", "B SVD", "1 A=LU", "2 A=UΣV^T"]

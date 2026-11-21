@@ -11,17 +11,23 @@
   example: y''+y=0 是二阶方程，通解含两个任意常数。
   exercises:
   - id: ug-ode-001-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 方程 y''+y=0 的阶是（ ）
     options: ["1", "2", "3", "0"]
     answer: "2"
     solution_outline: 最高阶导数是二阶导数。
   - id: ug-ode-001-e2
+    grade: mixed
+    difficulty: basic
     kind: fill
     stem: 方程 y'''+y=0 的阶是（ ）
     answer: "3"
     solution_outline: 最高阶导数为三阶。
   - id: ug-ode-001-e3
+    grade: mixed
+    difficulty: basic
     kind: truefalse
     stem: n 阶微分方程的通解通常含 n 个任意常数。
     answer: true
@@ -41,17 +47,23 @@
   example: y'=y 的解为 y=Ce^x。
   exercises:
   - id: ug-ode-002-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 下列方程属于可分离变量方程的是（ ）
     options: ["y'=xy", "y'+y=x+y²", "y''+y=0", "y'=x+y"]
     answer: "y'=xy"
     solution_outline: y'=xy 可写成 y'/y=x。
   - id: ug-ode-002-e2
+    grade: mixed
+    difficulty: basic
     kind: fill
     stem: y'=y 的通解是（ ）
     answer: "y=Ce^x"
     solution_outline: 分离变量积分得 ln|y|=x+C。
   - id: ug-ode-002-e3
+    grade: mixed
+    difficulty: basic
     kind: truefalse
     stem: y'=2x 的通解是 y=x²+C。
     answer: true
@@ -71,17 +83,23 @@
   example: y'+y=0 的解为 y=Ce^{−x}。
   exercises:
   - id: ug-ode-003-e1
+    grade: mixed
+    difficulty: intermediate
     kind: choice
     stem: 方程 y'+P(x)y=Q(x) 的积分因子是（ ）
     options: ["e^{∫P dx}", "e^{∫Q dx}", "P(x)", "Q(x)"]
     answer: "e^{∫P dx}"
     solution_outline: 乘以积分因子后左边成为 (μy)'。
   - id: ug-ode-003-e2
+    grade: mixed
+    difficulty: intermediate
     kind: fill
     stem: y'+y=0 的通解是（ ）
     answer: "y=Ce^{-x}"
     solution_outline: 特征根为 −1，通解为 Ce^{−x}。
   - id: ug-ode-003-e3
+    grade: mixed
+    difficulty: intermediate
     kind: find_error
     stem: 求 y'+y=0 的通解，哪一步错了（ ）
     options: ["第 1 步：特征方程 r+1=0", "第 2 步：r=−1", "第 3 步：通解 y=Ce^x"]
@@ -102,17 +120,23 @@
   example: y''−y=0 的特征根为 r=±1，通解为 C1e^x+C2e^{−x}。
   exercises:
   - id: ug-ode-004-e1
+    grade: mixed
+    difficulty: intermediate
     kind: choice
     stem: y''+y=0 的特征方程是（ ）
     options: ["r²+1=0", "r+1=0", "r²−1=0", "r²+r=0"]
     answer: "r²+1=0"
     solution_outline: 代入 y=e^{rx} 得 r²+1=0。
   - id: ug-ode-004-e2
+    grade: mixed
+    difficulty: intermediate
     kind: fill
     stem: y''−y=0 的特征根是（ ）
     answer: "±1"
     solution_outline: r²−1=0 的根为 1 和 −1。
   - id: ug-ode-004-e3
+    grade: mixed
+    difficulty: intermediate
     kind: proof_order
     stem: 求二阶常系数齐次方程通解的步骤排序（用逗号分隔）
     answer: "1,2,3,4"
@@ -132,17 +156,23 @@
   example: 人口指数增长模型中，人口翻倍时间由 ln2/k 给出。
   exercises:
   - id: ug-ode-005-e1
+    grade: mixed
+    difficulty: challenge
     kind: choice
     stem: 方程 N'=kN（k>0）描述的是（ ）
     options: ["指数增长", "指数衰减", "线性增长", "周期振荡"]
     answer: "指数增长"
     solution_outline: 解为 N0e^{kt}，随时间指数增长。
   - id: ug-ode-005-e2
+    grade: mixed
+    difficulty: challenge
     kind: fill
     stem: N'=−2N，N(0)=5，则 N(t)=（ ）
     answer: "5e^{-2t}"
     solution_outline: 指数衰减模型代入初值。
   - id: ug-ode-005-e3
+    grade: mixed
+    difficulty: challenge
     kind: truefalse
     stem: 指数衰减模型的半衰期与初值无关。
     answer: true

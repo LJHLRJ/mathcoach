@@ -6,753 +6,901 @@ nodes:
   parent_id: null
   prerequisites: []
   description: 高中学段
+  grade_span: [mixed]
 - id: stage-undergraduate
   name: 本科
   parent_id: null
   prerequisites: []
   description: 本科学段
+  grade_span: [mixed]
 - id: stage-graduate
   name: 研究生
   parent_id: null
   prerequisites: []
   description: 研究生学段
+  grade_span: [mixed]
 - id: course-hs-三角函数
   name: 三角函数
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：三角函数
+  grade_span: [mixed]
 - id: course-hs-不等式
   name: 不等式
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：不等式
+  grade_span: [mixed]
 - id: course-hs-函数与导数
   name: 函数与导数
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：函数与导数
+  grade_span: [mixed]
 - id: course-hs-复数
   name: 复数
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：复数
+  grade_span: [mixed]
 - id: course-hs-平面向量
   name: 平面向量
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：平面向量
+  grade_span: [mixed]
 - id: course-hs-数列
   name: 数列
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：数列
+  grade_span: [mixed]
 - id: course-hs-概率统计
   name: 概率统计
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：概率统计
+  grade_span: [mixed]
 - id: course-hs-立体几何
   name: 立体几何
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：立体几何
+  grade_span: [mixed]
 - id: course-hs-解析几何
   name: 解析几何
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：解析几何
+  grade_span: [mixed]
 - id: course-hs-计数原理
   name: 计数原理
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：计数原理
+  grade_span: [mixed]
 - id: course-hs-集合与逻辑
   name: 集合与逻辑
   parent_id: stage-highschool
   prerequisites: []
   description: 课程：集合与逻辑
+  grade_span: [mixed]
 - id: course-ug-复变函数
   name: 复变函数
   parent_id: stage-undergraduate
   prerequisites: []
   description: 课程：复变函数
+  grade_span: [mixed]
 - id: course-ug-常微分方程
   name: 常微分方程
   parent_id: stage-undergraduate
   prerequisites: []
   description: 课程：常微分方程
+  grade_span: [mixed]
 - id: course-ug-数值分析基础
   name: 数值分析基础
   parent_id: stage-undergraduate
   prerequisites: []
   description: 课程：数值分析基础
+  grade_span: [mixed]
 - id: course-ug-概率论与数理统计
   name: 概率论与数理统计
   parent_id: stage-undergraduate
   prerequisites: []
   description: 课程：概率论与数理统计
+  grade_span: [mixed]
 - id: course-ug-线性代数
   name: 线性代数
   parent_id: stage-undergraduate
   prerequisites: []
   description: 课程：线性代数
+  grade_span: [mixed]
 - id: course-ug-高等数学
   name: 高等数学
   parent_id: stage-undergraduate
   prerequisites: []
   description: 课程：高等数学
+  grade_span: [mixed]
 - id: course-grad-数值分析进阶
   name: 数值分析进阶
   parent_id: stage-graduate
   prerequisites: []
   description: 课程：数值分析进阶
+  grade_span: [mixed]
 - id: course-grad-数理方程
   name: 数理方程
   parent_id: stage-graduate
   prerequisites: []
   description: 课程：数理方程
+  grade_span: [mixed]
 - id: course-grad-最优化方法
   name: 最优化方法
   parent_id: stage-graduate
   prerequisites: []
   description: 课程：最优化方法
+  grade_span: [mixed]
 - id: course-grad-泛函分析
   name: 泛函分析
   parent_id: stage-graduate
   prerequisites: []
   description: 课程：泛函分析
+  grade_span: [mixed]
 - id: course-grad-矩阵论
   name: 矩阵论
   parent_id: stage-graduate
   prerequisites: []
   description: 课程：矩阵论
+  grade_span: [mixed]
 - id: course-grad-随机过程
   name: 随机过程
   parent_id: stage-graduate
   prerequisites: []
   description: 课程：随机过程
+  grade_span: [mixed]
 - id: hs-trig-004
   name: 正弦型函数的图像
   parent_id: course-hs-三角函数
   prerequisites: []
   description: y=A sin(ωx+φ) 的振幅为 |A|，周期为 2π/|ω|。
+  grade_span: [mixed]
 - id: hs-trig-002
   name: 同角三角函数关系
   parent_id: course-hs-三角函数
   prerequisites:
   - hs-trig-001
   description: sin²x+cos²x=1；tan x=sin x/cos x（cos x≠0）。
+  grade_span: [mixed]
 - id: hs-trig-003
   name: 诱导公式
   parent_id: course-hs-三角函数
   prerequisites:
   - hs-trig-002
   description: sin(π−x)=sin x，cos(π−x)=−cos x；sin(π+x)=−sin x，cos(π+x)=−cos x。
+  grade_span: [mixed]
 - id: hs-trig-001
   name: 弧度制
   parent_id: course-hs-三角函数
   prerequisites: []
   description: 长度等于半径的弧所对的圆心角为 1 弧度；180°=π 弧度，1 弧度约为 57.3°。
+  grade_span: [mixed]
 - id: hs-trig-005
   name: 解三角形
   parent_id: course-hs-三角函数
   prerequisites: []
   description: 正弦定理 a/sin A=b/sin B=c/sin C；余弦定理 c²=a²+b²−2ab cos C。
+  grade_span: [mixed]
 - id: hs-ineq-002
   name: 一元二次不等式
   parent_id: course-hs-不等式
   prerequisites:
   - hs-ineq-001
   description: 先求对应方程的两根，再结合开口方向写出解集。
+  grade_span: [mixed]
 - id: hs-ineq-001
   name: 不等式的性质
   parent_id: course-hs-不等式
   prerequisites: []
   description: 若 a>b，则 a+c>b+c；若 a>b 且 c>0，则 ac>bc；若 a>b 且 c<0，则 ac<bc。
+  grade_span: [mixed]
 - id: hs-ineq-003
   name: 基本不等式
   parent_id: course-hs-不等式
   prerequisites: []
   description: 若 a,b>0，则 a+b≥2√(ab)，当且仅当 a=b 时取等号。
+  grade_span: [mixed]
 - id: hs-ineq-004
   name: 线性规划
   parent_id: course-hs-不等式
   prerequisites: []
   description: 由一组线性不等式围成的区域称为可行域；线性目标函数在可行域顶点处取得最值。
+  grade_span: [mixed]
 - id: hs-ineq-005
   name: 绝对值不等式
   parent_id: course-hs-不等式
   prerequisites: []
   description: '|x|<a（a>0）等价于 −a<x<a；|x|>a 等价于 x<−a 或 x>a。'
+  grade_span: [mixed]
 - id: hs-func-003
   name: 函数的单调性
   parent_id: course-hs-函数与导数
   prerequisites:
   - hs-func-002
   description: 在区间 I 上，若 x1<x2 时总有 f(x1)<f(x2)，则 f 在 I 上单调递增；若总有 f(x1)>f(x2)，则单调递减。
+  grade_span: [mixed]
 - id: hs-func-002
   name: 函数的定义域
   parent_id: course-hs-函数与导数
   prerequisites:
   - hs-function-intro-001
   description: 使函数解析式有意义的自变量取值集合称为定义域；分母不为零、偶次根号内非负、对数真数为正。
+  grade_span: [mixed]
 - id: hs-function-intro-001
   name: 函数的概念
   parent_id: course-hs-函数与导数
   prerequisites: []
   description: 设 A、B 是非空数集，若按某个对应关系 f，对 A 中任意 x，B 中都有唯一确定的 y 与之对应，则称 f 为从 A 到 B 的函数。
+  grade_span: [mixed]
 - id: hs-func-004
   name: 导数的几何意义
   parent_id: course-hs-函数与导数
   prerequisites:
   - hs-func-003
   description: f′(x0) 是曲线 y=f(x) 在点 (x0,f(x0)) 处切线的斜率；切线方程为 y−f(x0)=f′(x0)(x−x0)。
+  grade_span: [mixed]
 - id: hs-func-005
   name: 导数与极值
   parent_id: course-hs-函数与导数
   prerequisites: []
   description: 若 f′(x0)=0 且 f′ 在 x0 两侧异号，则 x0 是极值点；f′(x0)=0 只是驻点，不一定是极值点。
+  grade_span: [mixed]
 - id: hs-func-006
   name: 导数的应用
   parent_id: course-hs-函数与导数
   prerequisites: []
   description: 在闭区间上连续的函数必有最大值和最小值，可通过比较端点和驻点处的函数值得到。
+  grade_span: [mixed]
 - id: hs-complex-005
   name: 复数方程
   parent_id: course-hs-复数
   prerequisites: []
   description: 方程 z²=−1 的两个根为 z=±i；实系数一元二次方程在判别式为负时有一对共轭复根。
+  grade_span: [mixed]
 - id: hs-complex-004
   name: 复平面
   parent_id: course-hs-复数
   prerequisites: []
   description: 实部对应横坐标，虚部对应纵坐标；复数与复平面内的点一一对应。
+  grade_span: [mixed]
 - id: hs-complex-001
   name: 复数的概念
   parent_id: course-hs-复数
   prerequisites: []
   description: 形如 a+bi（a,b∈R）的数称为复数，a 为实部，b 为虚部，i²=−1。
+  grade_span: [mixed]
 - id: hs-complex-002
   name: 复数的运算
   parent_id: course-hs-复数
   prerequisites: []
   description: (a+bi)+(c+di)=(a+c)+(b+d)i；(a+bi)(c+di)=(ac−bd)+(ad+bc)i。
+  grade_span: [mixed]
 - id: hs-complex-003
   name: 共轭复数与模
   parent_id: course-hs-复数
   prerequisites: []
   description: z=a+bi 的共轭为 a−bi，模 |z|=√(a²+b²)，且 |z|²=z·z̄。
+  grade_span: [mixed]
 - id: hs-vector-004
   name: 平行与垂直
   parent_id: course-hs-平面向量
   prerequisites: []
   description: a∥b 当且仅当 x1y2−x2y1=0；a⊥b 当且仅当 x1x2+y1y2=0。
+  grade_span: [mixed]
 - id: hs-vector-005
   name: 向量的应用
   parent_id: course-hs-平面向量
   prerequisites: []
   description: cosθ=a·b/(|a||b|)；|a|²=a·a。
+  grade_span: [mixed]
 - id: hs-vector-001
   name: 平面向量的概念
   parent_id: course-hs-平面向量
   prerequisites: []
   description: 既有大小又有方向的量称为向量；长度为 0 的向量为零向量，方向任意。
+  grade_span: [mixed]
 - id: hs-vector-002
   name: 向量的加减法
   parent_id: course-hs-平面向量
   prerequisites:
   - hs-vector-001
   description: 若 a=(x1,y1)，b=(x2,y2)，则 a±b=(x1±x2,y1±y2)，ka=(kx1,ky1)。
+  grade_span: [mixed]
 - id: hs-vector-003
   name: 数量积
   parent_id: course-hs-平面向量
   prerequisites: []
   description: a·b=|a||b|cosθ；坐标形式 a·b=x1x2+y1y2。
+  grade_span: [mixed]
 - id: hs-seq-001
   name: 数列的概念
   parent_id: course-hs-数列
   prerequisites: []
   description: 按一定顺序排列的一列数称为数列；a_n 表示第 n 项，n 为正整数。
+  grade_span: [mixed]
 - id: hs-seq-004
   name: 数列求和
   parent_id: course-hs-数列
   prerequisites: []
   description: 等差数列前 n 项和 S_n=n(a_1+a_n)/2；等比数列 S_n=a_1(1−q^n)/(1−q)（q≠1）。
+  grade_span: [mixed]
 - id: hs-seq-002
   name: 等差数列
   parent_id: course-hs-数列
   prerequisites:
   - hs-seq-001
   description: 若 a_{n+1}−a_n=d 为常数，则 {a_n} 为等差数列，通项 a_n=a_1+(n−1)d。
+  grade_span: [mixed]
 - id: hs-seq-003
   name: 等比数列
   parent_id: course-hs-数列
   prerequisites: []
   description: 若 a_{n+1}/a_n=q（q≠0）为常数，则 {a_n} 为等比数列，通项 a_n=a_1 q^{n−1}。
+  grade_span: [mixed]
 - id: hs-seq-005
   name: 递推数列
   parent_id: course-hs-数列
   prerequisites: []
   description: 用前项表示后项的等式称为递推关系；累加、累乘是常见求通项方法。
+  grade_span: [mixed]
 - id: hs-stats-002
   name: 古典概型
   parent_id: course-hs-概率统计
   prerequisites: []
   description: 若样本空间有 n 个等可能样本点，事件 A 含 m 个样本点，则 P(A)=m/n。
+  grade_span: [mixed]
 - id: hs-stats-001
   name: 随机事件与概率
   parent_id: course-hs-概率统计
   prerequisites: []
   description: 任何事件 A 的概率满足 0≤P(A)≤1；必然事件概率为 1，不可能事件概率为 0。
+  grade_span: [mixed]
 - id: hs-stats-003
   name: 互斥与独立
   parent_id: course-hs-概率统计
   prerequisites: []
   description: 互斥事件满足 P(A∪B)=P(A)+P(B)；独立事件满足 P(A∩B)=P(A)P(B)。
+  grade_span: [mixed]
 - id: hs-stats-004
   name: 统计量
   parent_id: course-hs-概率统计
   prerequisites: []
   description: 平均数为数据总和除以个数；中位数是排序后中间的数；众数是出现次数最多的数。
+  grade_span: [mixed]
 - id: hs-stats-005
   name: 分布与期望
   parent_id: course-hs-概率统计
   prerequisites: []
   description: E(X)=Σx_i p_i；二项分布 X~B(n,p) 的期望为 np，方差为 np(1−p)。
+  grade_span: [mixed]
 - id: hs-solid-005
   name: 空间几何体体积
   parent_id: course-hs-立体几何
   prerequisites: []
   description: 柱体 V=Sh；锥体 V=Sh/3；球 V=4πr³/3。
+  grade_span: [mixed]
 - id: hs-solid-003
   name: 线面垂直
   parent_id: course-hs-立体几何
   prerequisites: []
   description: 若直线 l 垂直于平面 α 内两条相交直线，则 l⊥α；线面垂直则 l 垂直于 α 内所有直线。
+  grade_span: [mixed]
 - id: hs-solid-002
   name: 线面平行
   parent_id: course-hs-立体几何
   prerequisites: []
   description: 平面外一条直线与平面内一条直线平行，则该直线与平面平行；线面平行时，过该直线的平面与原平面的交线与该直线平行。
+  grade_span: [mixed]
 - id: hs-solid-001
   name: 空间点线面关系
   parent_id: course-hs-立体几何
   prerequisites: []
   description: 两点确定一条直线；不共线的三点确定一个平面；两条相交或平行直线确定一个平面。
+  grade_span: [mixed]
 - id: hs-solid-004
   name: 空间角
   parent_id: course-hs-立体几何
   prerequisites: []
   description: 异面直线所成角的范围是 (0°,90°]；线面角是斜线与它在平面内射影的夹角。
+  grade_span: [mixed]
 - id: hs-analytic-002
   name: 圆的方程
   parent_id: course-hs-解析几何
   prerequisites: []
   description: 以 (a,b) 为圆心、r 为半径的圆方程为 (x−a)²+(y−b)²=r²。
+  grade_span: [mixed]
 - id: hs-analytic-003
   name: 直线与圆的位置关系
   parent_id: course-hs-解析几何
   prerequisites: []
   description: 圆心到直线距离 d<r 相交，d=r 相切，d>r 相离。
+  grade_span: [mixed]
 - id: hs-analytic-004
   name: 椭圆
   parent_id: course-hs-解析几何
   prerequisites: []
   description: 椭圆 x²/a²+y²/b²=1（a>b>0）中 c²=a²−b²，离心率 e=c/a。
+  grade_span: [mixed]
 - id: hs-analytic-005
   name: 抛物线
   parent_id: course-hs-解析几何
   prerequisites: []
   description: 抛物线 y²=2px（p>0）的焦点为 (p/2,0)，准线为 x=−p/2。
+  grade_span: [mixed]
 - id: hs-analytic-001
   name: 直线方程
   parent_id: course-hs-解析几何
   prerequisites: []
   description: 直线 y=kx+b 的斜率为 k，y 轴截距为 b；过点 (x0,y0) 且斜率为 k 的直线为 y−y0=k(x−x0)。
+  grade_span: [mixed]
 - id: hs-count-005
   name: 二项式定理
   parent_id: course-hs-计数原理
   prerequisites: []
   description: (a+b)^n=ΣC(n,k)a^{n−k}b^k，第 k+1 项系数为 C(n,k)。
+  grade_span: [mixed]
 - id: hs-count-003
   name: 排列
   parent_id: course-hs-计数原理
   prerequisites: []
   description: 从 n 个不同元素中取 m 个按顺序排列，方法数为 A(n,m)=n(n−1)…(n−m+1)。
+  grade_span: [mixed]
 - id: hs-count-004
   name: 组合
   parent_id: course-hs-计数原理
   prerequisites: []
   description: C(n,m)=A(n,m)/m!，且 C(n,m)=C(n,n−m)。
+  grade_span: [mixed]
 - id: hs-count-001
   name: 分类加法计数原理
   parent_id: course-hs-计数原理
   prerequisites: []
   description: 完成一件事有 n 类互斥方案，第 i 类有 m_i 种方法，则总方法数为 m_1+…+m_n。
+  grade_span: [mixed]
 - id: hs-count-002
   name: 分步乘法计数原理
   parent_id: course-hs-计数原理
   prerequisites: []
   description: 完成一件事需要 n 个步骤，第 i 步有 m_i 种方法，则总方法数为 m_1×…×m_n。
+  grade_span: [mixed]
 - id: hs-set-003
   name: 充分必要条件
   parent_id: course-hs-集合与逻辑
   prerequisites:
   - hs-set-002
   description: 若 p⇒q，则 p 是 q 的充分条件，q 是 p 的必要条件；若 p⇔q，则 p 与 q 互为充要条件。
+  grade_span: [mixed]
 - id: hs-set-004
   name: 量词与否定
   parent_id: course-hs-集合与逻辑
   prerequisites: []
   description: ¬(∀x∈M, p(x)) 等价于 ∃x∈M, ¬p(x)；¬(∃x∈M, p(x)) 等价于 ∀x∈M, ¬p(x)。
+  grade_span: [mixed]
 - id: hs-set-001
   name: 集合与元素
   parent_id: course-hs-集合与逻辑
   prerequisites: []
   description: 把一些确定的对象看成一个整体就构成集合；对象称为元素，元素与集合之间只有“属于”或“不属于”两种关系。
+  grade_span: [mixed]
 - id: hs-set-002
   name: 集合的运算
   parent_id: course-hs-集合与逻辑
   prerequisites:
   - hs-set-001
   description: A∩B={x | x∈A 且 x∈B}；A∪B={x | x∈A 或 x∈B}；A\B 表示属于 A 但不属于 B 的元素。
+  grade_span: [mixed]
 - id: hs-set-005
   name: 集合计数与子集
   parent_id: course-hs-集合与逻辑
   prerequisites: []
   description: 含 n 个元素的集合有 2^n 个子集、2^n−1 个真子集；容斥原理：|A∪B|=|A|+|B|−|A∩B|。
+  grade_span: [mixed]
 - id: ug-complex-003
   name: 初等复变函数
   parent_id: course-ug-复变函数
   prerequisites: []
   description: e^{iθ}=cosθ+i sinθ；e^z 是周期为 2πi 的整函数，且永不为零。
+  grade_span: [mixed]
 - id: ug-complex-001
   name: 复数与复平面
   parent_id: course-ug-复变函数
   prerequisites: []
   description: z=r(cosθ+i sinθ)=re^{iθ}，其中 r=|z|，θ=Arg z。
+  grade_span: [mixed]
 - id: ug-complex-004
   name: 复积分
   parent_id: course-ug-复变函数
   prerequisites: []
   description: 若 f 在单连通区域解析，则沿任意闭曲线积分为 0；∮ dz/z=2πi（绕原点一圈）。
+  grade_span: [mixed]
 - id: ug-complex-005
   name: 留数
   parent_id: course-ug-复变函数
   prerequisites: []
   description: Res(f,z0)=1/(2πi)∮ f dz；简单极点处 Res(f,z0)=lim (z−z0)f(z)。
+  grade_span: [mixed]
 - id: ug-complex-002
   name: 解析函数
   parent_id: course-ug-复变函数
   prerequisites: []
   description: f=u+iv 在区域内解析的必要条件是 u_x=v_y，u_y=−v_x（C-R 方程）。
+  grade_span: [mixed]
 - id: ug-ode-002
   name: 一阶可分离变量方程
   parent_id: course-ug-常微分方程
   prerequisites: []
   description: 形如 y'=f(x)g(y) 的方程称为可分离变量方程，分离后两边积分。
+  grade_span: [mixed]
 - id: ug-ode-003
   name: 一阶线性方程
   parent_id: course-ug-常微分方程
   prerequisites: []
   description: y'+P(x)y=Q(x) 的积分因子为 μ=e^{∫P dx}，解为 y=μ⁻¹∫μQ dx+Cμ⁻¹。
+  grade_span: [mixed]
 - id: ug-ode-004
   name: 二阶常系数线性方程
   parent_id: course-ug-常微分方程
   prerequisites: []
   description: y''+py'+qy=0 的特征方程为 r²+pr+q=0，根据根的情况写出通解。
+  grade_span: [mixed]
 - id: ug-ode-001
   name: 微分方程基本概念
   parent_id: course-ug-常微分方程
   prerequisites: []
   description: 方程中出现的最高阶导数的阶数称为微分方程的阶；n 阶方程的通解含 n 个任意常数。
+  grade_span: [mixed]
 - id: ug-ode-005
   name: 微分方程应用
   parent_id: course-ug-常微分方程
   prerequisites: []
   description: N'=kN 的解为 N=N0e^{kt}；k>0 增长，k<0 衰减。
+  grade_span: [mixed]
 - id: ug-numerical-004
   name: 插值
   parent_id: course-ug-数值分析基础
   prerequisites: []
   description: n+1 个互异节点确定唯一的次数不超过 n 的插值多项式。
+  grade_span: [mixed]
 - id: ug-numerical-005
   name: 数值积分
   parent_id: course-ug-数值分析基础
   prerequisites: []
   description: 梯形公式 ∫_a^b f dx≈(b−a)[f(a)+f(b)]/2；辛普森公式用抛物线近似。
+  grade_span: [mixed]
 - id: ug-numerical-002
   name: 二分法
   parent_id: course-ug-数值分析基础
   prerequisites: []
   description: 若 f(a)f(b)<0 且 f 连续，则二分法不断缩小区间，长度每步减半。
+  grade_span: [mixed]
 - id: ug-numerical-003
   name: 牛顿迭代法
   parent_id: course-ug-数值分析基础
   prerequisites: []
   description: x_{n+1}=x_n−f(x_n)/f′(x_n)，在单根附近通常二次收敛。
+  grade_span: [mixed]
 - id: ug-numerical-001
   name: 误差与有效数字
   parent_id: course-ug-数值分析基础
   prerequisites: []
   description: 绝对误差 |x−x*|；相对误差 |x−x*|/|x|（x≠0）。
+  grade_span: [mixed]
 - id: ug-prob-004
   name: 常见分布
   parent_id: course-ug-概率论与数理统计
   prerequisites: []
   description: X~B(n,p) 时 E(X)=np，Var(X)=np(1−p)；X~P(λ) 时 E(X)=Var(X)=λ。
+  grade_span: [mixed]
 - id: ug-prob-002
   name: 条件概率
   parent_id: course-ug-概率论与数理统计
   prerequisites: []
   description: P(A|B)=P(A∩B)/P(B)（P(B)>0）；A、B 独立时 P(A|B)=P(A)。
+  grade_span: [mixed]
 - id: ug-prob-001
   name: 概率公理
   parent_id: course-ug-概率论与数理统计
   prerequisites: []
   description: P(Ω)=1，P(∅)=0，可列互斥事件满足可列可加性。
+  grade_span: [mixed]
 - id: ug-prob-005
   name: 参数估计
   parent_id: course-ug-概率论与数理统计
   prerequisites: []
   description: 样本均值是总体均值的无偏估计；置信水平描述重复抽样下区间覆盖参数的比例。
+  grade_span: [mixed]
 - id: ug-prob-003
   name: 随机变量与数字特征
   parent_id: course-ug-概率论与数理统计
   prerequisites: []
   description: E(aX+b)=aE(X)+b；Var(aX+b)=a²Var(X)。
+  grade_span: [mixed]
 - id: ug-linear-003
   name: 向量组的秩
   parent_id: course-ug-线性代数
   prerequisites: []
   description: 矩阵的秩等于其行阶梯形中非零行的个数，且 rank(A)≤min(m,n)。
+  grade_span: [mixed]
 - id: ug-linear-005
   name: 特征值与特征向量
   parent_id: course-ug-线性代数
   prerequisites: []
   description: 若 Ax=λx（x≠0），则 λ 为特征值，x 为特征向量；λ 由 |A−λI|=0 求出。
+  grade_span: [mixed]
 - id: ug-linear-001
   name: 矩阵运算
   parent_id: course-ug-线性代数
   prerequisites: []
   description: (AB)_{ij}=Σ a_{ik}b_{kj}；一般 AB≠BA，但 (AB)^T=B^T A^T。
+  grade_span: [mixed]
 - id: ug-linear-004
   name: 线性方程组
   parent_id: course-ug-线性代数
   prerequisites: []
   description: 方阵方程组 Ax=b 有唯一解当且仅当 det A≠0；齐次方程组 Ax=0 必有零解。
+  grade_span: [mixed]
 - id: ug-linear-002
   name: 行列式
   parent_id: course-ug-线性代数
   prerequisites:
   - ug-linear-001
   description: 二阶行列式 |a b; c d|=ad−bc；det(AB)=det A det B。
+  grade_span: [mixed]
 - id: ug-calculus-005
   name: 多元函数微分
   parent_id: course-ug-高等数学
   prerequisites: []
   description: ∂f/∂x 表示固定 y 后对 x 求导；梯度为 (f_x,f_y)。
+  grade_span: [mixed]
 - id: ug-calculus-002
   name: 导数与微分
   parent_id: course-ug-高等数学
   prerequisites:
   - ug-calculus-001
   description: f′(x)=lim h→0 [f(x+h)−f(x)]/h；可导必连续，连续不一定可导。
+  grade_span: [mixed]
 - id: ug-calculus-001
   name: 极限
   parent_id: course-ug-高等数学
   prerequisites: []
   description: 若 x 无限接近 x0 时 f(x) 无限接近 L，则称 f 在 x0 处的极限为 L；极限存在不要求函数在该点有定义。
+  grade_span: [mixed]
 - id: ug-calculus-003
   name: 不定积分
   parent_id: course-ug-高等数学
   prerequisites: []
   description: 若 F′(x)=f(x)，则 ∫f(x)dx=F(x)+C。
+  grade_span: [mixed]
 - id: ug-calculus-004
   name: 级数
   parent_id: course-ug-高等数学
   prerequisites: []
   description: 几何级数 Σq^n 当 |q|<1 时收敛；调和级数 Σ1/n 发散。
+  grade_span: [mixed]
 - id: grad-numerical-006
   name: 常微分方程数值解
   parent_id: course-grad-数值分析进阶
   prerequisites: []
   description: 显式 Euler 法 y_{n+1}=y_n+h f(t_n,y_n)，局部截断误差为 O(h²)。
+  grade_span: [mixed]
 - id: grad-numerical-005
   name: 数值微分与数值积分
   parent_id: course-grad-数值分析进阶
   prerequisites: []
   description: 中心差分 f′(x)≈[f(x+h)−f(x−h)]/(2h)，误差阶 O(h²)。
+  grade_span: [mixed]
 - id: grad-numerical-003
   name: 特征值算法
   parent_id: course-grad-数值分析进阶
   prerequisites: []
   description: 幂法用于求模最大的特征值；瑞利商给出特征值的近似。
+  grade_span: [mixed]
 - id: grad-numerical-001
   name: 稳定性与条件数
   parent_id: course-grad-数值分析进阶
   prerequisites: []
   description: cond(A)=||A||·||A⁻¹||；条件数越大，问题越病态。
+  grade_span: [mixed]
 - id: grad-numerical-002
   name: 线性方程组迭代法
   parent_id: course-grad-数值分析进阶
   prerequisites: []
   description: Jacobi 与 Gauss-Seidel 迭代收敛的充分条件之一是迭代矩阵谱半径小于 1。
+  grade_span: [mixed]
 - id: grad-numerical-004
   name: 非线性方程求根
   parent_id: course-grad-数值分析进阶
   prerequisites: []
   description: 牛顿法二次收敛；割线法超线性收敛，阶约为 1.618。
+  grade_span: [mixed]
 - id: grad-pde-005
   name: 分离变量法
   parent_id: course-grad-数理方程
   prerequisites: []
   description: 设 u=X(x)T(t)，代入方程得到两个常微分方程，由边界条件确定本征值。
+  grade_span: [mixed]
 - id: grad-pde-001
   name: 偏微分方程分类
   parent_id: course-grad-数理方程
   prerequisites: []
   description: 方程 Au_xx+2Bu_xy+Cu_yy+…=0，判别式 B²−AC<0 椭圆、=0 抛物、>0 双曲。
+  grade_span: [mixed]
 - id: grad-pde-004
   name: 拉普拉斯方程
   parent_id: course-grad-数理方程
   prerequisites: []
   description: Δu=0 的解称为调和函数；满足最大值原理和平均值性质。
+  grade_span: [mixed]
 - id: grad-pde-002
   name: 波动方程
   parent_id: course-grad-数理方程
   prerequisites: []
   description: u_tt=a²u_xx 的通解可用 d'Alembert 公式表示，a 为波速。
+  grade_span: [mixed]
 - id: grad-pde-003
   name: 热传导方程
   parent_id: course-grad-数理方程
   prerequisites: []
   description: u_t=a²u_xx；稳态时 u_t=0，退化为拉普拉斯方程。
+  grade_span: [mixed]
 - id: grad-pde-006
   name: 傅里叶变换法
   parent_id: course-grad-数理方程
   prerequisites: []
   description: F[f](ξ)=∫f(x)e^{−iξx}dx；F[f′]=iξF[f]。
+  grade_span: [mixed]
 - id: grad-optim-001
   name: 凸集与凸函数
   parent_id: course-grad-最优化方法
   prerequisites: []
   description: 凸集满足 (1−t)x+ty∈C；凸函数满足 f((1−t)x+ty)≤(1−t)f(x)+tf(y)。
+  grade_span: [mixed]
 - id: grad-optim-006
   name: 对偶理论
   parent_id: course-grad-最优化方法
   prerequisites: []
   description: 弱对偶给出 d*≤p*；凸问题满足 Slater 条件时强对偶成立。
+  grade_span: [mixed]
 - id: grad-optim-002
   name: 无约束优化
   parent_id: course-grad-最优化方法
   prerequisites: []
   description: 一阶必要条件 ∇f(x*)=0；二阶充分条件 Hessian 正定时为严格局部极小。
+  grade_span: [mixed]
 - id: grad-optim-003
   name: 梯度下降
   parent_id: course-grad-最优化方法
   prerequisites: []
   description: x_{k+1}=x_k−α_k∇f(x_k)，α_k 为步长或学习率。
+  grade_span: [mixed]
 - id: grad-optim-004
   name: 拉格朗日乘子
   parent_id: course-grad-最优化方法
   prerequisites: []
   description: min f 受约束 g=0 时，构造 L=f+λg，令 ∇L=0。
+  grade_span: [mixed]
 - id: grad-optim-005
   name: KKT 条件
   parent_id: course-grad-最优化方法
   prerequisites: []
   description: KKT 条件包含原始可行性、对偶可行性、平稳性、互补松弛与二阶条件。
+  grade_span: [mixed]
 - id: grad-functional-006
   name: 基本定理
   parent_id: course-grad-泛函分析
   prerequisites: []
   description: Hahn-Banach 定理保证泛函延拓；开映射定理、闭图像定理联系有界性与连续性。
+  grade_span: [mixed]
 - id: grad-functional-002
   name: 完备性与巴拿赫空间
   parent_id: course-grad-泛函分析
   prerequisites: []
   description: 每个柯西列都收敛的赋范空间称为巴拿赫空间。
+  grade_span: [mixed]
 - id: grad-functional-005
   name: 对偶空间
   parent_id: course-grad-泛函分析
   prerequisites: []
   description: X 的对偶空间 X* 是 X 上全体有界线性泛函构成的空间。
+  grade_span: [mixed]
 - id: grad-functional-003
   name: 内积与希尔伯特空间
   parent_id: course-grad-泛函分析
   prerequisites: []
   description: 内积 ⟨x,y⟩ 满足线性、共轭对称、正定性；完备内积空间称为希尔伯特空间。
+  grade_span: [mixed]
 - id: grad-functional-001
   name: 度量空间
   parent_id: course-grad-泛函分析
   prerequisites: []
   description: 距离 d(x,y) 满足非负性、对称性、三角不等式，且 d(x,y)=0 当且仅当 x=y。
+  grade_span: [mixed]
 - id: grad-functional-004
   name: 有界线性算子
   parent_id: course-grad-泛函分析
   prerequisites: []
   description: 线性算子 T 有界当且仅当存在 M 使 ||Tx||≤M||x||；有界等价于连续。
+  grade_span: [mixed]
 - id: grad-matrix-005
   name: Jordan 标准形
   parent_id: course-grad-矩阵论
   prerequisites: []
   description: 每个复矩阵都相似于唯一的 Jordan 标准形；Jordan 块数量等于几何重数。
+  grade_span: [mixed]
 - id: grad-matrix-002
   name: 基与维数
   parent_id: course-grad-矩阵论
   prerequisites: []
   description: 线性无关且能生成 V 的向量组称为 V 的基，基中向量个数称为维数。
+  grade_span: [mixed]
 - id: grad-matrix-004
   name: 特征值与对角化
   parent_id: course-grad-矩阵论
   prerequisites: []
   description: n 阶矩阵 A 可对角化当且仅当它有 n 个线性无关的特征向量。
+  grade_span: [mixed]
 - id: grad-matrix-006
   name: 矩阵分解
   parent_id: course-grad-矩阵论
   prerequisites: []
   description: LU 分解 A=LU；QR 分解 A=QR；奇异值分解 A=UΣV^T。
+  grade_span: [mixed]
 - id: grad-matrix-003
   name: 线性变换
   parent_id: course-grad-矩阵论
   prerequisites: []
   description: 线性变换 T 满足 T(αx+βy)=αT(x)+βT(y)；在给定基下对应一个矩阵。
+  grade_span: [mixed]
 - id: grad-matrix-001
   name: 线性空间
   parent_id: course-grad-矩阵论
   prerequisites: []
   description: 线性空间 V 对加法与数乘封闭，并满足交换律、结合律、零元、负元、分配律等公理。
+  grade_span: [mixed]
 - id: grad-stochastic-001
   name: 随机过程概念
   parent_id: course-grad-随机过程
   prerequisites: []
   description: '{X_t, t∈T} 是概率空间上的随机变量族，T 为指标集，状态空间为 X_t 的取值集合。'
+  grade_span: [mixed]
 - id: grad-stochastic-004
   name: 布朗运动
   parent_id: course-grad-随机过程
   prerequisites: []
   description: 标准布朗运动 B_t 满足 B_0=0、独立增量、增量 B_t−B_s~N(0,t−s)，路径连续。
+  grade_span: [mixed]
 - id: grad-stochastic-003
   name: 泊松过程
   parent_id: course-grad-随机过程
   prerequisites: []
   description: 计数过程 N_t 具有独立增量与平稳增量，N_t~P(λt)，E(N_t)=λt。
+  grade_span: [mixed]
 - id: grad-stochastic-006
   name: 伊藤积分
   parent_id: course-grad-随机过程
   prerequisites: []
   description: 伊藤等距 E[(∫H dB)²]=E[∫H²dt]；伊藤公式包含二阶项。
+  grade_span: [mixed]
 - id: grad-stochastic-005
   name: 鞅
   parent_id: course-grad-随机过程
   prerequisites: []
   description: E[|X_n|]<∞，且 E[X_{n+1}|F_n]=X_n。
+  grade_span: [mixed]
 - id: grad-stochastic-002
   name: 马尔可夫链
   parent_id: course-grad-随机过程
   prerequisites: []
   description: P(X_{n+1}=j|X_n=i,X_{n−1},…)=P(X_{n+1}=j|X_n=i)；转移矩阵每行和为 1。
+  grade_span: [mixed]
 bindings:
 - exercise_id: grad-functional-001-e1
   knowledge_point_id: grad-functional-001

@@ -11,17 +11,23 @@
   example: 1+i 的模为 √2，辐角为 π/4。
   exercises:
   - id: ug-complex-001-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 复数 1+i 的辐角主值是（ ）
     options: ["π/4", "π/2", "3π/4", "−π/4"]
     answer: "π/4"
     solution_outline: 点 (1,1) 在第一象限，角度为 π/4。
   - id: ug-complex-001-e2
+    grade: mixed
+    difficulty: basic
     kind: fill
     stem: "|1+i|=（ ）"
     answer: "√2"
     solution_outline: √(1²+1²)=√2。
   - id: ug-complex-001-e3
+    grade: mixed
+    difficulty: basic
     kind: truefalse
     stem: 复数相乘时，模相乘、辐角相加。
     answer: true
@@ -41,17 +47,23 @@
   example: f(z)=z² 的实部 x²−y²、虚部 2xy 满足 C-R 方程。
   exercises:
   - id: ug-complex-002-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 柯西-黎曼方程是（ ）
     options: ["u_x=v_y，u_y=−v_x", "u_x=v_x，u_y=v_y", "u_x=−v_y，u_y=v_x", "u_x=u_y，v_x=v_y"]
     answer: "u_x=v_y，u_y=−v_x"
     solution_outline: 解析函数的实部与虚部偏导满足 C-R 方程。
   - id: ug-complex-002-e2
+    grade: mixed
+    difficulty: basic
     kind: truefalse
     stem: f(z)=|z|² 在复平面上处处解析。
     answer: false
     solution_outline: 它只在 z=0 处满足 C-R 方程，不构成解析区域。
   - id: ug-complex-002-e3
+    grade: mixed
+    difficulty: basic
     kind: fill
     stem: z² 的实部是（ ）
     answer: "x²-y²"
@@ -71,17 +83,23 @@
   example: e^{iπ}=−1，e^{iπ/2}=i。
   exercises:
   - id: ug-complex-003-e1
+    grade: mixed
+    difficulty: intermediate
     kind: choice
     stem: e^{iπ}=（ ）
     options: ["−1", "1", "i", "−i"]
     answer: "−1"
     solution_outline: 欧拉公式代入 θ=π。
   - id: ug-complex-003-e2
+    grade: mixed
+    difficulty: intermediate
     kind: fill
     stem: e^{iπ/2}=（ ）
     answer: "i"
     solution_outline: cos(π/2)+i sin(π/2)=i。
   - id: ug-complex-003-e3
+    grade: mixed
+    difficulty: intermediate
     kind: truefalse
     stem: 对任意复数 z，e^z 都不等于 0。
     answer: true
@@ -101,17 +119,23 @@
   example: 沿单位圆逆时针积分 ∮dz/z=2πi。
   exercises:
   - id: ug-complex-004-e1
+    grade: mixed
+    difficulty: intermediate
     kind: choice
     stem: 若 f 在单连通区域解析，则沿区域内任意闭曲线积分（ ）
     options: ["等于 0", "等于 1", "等于 2πi", "不存在"]
     answer: "等于 0"
     solution_outline: 柯西积分定理。
   - id: ug-complex-004-e2
+    grade: mixed
+    difficulty: intermediate
     kind: fill
     stem: 沿单位圆逆时针积分 ∮ dz/z=（ ）
     answer: "2πi"
     solution_outline: 极点 z=0 在曲线内部，留数为 1。
   - id: ug-complex-004-e3
+    grade: mixed
+    difficulty: intermediate
     kind: find_error
     stem: 计算 ∮ dz/(z−1)（曲线为 |z|=1），哪一步错了（ ）
     options: ["第 1 步：奇点在 z=1", "第 2 步：曲线 |z|=1 不包围 z=1", "第 3 步：所以积分等于 2πi"]
@@ -132,17 +156,23 @@
   example: Res(1/z,0)=1。
   exercises:
   - id: ug-complex-005-e1
+    grade: mixed
+    difficulty: challenge
     kind: choice
     stem: Res(1/z,0)=（ ）
     options: ["1", "0", "2πi", "−1"]
     answer: "1"
     solution_outline: 1/z 在 0 处留数为系数 1。
   - id: ug-complex-005-e2
+    grade: mixed
+    difficulty: challenge
     kind: fill
     stem: Res(1/(z−1),1)=（ ）
     answer: "1"
     solution_outline: 简单极点，留数为分子在极点的值 1。
   - id: ug-complex-005-e3
+    grade: mixed
+    difficulty: challenge
     kind: truefalse
     stem: 留数定理把闭曲线积分转化为曲线内奇点留数之和。
     answer: true

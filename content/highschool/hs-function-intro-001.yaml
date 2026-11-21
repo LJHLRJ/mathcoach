@@ -13,18 +13,24 @@ mistakes:
 example: y = x² 是函数；x² + y² = 1 中 x = 0 时 y 有两个值，不是函数。
 exercises:
   - id: hs-function-intro-001-e1
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 下列对应关系中，y 是 x 的函数的是（ ）
     options: [y = x², x² + y² = 1, y² = x, x = 1]
     answer: y = x²
     solution_outline: 每个 x 只有唯一 y 与之对应；其余关系会出现一个 x 对应两个 y。
   - id: hs-function-intro-001-e2
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 函数 f(x) = √(x-2) 的定义域是（ ）
     options: [x ≥ 2, x > 2, x ≤ 2, 全体实数]
     answer: x ≥ 2
     solution_outline: 根号内非负，即 x - 2 ≥ 0。
   - id: hs-function-intro-001-e3
+    grade: mixed
+    difficulty: basic
     kind: choice
     stem: 若 f(x) = 2x + 1，则 f(3) =（ ）
     options: ["5", "6", "7", "8"]
