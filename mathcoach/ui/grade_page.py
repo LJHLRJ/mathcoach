@@ -1,18 +1,25 @@
 """按年级浏览卡片：筛选式切换，不隔离学习数据。"""
 from __future__ import annotations
 
+import sqlite3
 from collections import defaultdict
+from collections.abc import Mapping
+from pathlib import Path
 
 import streamlit as st
 
+from ..config import db_path
 from ..domain.grade_index import (
     DIFFICULTY_VALUES,
     GRADE_VALUES,
     UNCLASSIFIED,
     GradeIndex,
 )
-from ..domain.models import KnowledgeCard
+from ..domain.models import Consent, KnowledgeCard
 from ..memory.repository import Repository
+from ..memory.settings_repo import SQLiteSettingsStore
+
+DEFAULT_GRADE_KEY = "default_grade"
 
 GRADE_LABELS = {
     "all": "全部年级",
@@ -39,12 +46,64 @@ DIFFICULTY_OPTIONS = ("all",) + DIFFICULTY_VALUES + (UNCLASSIFIED,)
 STAGE_ORDER = {"highschool": 0, "undergraduate": 1, "graduate": 2}
 
 
-def _grade_label(value: str) -> str:
+def grade_label(value: str) -> str:
     return GRADE_LABELS.get(value, value)
 
 
 def _difficulty_label(value: str) -> str:
     return DIFFICULTY_LABELS.get(value, value)
+
+
+def _is_guest(consent: Consent) -> bool:
+    return not (consent.memory or consent.mistake_book)
+
+
+def load_default_grade(
+    consent: Consent, path: Path | None = None
+) -> str:
+    """读取“默认进入年级”；默认全部年级。"""
+    if _is_guest(consent):
+        value = st.session_state.get(DEFAULT_GRADE_KEY, "all")
+        return value if value in GRADE_OPTIONS else "all"
+    if path is None:
+        cached = st.session_state.get(DEFAULT_GRADE_KEY)
+        if isinstance(cached, str) and cached in GRADE_OPTIONS:
+            return cached
+    try:
+        store = SQLiteSettingsStore(path or db_path())
+        try:
+            values = store.get_all()
+        finally:
+            store.close()
+    except (OSError, sqlite3.Error):
+        return "all"
+    value = values.get(DEFAULT_GRADE_KEY, "all")
+    if not isinstance(value, str) or value not in GRADE_OPTIONS:
+        value = "all"
+    if path is None:
+        st.session_state[DEFAULT_GRADE_KEY] = value
+    return value
+
+
+def save_default_grade(
+    consent: Consent, grade: str, path: Path | None = None
+) -> bool:
+    """保存“默认进入年级”；失败时不阻断主流程。"""
+    if grade not in GRADE_OPTIONS:
+        return False
+    if _is_guest(consent):
+        st.session_state[DEFAULT_GRADE_KEY] = grade
+        return True
+    try:
+        store = SQLiteSettingsStore(path or db_path())
+        try:
+            store.set_many({DEFAULT_GRADE_KEY: grade})
+        finally:
+            store.close()
+    except (OSError, sqlite3.Error):
+        return False
+    st.session_state[DEFAULT_GRADE_KEY] = grade
+    return True
 
 
 def _card_metadata(
@@ -100,14 +159,59 @@ def _grouped_cards(
     return groups
 
 
+def _knowledge_cards_for_grade(
+    cards: list[KnowledgeCard],
+    spans: Mapping[str, tuple[str, ...]],
+    grade: str,
+) -> list[KnowledgeCard]:
+    if grade == "all":
+        return list(cards)
+    return [
+        card
+        for card in cards
+        if grade in spans.get(card.id, (UNCLASSIFIED,))
+    ]
+
+
+def _render_learning_entry(
+    cards: list[KnowledgeCard],
+    spans: Mapping[str, tuple[str, ...]],
+    grade: str,
+) -> None:
+    with st.expander("先学习本年级知识点"):
+        knowledge_cards = _knowledge_cards_for_grade(
+            cards, spans, grade
+        )
+        if not knowledge_cards:
+            st.caption("该年级暂无已标注知识点。")
+            return
+        ordered = sorted(knowledge_cards, key=_sort_key)
+        labels = {
+            card.id: f"{card.name} · {card.course}" for card in ordered
+        }
+        selected = st.selectbox(
+            "选择知识点",
+            list(labels),
+            format_func=lambda value: labels[value],
+            key=f"grade_kp_select_{grade}",
+        )
+        if st.button(
+            "打开学习卡片", key=f"grade_kp_open_{grade}"
+        ):
+            st.query_params["kp"] = selected
+            st.rerun()
+
+
 @st.fragment
 def _render_filters_and_groups(
-    cards: list[KnowledgeCard], index: GradeIndex
+    cards: list[KnowledgeCard],
+    index: GradeIndex,
+    spans: Mapping[str, tuple[str, ...]],
 ) -> None:
     grade = st.selectbox(
         "年级",
         GRADE_OPTIONS,
-        format_func=_grade_label,
+        format_func=grade_label,
         key="grade_filter",
     )
     st.session_state["grade_last_selected"] = grade
@@ -117,6 +221,7 @@ def _render_filters_and_groups(
         format_func=_difficulty_label,
         key="difficulty_filter",
     )
+    _render_learning_entry(cards, spans, grade)
     filtered = _filtered_cards(cards, index, grade, difficulty)
     exercise_count = sum(len(card.exercises) for card in filtered)
     st.caption(
@@ -147,7 +252,9 @@ def _render_filters_and_groups(
 def render_grade_page(
     cards: list[KnowledgeCard],
     index: GradeIndex,
+    spans: Mapping[str, tuple[str, ...]],
     repository: Repository,
+    consent: Consent,
     initial_grade: str | None = None,
 ) -> None:
     """年级筛选页；学习数据保持全局共享。"""
@@ -164,12 +271,13 @@ def render_grade_page(
         )
         st.caption(f"跨年级已到期：{preview}")
 
+    default_grade = load_default_grade(consent)
     if initial_grade in GRADE_OPTIONS:
         if st.session_state.get("grade_filter") != initial_grade:
             st.session_state["grade_filter"] = initial_grade
     elif "grade_filter" not in st.session_state:
         st.session_state["grade_filter"] = st.session_state.get(
-            "grade_last_selected", "all"
+            "grade_last_selected", default_grade
         )
 
-    _render_filters_and_groups(cards, index)
+    _render_filters_and_groups(cards, index, spans)

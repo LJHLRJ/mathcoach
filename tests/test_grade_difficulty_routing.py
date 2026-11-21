@@ -7,15 +7,22 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 from mathcoach.domain.models import (
+    Consent,
     ErrorType,
     ExerciseKind,
     MistakeEntry,
     Stage,
 )
+from mathcoach.memory.settings_repo import SQLiteSettingsStore
 from mathcoach.memory.sqlite_repo import SQLiteRepository
+from mathcoach.ui.grade_page import (
+    load_default_grade,
+    save_default_grade,
+)
 
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 NOW = datetime(2026, 11, 22, 12, 0, tzinfo=UTC)
+PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def _select_mode(at, label: str) -> None:
@@ -122,3 +129,98 @@ def test_today_review_counts_all_stages(tmp_path, monkeypatch):
         if item.label == "今日待复习（跨年级）"
     )
     assert metric.value == "2"
+
+
+def test_difficulty_groups_and_learning_entry(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "grade-groups.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _open_grade_page(at)
+    _selectbox(at, "年级").select("mixed").run()
+
+    assert not at.exception
+    expanders = {item.label for item in at.expander}
+    assert "先学习本年级知识点" in expanders
+    assert "基础 · 46 张卡片" in expanders
+    assert "进阶 · 47 张卡片" in expanders
+    assert "挑战 · 29 张卡片" in expanders
+
+    _selectbox(at, "难度").select("basic").run()
+    assert _selectbox(at, "年级").value == "mixed"
+
+    knowledge = _selectbox(at, "选择知识点")
+    knowledge.select("hs-function-intro-001").run()
+    next(
+        button for button in at.button if button.label == "打开学习卡片"
+    ).click().run()
+
+    assert not at.exception
+    assert at.subheader[0].value == "知识点浏览"
+    assert any(
+        "函数的概念" in markdown.value for markdown in at.markdown
+    )
+
+
+def test_empty_grade_learning_entry(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "grade-empty-entry.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _open_grade_page(at)
+    _selectbox(at, "年级").select("g1").run()
+
+    assert not at.exception
+    assert any(
+        "该年级暂无已标注知识点" in caption.value
+        for caption in at.caption
+    )
+
+
+def test_default_grade_persists_in_settings_store(tmp_path):
+    path = tmp_path / "grade-default.sqlite3"
+
+    assert load_default_grade(PERSISTENT, path) == "all"
+    assert save_default_grade(PERSISTENT, "mixed", path) is True
+    assert load_default_grade(PERSISTENT, path) == "mixed"
+    assert save_default_grade(PERSISTENT, "unknown", path) is False
+    assert load_default_grade(PERSISTENT, path) == "mixed"
+
+
+def test_default_grade_applied_to_grade_page(tmp_path, monkeypatch):
+    path = tmp_path / "grade-default-ui.sqlite3"
+    store = SQLiteSettingsStore(path)
+    try:
+        store.set_many({"default_grade": "mixed"})
+    finally:
+        store.close()
+    monkeypatch.setenv("MATHCOACH_DB", str(path))
+
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _open_grade_page(at)
+
+    assert not at.exception
+    assert _selectbox(at, "年级").value == "mixed"
+
+
+def test_settings_page_shows_default_grade_control(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "grade-settings.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    at.session_state["main_tabs"] = "设置"
+    at.run()
+
+    assert not at.exception
+    assert any(
+        box.label == "默认进入年级" for box in at.selectbox
+    )
+    assert any(
+        button.label == "保存学习入口设置" for button in at.button
+    )

@@ -46,6 +46,12 @@ from .components import (
     loading_skeleton,
 )
 from .focus_audio import render_focus_audio
+from .grade_page import (
+    GRADE_OPTIONS,
+    grade_label,
+    load_default_grade,
+    save_default_grade,
+)
 from .icons import ICON_CHECK, ICON_ERROR, ICON_EXPORT, ICON_INFO
 from .knowledge_browser import (
     load_learning_cards_enabled,
@@ -296,6 +302,8 @@ def _render_notices() -> None:
         st.success("动效设置已保存。")
     if st.session_state.pop("settings_focus_audio_saved", False):
         st.success("专注音频设置已保存。")
+    if st.session_state.pop("settings_grade_saved", False):
+        st.success("学习入口设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
     if cleared is not None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
@@ -490,6 +498,42 @@ def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
             ".streamlit/config.toml 生效）"
         )
         st.caption("本面板只读，不提供写入口。")
+
+
+def _render_grade_default_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.divider()
+    st.markdown("### 学习入口")
+    st.caption(
+        "默认进入年级只影响“按年级”页的初始筛选，"
+        "不隔离收据、错题本与复习队列。"
+    )
+    current = load_default_grade(consent)
+    index = GRADE_OPTIONS.index(current) if current in GRADE_OPTIONS else 0
+    with st.form("settings_grade_form"):
+        selected = st.selectbox(
+            "默认进入年级",
+            GRADE_OPTIONS,
+            index=index,
+            format_func=lambda value: (
+                "不指定（全部年级）"
+                if value == "all"
+                else grade_label(value)
+            ),
+            key="settings_default_grade",
+        )
+        saved = st.form_submit_button(
+            "保存学习入口设置", **button_kwargs(PRIMARY)
+        )
+    if not saved:
+        return
+    if save_default_grade(consent, selected):
+        repository.record_audit("settings_grade", "ok")
+        st.session_state["settings_grade_saved"] = True
+        st.rerun()
+    else:
+        st.error(f"{ICON_ERROR} 学习入口设置保存失败，请重试。")
 
 
 def _render_appearance_form(
@@ -810,6 +854,7 @@ def render_settings_page(
     elif offline:
         st.caption("未配置 API Key 时使用离线模板，判分逻辑不变。")
 
+    _render_grade_default_form(repository, consent)
     _render_appearance_form(repository, consent)
     _render_sound_form(repository, consent)
     _render_motion_form(repository, consent)

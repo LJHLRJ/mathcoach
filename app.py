@@ -17,7 +17,11 @@ from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
 from mathcoach.domain.explanation import build_explanation, locate_error
-from mathcoach.domain.grade_index import GradeIndexError, load_grade_index
+from mathcoach.domain.grade_index import (
+    GradeIndexError,
+    load_grade_index,
+    load_grade_spans,
+)
 from mathcoach.domain.knowledge_tree import (
     KnowledgeTreeError,
     load_knowledge_tree,
@@ -85,7 +89,10 @@ from mathcoach.ui.first_run import (
     initialize_repository,
     initialize_settings,
 )
-from mathcoach.ui.grade_page import render_grade_page
+from mathcoach.ui.grade_page import (
+    load_default_grade,
+    render_grade_page,
+)
 from mathcoach.ui.icons import (
     ICON_CHECK,
     ICON_ERROR,
@@ -189,6 +196,15 @@ def _load_grade_index():
         return load_grade_index(CONTENT_ROOT)
     except GradeIndexError as exc:
         st.error(f"{ICON_ERROR} 年级元数据加载失败：{exc}")
+        return None
+
+
+@st.cache_resource
+def _load_grade_spans():
+    try:
+        return load_grade_spans(CONTENT_ROOT / "knowledge_tree.yaml")
+    except GradeIndexError as exc:
+        st.warning(f"{ICON_INFO} 知识点年级范围暂不可用：{exc}")
         return None
 
 
@@ -1380,10 +1396,13 @@ def _render_grade_mode(initial_grade: str | None = None) -> None:
     index = _load_grade_index()
     if index is None:
         return
+    spans = _load_grade_spans() or {}
     render_grade_page(
         cards=cards,
         index=index,
+        spans=spans,
         repository=st.session_state.repository,
+        consent=st.session_state.consent,
         initial_grade=initial_grade,
     )
 
@@ -1411,8 +1430,9 @@ def _render_current_mode() -> None:
     mode = st.session_state.get("app_mode", MODE_SESSION)
     previous_mode = st.session_state.get("_last_rendered_mode")
     if mode == MODE_GRADE and previous_mode != MODE_GRADE:
+        fallback = load_default_grade(st.session_state.consent)
         st.session_state["grade_filter"] = st.session_state.get(
-            "grade_last_selected", "all"
+            "grade_last_selected", fallback
         )
     st.session_state["_last_rendered_mode"] = mode
     if mode == MODE_GRADE:
