@@ -53,7 +53,7 @@ from mathcoach.ui.icons import (
     ICON_SUBMIT,
     ICON_UPDATE,
 )
-from mathcoach.ui.layout import card, hint_block, kpi_row
+from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
 from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
     build_challenge_state,
@@ -71,7 +71,6 @@ from mathcoach.session.daily import (
     submit_daily_answer,
     time_is_up,
 )
-from mathcoach.session.diagnosis_view import render_gaps
 from mathcoach.session.engine import SessionEngine
 from mathcoach.timeutil import local_day, local_day_key
 from mathcoach.update_check import UpdateCheckError, check_for_update
@@ -139,6 +138,22 @@ def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
     return gaps
 
 
+def _render_gap_diagnosis(gaps: list[Gap]) -> None:
+    """先修诊断：结论在前，依据用 caption 紧跟其后。"""
+    if not gaps:
+        return
+    st.markdown("**先修诊断**")
+    for gap in gaps:
+        chain = " → ".join(gap.chain)
+        st.markdown(
+            f"- 当前卡点：{chain}\n"
+            f"  原因：{gap.reason}\n"
+            f"  建议先复习：{gap.chain[-1]}"
+        )
+        if gap.basis:
+            st.caption(f"依据：{gap.basis}")
+
+
 if "provider" not in st.session_state:
     st.session_state.provider = build_provider()
 if "consent" not in st.session_state:
@@ -170,7 +185,7 @@ def _render_mistake_book(repository) -> None:
         )
         gaps = _collect_gaps(repository, entry.card_id)
         if gaps:
-            st.markdown(render_gaps(gaps))
+            _render_gap_diagnosis(gaps)
 
 
 def _render_review_plan(repository) -> None:
@@ -369,7 +384,7 @@ def _render_session() -> None:
 
     if view.phase is Phase.GOAL_CONFIRM:
         with card(view.title):
-            st.write(view.body)
+            st.write(math_markdown(view.body))
             goal = st.text_input("今天想练到什么？", key="goal_input")
             if st.button("确认目标", key="confirm_goal", icon=ICON_PLAY):
                 try:
@@ -385,7 +400,7 @@ def _render_session() -> None:
 
     if view.phase is Phase.EXPLAIN:
         with card(view.title, engine.card.course):
-            st.write(view.body)
+            st.write(math_markdown(view.body))
             if view.notice:
                 st.info(f"{ICON_INFO} {view.notice}")
             # 可视化是可选增强：失败时只提示，不阻断讲解/小测
@@ -422,6 +437,7 @@ def _render_session() -> None:
                 st.caption(view.notice)
             if render_visual(engine.card.id) == "failed":
                 st.info(f"{ICON_INFO} 可视化暂不可用")
+            st.write(math_markdown(view.body))
             answer = _render_answer_input(engine.current_exercise)
             if st.button("提交答案", key="submit_answer", icon=ICON_SUBMIT):
                 engine.submit_answer(answer)
@@ -432,7 +448,7 @@ def _render_session() -> None:
     if view.phase is Phase.DIAGNOSE:
         with card(view.title):
             st.error(f"{ICON_ERROR} 再看一眼提示")
-            st.write(view.body)
+            st.write(math_markdown(view.body))
             if view.notice:
                 st.info(f"{ICON_INFO} {view.notice}")
             selected = st.radio(
@@ -453,7 +469,7 @@ def _render_session() -> None:
             for attempt in engine.state.attempts
         ):
             st.error(f"{ICON_ERROR} 再看一眼提示")
-        hint_block(engine.state.hint_level, view.body)
+        hint_block(engine.state.hint_level, math_markdown(view.body))
         if view.notice:
             st.caption(view.notice)
         if st.button("再试一次", key="retry", icon=ICON_RESTART):
@@ -495,7 +511,7 @@ def _render_session() -> None:
 
     if view.phase is Phase.WRAPUP:
         with card("本次闭环完成"):
-            st.write(view.body)
+            st.write(math_markdown(view.body))
             if st.button("重新开始", key="restart", icon=ICON_RESTART):
                 st.session_state.engine = SessionEngine(
                     card=engine.card,
@@ -588,7 +604,8 @@ def _render_dashboard() -> None:
     if mastery_rows:
         st.markdown("**掌握概率**")
         for card_id, text in mastery_rows:
-            st.markdown(f"- {card_id}：{text}")
+            st.markdown(f"- {card_id}")
+            st.caption(f"依据：{text}")
     recommendations = _next_recommendations(
         st.session_state.repository, cards, prerequisites
     )
@@ -597,8 +614,8 @@ def _render_dashboard() -> None:
         for recommendation in recommendations:
             st.markdown(
                 f"- {recommendation.card_id}：{recommendation.reason}"
-                f"（依据：{recommendation.basis}）"
             )
+            st.caption(f"依据：{recommendation.basis}")
     if st.session_state.get("narrative_enabled", True) and narrative_nodes:
         progress = _narrative_progress(st.session_state.repository)
         st.markdown("**叙事进度**")
@@ -623,7 +640,7 @@ def _render_dashboard() -> None:
         )
     gaps = _collect_gaps(st.session_state.repository)
     if gaps:
-        st.markdown(render_gaps(gaps))
+        _render_gap_diagnosis(gaps)
     if summary.receipts == 0 and summary.mistakes == 0:
         st.info(f"{ICON_INFO} 还没有学习记录，先完成一次讲解 → 小测闭环。")
 
@@ -876,7 +893,7 @@ def _render_review_package() -> None:
     if state is None:
         gaps = _collect_gaps(repository)
         if gaps:
-            st.markdown(render_gaps(gaps))
+            _render_gap_diagnosis(gaps)
         priority = {gap.chain[-1] for gap in gaps}
         package = build_review_package(
             repository, cards, now, priority_card_ids=priority

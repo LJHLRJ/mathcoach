@@ -142,3 +142,33 @@ def test_first_screen_buttons_use_material_icons(tmp_path, monkeypatch):
         "material" in (getattr(button, "icon", "") or "")
         for button in at.button
     )
+
+
+def test_receipt_basis_is_rendered_as_caption(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    at.selectbox[0].select("hs-function-intro-001").run()
+    at.text_input[0].set_value("搞懂函数的概念")
+    at.button[0].click().run()
+    at.button[0].click().run()
+    at.radio[0].set_value("y = x²")
+    at.button[0].click().run()
+
+    assert not at.exception
+    assert any(caption.value.startswith("依据：") for caption in at.caption)
+
+
+def test_quiz_does_not_render_archive_tab_content(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    _start_quiz(at)
+
+    assert not at.exception
+    assert not any(
+        "学习仪表盘" in subheader.value for subheader in at.subheader
+    )
+    assert not any(metric.label == "收据总数" for metric in at.metric)

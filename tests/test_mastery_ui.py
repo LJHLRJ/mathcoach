@@ -58,4 +58,4 @@ def test_dashboard_shows_bkt_probability(tmp_path, monkeypatch):
     at.selectbox[1].select("仪表盘").run()
 
     assert not at.exception
-    assert any("62%" in markdown.value for markdown in at.markdown)
+    assert any("62%" in caption.value for caption in at.caption)

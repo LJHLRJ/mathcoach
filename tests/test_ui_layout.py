@@ -75,3 +75,11 @@ def test_layout_module_does_not_import_business_layers():
 
     for name in imported:
         assert not name.startswith(BANNED_LAYERS), f"layout.py 不应依赖业务层：{name}"
+
+
+def test_math_markdown_wraps_caret_and_underscore_formulas():
+    from mathcoach.ui.layout import math_markdown
+
+    assert math_markdown("求 x^2 的导数") == "求 $x^2$ 的导数"
+    assert math_markdown("a_{ij} 与 b^T") == "$a_{ij}$ 与 $b^T$"
+    assert math_markdown("已有 $x^2$ 不再处理") == "已有 $x^2$ 不再处理"

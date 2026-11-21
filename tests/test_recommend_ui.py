@@ -14,7 +14,7 @@ def test_dashboard_shows_three_recommendations(tmp_path, monkeypatch):
 
     assert not at.exception
     assert any("下一步推荐" in markdown.value for markdown in at.markdown)
-    recommendation_lines = [
-        markdown.value for markdown in at.markdown if "依据：" in markdown.value
+    basis_lines = [
+        caption.value for caption in at.caption if "依据：" in caption.value
     ]
-    assert len(recommendation_lines) == 3
+    assert len(basis_lines) == 3
