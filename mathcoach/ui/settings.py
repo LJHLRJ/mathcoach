@@ -36,6 +36,11 @@ from ..memory.settings_repo import (
 )
 from ..safety.redlines import sanitize_text
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .sound import (
+    cue_bytes,
+    load_sound_settings,
+    save_sound_settings,
+)
 from .theme_background import (
     BACKGROUND_OPTIONS,
     inject_background_css,
@@ -218,6 +223,8 @@ def _render_notices() -> None:
         st.success("复习配比已保存。")
     if st.session_state.pop("settings_appearance_saved", False):
         st.success("外观设置已保存。")
+    if st.session_state.pop("settings_sound_saved", False):
+        st.success("声音设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
     if cleared is not None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
@@ -405,6 +412,59 @@ def _render_appearance_form(
         st.error(f"{ICON_ERROR} 背景设置保存失败，请重试。")
 
 
+def _render_sound_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.markdown("### 声音")
+    st.caption(
+        "默认关闭；音量由浏览器原生播放器控制。"
+        "首次播放需要你点击；不会在进入应用时自动播放。"
+    )
+    current = load_sound_settings(consent)
+    with st.form("settings_sound_form"):
+        enabled = st.toggle(
+            "启用声音",
+            value=current.enabled,
+            key="settings_sound_enabled",
+        )
+        feedback = st.toggle(
+            "答题反馈音",
+            value=current.feedback_enabled,
+            key="settings_feedback_enabled",
+        )
+        saved = st.form_submit_button("保存声音设置")
+    if saved:
+        if save_sound_settings(
+            consent,
+            enabled=enabled,
+            feedback_enabled=feedback,
+        ):
+            repository.record_audit("settings_sound", "ok")
+            st.session_state["settings_sound_saved"] = True
+            st.rerun()
+        else:
+            st.error(f"{ICON_ERROR} 声音设置保存失败，请重试。")
+    st.caption("试听使用原生播放器；浏览器可能拦截自动播放。")
+    if st.button("试听正确音", key="sound_preview_correct"):
+        if not current.enabled:
+            st.info("请先启用声音并保存。")
+        else:
+            st.audio(
+                cue_bytes("correct"),
+                format="audio/mpeg",
+                autoplay=True,
+            )
+    if st.button("试听点击音", key="sound_preview_click"):
+        if not current.enabled:
+            st.info("请先启用声音并保存。")
+        else:
+            st.audio(
+                cue_bytes("click"),
+                format="audio/mpeg",
+                autoplay=True,
+            )
+
+
 def _render_review_ratio_form(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
@@ -557,6 +617,7 @@ def render_settings_page(
         st.caption("未配置 API Key 时使用离线模板，判分逻辑不变。")
 
     _render_appearance_form(repository, consent)
+    _render_sound_form(repository, consent)
     _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)
     _render_clear(repository, consent)

@@ -71,6 +71,7 @@ from mathcoach.ui.settings import (
     inject_font_size_css,
     render_settings_page,
 )
+from mathcoach.ui.sound import play_pending_feedback, queue_feedback
 from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
     build_challenge_state,
@@ -490,7 +491,15 @@ def _render_session() -> None:
             st.write(math_markdown(view.body))
             answer = _render_answer_input(engine.current_exercise)
             if st.button("提交答案", key="submit_answer", icon=ICON_SUBMIT):
-                engine.submit_answer(answer)
+                next_view = engine.submit_answer(answer)
+                if next_view.phase is Phase.RECEIPT:
+                    queue_feedback("correct", st.session_state.consent)
+                elif next_view.phase in (
+                    Phase.HINT,
+                    Phase.DIAGNOSE,
+                    Phase.WRAPUP,
+                ):
+                    queue_feedback("wrong", st.session_state.consent)
                 st.rerun()
         _render_hint_actions()
         return
@@ -556,7 +565,9 @@ def _render_session() -> None:
                 else:
                     st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
         if st.button("继续", key="advance", icon=ICON_PLAY):
-            engine.advance()
+            next_view = engine.advance()
+            if next_view.phase is Phase.WRAPUP:
+                queue_feedback("complete", st.session_state.consent)
             st.rerun()
         return
 
@@ -724,6 +735,10 @@ def _render_active_quiz(
             on_finish(state, now)
             state.persisted = True
         _render_quiz_summary(state, now, summary_title)
+        completed_key = f"feedback_complete:{key_prefix}:{state.date_key}"
+        if not st.session_state.get(completed_key):
+            st.session_state[completed_key] = True
+            queue_feedback("complete", st.session_state.consent)
         return
 
     st.caption(
@@ -744,8 +759,13 @@ def _render_active_quiz(
         "提交答案", key=f"{key_prefix}_submit", icon=ICON_SUBMIT
     ):
         submission = submit_daily_answer(state, answer, now)
-        if submission is not None and on_submission is not None:
-            on_submission(submission, answer, now)
+        if submission is not None:
+            if on_submission is not None:
+                on_submission(submission, answer, now)
+            if submission.correct is True:
+                queue_feedback("correct", st.session_state.consent)
+            elif submission.correct is False:
+                queue_feedback("wrong", st.session_state.consent)
         if state.finished and on_finish is not None and not state.persisted:
             on_finish(state, now)
             state.persisted = True
@@ -1136,3 +1156,5 @@ with tabs[2]:
 with tabs[3]:
     if tabs[3].open:
         _render_settings_tab()
+
+play_pending_feedback(st.session_state.consent)
