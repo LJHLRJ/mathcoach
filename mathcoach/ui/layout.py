@@ -35,7 +35,7 @@ def math_markdown(text: str) -> str:
 
 def _card_key(title: str) -> str:
     """由标题生成稳定 key，供主题 CSS 选中卡片容器。"""
-    digest = hashlib.sha1(title.encode("utf-8")).hexdigest()[:12]
+    digest = hashlib.sha256(title.encode("utf-8")).hexdigest()[:12]
     return f"mc-card-{digest}"
 
 
