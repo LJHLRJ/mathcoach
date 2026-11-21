@@ -102,7 +102,7 @@
   - `tests/test_ui_theme_layout.py`
   - `tests/test_ui_theme_buttons.py`
   - `tests/test_ui_theme_interactions.py`
-- 视觉回归：Chrome 155，1440×900，阈值 0.5%；基线已按 Streamlit 1.59.0 与主题改动刷新。
+- 本地使用 Chrome 155 验证；最终基线使用 CI Chrome 的实际截图对齐（1440×900，阈值 0.5%），PR CI 已通过。
 - 视觉基线仅覆盖首屏、QUIZ、收据，不做像素级断言。
 
 ## 回退
