@@ -25,8 +25,6 @@
 
 统计口径：按文件名匹配 `test_safety*.py` / `test_guards*.py` / `test_redlines*.py`，统计以 `test_` 开头的函数；同一函数内多个样本只计 1 项；按函数名或断言中的 blocked / rejected / injection / 拒绝 识别拦截用例，`safe_*` 等反向用例不计入。`test_audit.py`（2 项）与 `test_engine_safety.py`（4 项）不属于本小节文件口径，未计入。
 
-补充口径：若将 `test_audit.py` 与 `test_engine_safety.py` 合并统计，共 28 个用例；其中显式注入样本 10/10 拦截、脱敏断言样本 12/12 替换。
-
 ## 桌面客户端
 
 Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
