@@ -54,6 +54,11 @@ from mathcoach.ui.icons import (
     ICON_UPDATE,
 )
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
+from mathcoach.ui.onboarding import (
+    mark_first_use_done,
+    render_onboarding,
+    repository_has_history,
+)
 from mathcoach.ui.settings import (
     apply_runtime_settings,
     current_settings,
@@ -179,6 +184,10 @@ if "engine" not in st.session_state:
 
 provider = st.session_state.provider
 engine: SessionEngine = st.session_state.engine
+if "onboarding_had_history" not in st.session_state:
+    st.session_state["onboarding_had_history"] = repository_has_history(
+        st.session_state.repository
+    )
 inject_font_size_css(st.session_state.settings.font_size)
 
 
@@ -507,6 +516,7 @@ def _render_session() -> None:
 
     if view.phase is Phase.RECEIPT:
         receipt = view.receipt
+        mark_first_use_done()
         with card("收据已生成"):
             st.success(f"{ICON_CHECK} 答对了")
             if receipt is not None:
@@ -959,6 +969,8 @@ def _render_review_package() -> None:
         on_submission=_on_submission,
         summary_title="复习包完成",
     )
+    if state.finished:
+        mark_first_use_done()
     if state.finished and st.button(
         "再来一组", key="restart_review", icon=ICON_RESTART
     ):
@@ -1087,6 +1099,10 @@ _render_sidebar()
 st.title("数学陪练")
 if isinstance(provider, OfflineProvider) or getattr(provider, "degraded", False):
     st.caption("离线模板模式：讲解使用确定性模板，判分逻辑不变。")
+render_onboarding(
+    st.session_state.consent,
+    had_history=st.session_state["onboarding_had_history"],
+)
 
 tabs = st.tabs(
     ["当前任务", "学习档案", "错题本", "设置"],
