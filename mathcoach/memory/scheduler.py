@@ -14,14 +14,18 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
 import yaml
 
 from ..domain.fsrs import DEFAULT_PARAMS, FsrsParams, params_from_mapping
-from ..domain.models import MistakeEntry, ReviewItem, ReviewState
+from ..domain.models import KnowledgeCard, MistakeEntry, ReviewItem, ReviewState
+from ..domain.review_pack import compose
 from ..domain.spaced_repetition import Bucket, bucket_for
 from ..timeutil import end_of_local_day, start_of_local_day_after
+
+if TYPE_CHECKING:
+    from ..session.daily import DailyQuestion
 
 REVIEW_LIMIT = 3
 MASTERY_STREAK = 2
@@ -117,3 +121,57 @@ def build_review_queue(repo, now: datetime) -> dict[Bucket, list[MistakeEntry]]:
     for item in repo.list_due_mistakes(now):
         queue[bucket_for(item.interval_days)].append(item)
     return dict(queue)
+
+
+def build_review_pack(
+    repository,
+    cards: list[KnowledgeCard],
+    now: datetime,
+    priority_card_ids: set[str] | None = None,
+    total: int = 5,
+) -> list[DailyQuestion]:
+    """混合复习包：缺口 1 + 到期 3 + 拓展 1，不足时从全卡池补齐。"""
+    # 延迟导入，避免 scheduler -> daily -> repository 的循环依赖
+    from ..session.daily import DailyQuestion
+
+    by_exercise = {
+        exercise.id: (card, exercise)
+        for card in cards
+        for exercise in card.exercises
+    }
+    due_questions: list[DailyQuestion] = []
+    for item in sorted(repository.list_review_items(), key=lambda current: current.due_at):
+        pair = by_exercise.get(item.mistake.exercise_id)
+        if pair is not None:
+            due_questions.append(DailyQuestion(card=pair[0], exercise=pair[1]))
+
+    cards_by_id = {card.id: card for card in cards}
+    gap_questions: list[DailyQuestion] = []
+    for card_id in sorted(priority_card_ids or set()):
+        card = cards_by_id.get(card_id)
+        if card is not None and card.exercises:
+            gap_questions.append(DailyQuestion(card=card, exercise=card.exercises[0]))
+
+    variant_questions: list[DailyQuestion] = []
+    for mistake in repository.list_mistakes(limit=None):
+        card = cards_by_id.get(mistake.card_id)
+        if card is None:
+            continue
+        for exercise in card.exercises:
+            if exercise.id != mistake.exercise_id:
+                variant_questions.append(DailyQuestion(card=card, exercise=exercise))
+                break
+
+    selected = compose(due_questions, gap_questions, variant_questions, total)
+    if len(selected) < total:
+        # 混合队列不足时从全卡池补齐，保证首期固定 5 题
+        seen = {question.exercise.id for question in selected}
+        for card in cards:
+            for exercise in card.exercises:
+                if exercise.id in seen:
+                    continue
+                selected.append(DailyQuestion(card=card, exercise=exercise))
+                seen.add(exercise.id)
+                if len(selected) >= total:
+                    return selected
+    return selected

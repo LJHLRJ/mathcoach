@@ -8,6 +8,7 @@ from ..domain.models import KnowledgeCard
 from ..session.daily import DailyQuestion
 from ..timeutil import end_of_local_day
 from .repository import Repository
+from .scheduler import build_review_pack
 
 REVIEW_PACKAGE_SIZE = 5
 REVIEW_PACKAGE_LIMIT_S = 900
@@ -26,61 +27,17 @@ def build_review_package(
     count: int = REVIEW_PACKAGE_SIZE,
     priority_card_ids: set[str] | None = None,
 ) -> ReviewPackage:
-    by_exercise = {
-        exercise.id: (card, exercise)
-        for card in cards
-        for exercise in card.exercises
-    }
     items = repository.list_review_items()
-    if not items:
+    if not items and not priority_card_ids:
         return ReviewPackage((), "暂无待复习错题，先完成一次小测。")
 
     today_end = end_of_local_day(now)
     priority = priority_card_ids or set()
-    ordered = sorted(
-        items,
-        key=lambda item: (
-            item.mistake.card_id not in priority,  # 先修缺口链上的卡片优先
-            item.due_at > today_end,
-            item.due_at,
-        ),
-    )
-    selected: list[DailyQuestion] = []
-    seen: set[str] = set()
-    for item in ordered:
-        pair = by_exercise.get(item.mistake.exercise_id)
-        if pair is None or item.mistake.exercise_id in seen:
-            continue
-        card, exercise = pair
-        selected.append(DailyQuestion(card, exercise))
-        seen.add(exercise.id)
-        if len(selected) >= count:
-            break
-
-    if len(selected) < count:
-        prefer_cards = {question.card.id for question in selected}
-        candidates = sorted(
-            (
-                (card, exercise)
-                for card in cards
-                for exercise in card.exercises
-                if exercise.id not in seen
-            ),
-            key=lambda pair: (
-                pair[0].id not in prefer_cards,
-                pair[0].id,
-                pair[1].id,
-            ),
-        )
-        for card, exercise in candidates:
-            selected.append(DailyQuestion(card, exercise))
-            seen.add(exercise.id)
-            if len(selected) >= count:
-                break
-
+    selected = build_review_pack(repository, cards, now, priority, count)
     due_count = sum(1 for item in items if item.due_at <= today_end)
     reason = (
-        f"从 {len(items)} 道待复习错题中优先选取 {due_count} 道到期题，"
+        f"从 {len(items)} 道待复习错题中生成混合复习包："
+        f"到期 {due_count} 题、先修缺口 {len(priority)} 题，"
         f"共 {len(selected)} 题。"
     )
     return ReviewPackage(tuple(selected), reason)

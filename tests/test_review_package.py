@@ -77,6 +77,7 @@ def test_package_prioritizes_due_mistakes_and_fills_to_five():
         "c2-e1",
     }
     assert "待复习错题" in package.reason
+    assert "混合复习包" in package.reason
 
 
 def test_package_without_mistakes_is_empty():
