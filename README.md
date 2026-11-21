@@ -130,15 +130,21 @@ python -m build
 | M6a | 仪表盘 + 每日挑战 + 错题变式 | 已完成 |
 | M6b | 学习路径 + 周报 + 挑战赛 + 智能复习包 + 错因趋势 | 已完成 |
 | M7 | 文档与提示词文件 + 导出学习包 | 已完成 |
-| M9 | FSRS 调度 + schema v3 | 已完成 |
-| M10 | 可复核依据字段（收据/先修/掌握度） | 已完成 |
-| M11 | 交互式可视化（切线/三平面） | 已完成 |
-| M12 | BKT 掌握概率 | 已完成 |
-| M13 | 混合复习包（15 分钟 5 题） | 已完成 |
-| M14 | 学习路径推荐 | 已完成 |
-| M15 | 叙事层 | 已完成 |
-| M16 | 桌面 CI 构建与 Release 资产 | 已完成 |
-| M17 | 界面优化与美化 + 截图视觉回归 | 已完成（v0.5.0） |
+
+### 后续里程碑（进行中/已完成）
+
+| 里程碑 | 内容 | 状态 | 证据 |
+|---|---|---|---|
+| M8 | SM-2 简化调度 + 先修链诊断 | 已完成 | `mathcoach/domain/spaced_repetition.py`、`mathcoach/domain/prerequisites.py` |
+| M9 | FSRS 调度 | 已完成 | `mathcoach/domain/fsrs.py` |
+| M10 | 收据与诊断“依据”字段 | 已完成 | `mathcoach/domain/basis.py` |
+| M11 | 交互式可视化试点 | 已完成 | `mathcoach/ui/visuals/` |
+| M12 | BKT 掌握概率 | 已完成 | `mathcoach/domain/bkt.py` |
+| M13 | 智能复习包混合队列 | 已完成 | `mathcoach/domain/review_pack.py` |
+| M14 | 学习路径推荐 | 已完成 | `mathcoach/domain/learning_path.py` |
+| M15 | 叙事化游戏化 | 已完成 | `mathcoach/domain/narrative.py`、`content/narrative.yaml` |
+| M16 | GitHub Actions 自动打包 | 已完成 | `.github/workflows/build-desktop.yml` |
+| M17 | 界面优化与美化 | 已完成（v0.5.0） | `.streamlit/config.toml`、`mathcoach/ui/layout.py`、`mathcoach/ui/icons.py` |
 
 当前发布：**v0.5.1**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
 
