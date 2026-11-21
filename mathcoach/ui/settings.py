@@ -35,6 +35,7 @@ from ..memory.settings_repo import (
     secrets_path,
 )
 from ..safety.redlines import sanitize_text
+from .focus_audio import render_focus_audio
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
 from .sound import (
     cue_bytes,
@@ -225,6 +226,8 @@ def _render_notices() -> None:
         st.success("外观设置已保存。")
     if st.session_state.pop("settings_sound_saved", False):
         st.success("声音设置已保存。")
+    if st.session_state.pop("settings_focus_audio_saved", False):
+        st.success("专注音频设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
     if cleared is not None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
@@ -618,6 +621,7 @@ def render_settings_page(
 
     _render_appearance_form(repository, consent)
     _render_sound_form(repository, consent)
+    render_focus_audio(repository, consent)
     _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)
     _render_clear(repository, consent)
