@@ -144,7 +144,7 @@ python -m build
 | M16 | GitHub Actions 自动打包 | 已完成 | `.github/workflows/build-desktop.yml` |
 | M17 | 界面优化与美化 | 已完成（v0.5.0） | `.streamlit/config.toml`、`mathcoach/ui/layout.py`、`mathcoach/ui/icons.py` |
 
-当前发布：**v0.6.0**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
+当前发布：**v0.6.1**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
 
 ## 设计文档
 
