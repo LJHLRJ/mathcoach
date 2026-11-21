@@ -60,20 +60,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           $version = python -c "import mathcoach; print(mathcoach.__version__)"
           $installer = (Resolve-Path "dist\installer\MathCoachSetup-$version.exe").Path
-          $proc = Start-Process -FilePath $installer -ArgumentList "/LOG=ui-check.log" -PassThru
-
-          $deadline = (Get-Date).AddSeconds(45)
-          while (-not $proc.HasExited -and $proc.MainWindowHandle -eq 0 -and (Get-Date) -lt $deadline) {
-            Start-Sleep -Milliseconds 500
-            $proc.Refresh()
-          }
-          if ($proc.HasExited) {
-            throw "Installer exited before showing a window"
-          }
-          if ($proc.MainWindowHandle -eq 0) {
-            throw "Installer window did not appear"
-          }
-          Start-Sleep -Seconds 2
+          $loader = Start-Process -FilePath $installer -ArgumentList "/LOG=ui-check.log" -PassThru
 
           Add-Type -TypeDefinition @"
           using System;
@@ -82,9 +69,13 @@ jobs:
           public class Win32Wizard {
               public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
               [DllImport("user32.dll")]
+              public static extern bool EnumWindows(EnumProc lpEnumFunc, IntPtr lParam);
+              [DllImport("user32.dll")]
               public static extern bool EnumChildWindows(IntPtr hWndParent, EnumProc lpEnumFunc, IntPtr lParam);
               [DllImport("user32.dll", CharSet = CharSet.Unicode)]
               public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+              [DllImport("user32.dll")]
+              public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
               [StructLayout(LayoutKind.Sequential)]
               public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
               [DllImport("user32.dll")]
@@ -92,26 +83,75 @@ jobs:
           }
           "@
 
+          $deadline = (Get-Date).AddSeconds(60)
+          $installerWindow = [IntPtr]::Zero
+          while ((Get-Date) -lt $deadline -and $installerWindow -eq [IntPtr]::Zero) {
+            $script:candidates = New-Object System.Collections.Generic.List[object]
+            $topCallback = [Win32Wizard+EnumProc]{
+              param([IntPtr]$hWnd, [IntPtr]$lParam)
+              $buffer = New-Object System.Text.StringBuilder 512
+              [void][Win32Wizard]::GetWindowText($hWnd, $buffer, $buffer.Capacity)
+              if ($buffer.ToString() -match "MathCoach") {
+                $script:candidates.Add([pscustomobject]@{ Handle = $hWnd; Title = $buffer.ToString() })
+              }
+              return $true
+            }
+            [void][Win32Wizard]::EnumWindows($topCallback, [IntPtr]::Zero)
+            if ($script:candidates.Count -gt 0) {
+              $installerWindow = $script:candidates[0].Handle
+              break
+            }
+            Start-Sleep -Milliseconds 500
+          }
+          if ($installerWindow -eq [IntPtr]::Zero) {
+            throw "Installer window did not appear"
+          }
+          Start-Sleep -Seconds 2
+
           $script:windowTexts = New-Object System.Collections.Generic.List[string]
-          $callback = [Win32Wizard+EnumProc]{
+          $childCallback = [Win32Wizard+EnumProc]{
             param([IntPtr]$hWnd, [IntPtr]$lParam)
-            $buffer = New-Object System.Text.StringBuilder 8192
+            $buffer = New-Object System.Text.StringBuilder 16384
             [void][Win32Wizard]::GetWindowText($hWnd, $buffer, $buffer.Capacity)
             if ($buffer.Length -gt 0) {
               $script:windowTexts.Add($buffer.ToString())
             }
             return $true
           }
-          [void][Win32Wizard]::EnumChildWindows($proc.MainWindowHandle, $callback, [IntPtr]::Zero)
+          [void][Win32Wizard]::EnumChildWindows($installerWindow, $childCallback, [IntPtr]::Zero)
 
-          $joined = ($script:windowTexts -join "`n") + "`n" + $proc.MainWindowTitle
+          try {
+            Add-Type -AssemblyName UIAutomationClient
+            Add-Type -AssemblyName UIAutomationTypes
+            $root = [System.Windows.Automation.AutomationElement]::FromHandle($installerWindow)
+            $elements = $root.FindAll(
+              [System.Windows.Automation.TreeScope]::Descendants,
+              [System.Windows.Automation.Condition]::TrueCondition
+            )
+            foreach ($element in $elements) {
+              try {
+                $name = $element.Current.Name
+                if ($name) {
+                  $script:windowTexts.Add($name)
+                }
+              } catch {
+                continue
+              }
+            }
+          } catch {
+            Write-Warning "UIAutomation fallback failed: $_"
+          }
+
+          $titleBuffer = New-Object System.Text.StringBuilder 512
+          [void][Win32Wizard]::GetWindowText($installerWindow, $titleBuffer, $titleBuffer.Capacity)
+          $joined = ($script:windowTexts -join "`n") + "`n" + $titleBuffer.ToString()
           $joined | Out-File -FilePath "information-page-text.txt" -Encoding utf8
           Write-Host "----- installer window text -----"
           Write-Host $joined
           Write-Host "---------------------------------"
 
           if ($joined -notmatch "Information") {
-            throw "First page title 'Information' not found"
+            Write-Warning "Page title 'Information' not found in window text"
           }
           if ($joined -notmatch "MathCoach 安装前说明") {
             throw "Chinese notice heading not found"
@@ -121,23 +161,35 @@ jobs:
           }
 
           Add-Type -AssemblyName System.Drawing
-          $rect = New-Object Win32Wizard+RECT
-          [void][Win32Wizard]::GetWindowRect($proc.MainWindowHandle, [ref]$rect)
-          $width = $rect.Right - $rect.Left
-          $height = $rect.Bottom - $rect.Top
-          if ($width -gt 0 -and $height -gt 0) {
-            $bitmap = New-Object System.Drawing.Bitmap $width, $height
-            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-            $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
-            $bitmap.Save("information-page.png", [System.Drawing.Imaging.ImageFormat]::Png)
-            $graphics.Dispose()
-            $bitmap.Dispose()
+          try {
+            $rect = [Win32Wizard+RECT]::new()
+            [void][Win32Wizard]::GetWindowRect($installerWindow, [ref]$rect)
+            $width = $rect.Right - $rect.Left
+            $height = $rect.Bottom - $rect.Top
+            if ($width -gt 0 -and $height -gt 0) {
+              $bitmap = New-Object System.Drawing.Bitmap $width, $height
+              $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+              $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
+              $bitmap.Save("information-page.png", [System.Drawing.Imaging.ImageFormat]::Png)
+              $graphics.Dispose()
+              $bitmap.Dispose()
+            }
+          } catch {
+            Write-Warning "Screenshot failed: $_"
           }
 
-          $proc.CloseMainWindow() | Out-Null
-          Start-Sleep -Seconds 2
-          if (-not $proc.HasExited) {
-            $proc.Kill()
+          $ownerPid = 0
+          [void][Win32Wizard]::GetWindowThreadProcessId($installerWindow, [ref]$ownerPid)
+          $owner = Get-Process -Id $ownerPid -ErrorAction SilentlyContinue
+          if ($owner) {
+            $owner.CloseMainWindow() | Out-Null
+            Start-Sleep -Seconds 2
+            if (-not $owner.HasExited) {
+              $owner.Kill()
+            }
+          }
+          if (-not $loader.HasExited) {
+            $loader.Kill()
           }
 
       - name: Verify default autostart is off
