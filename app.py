@@ -436,7 +436,25 @@ def _render_sidebar() -> None:
     with st.sidebar:
         st.header("学习设置")
         _render_card_selector()
-        st.selectbox("功能", MODES, key="app_mode")
+        if (
+            st.query_params.get("grade")
+            and st.session_state.get("app_mode") != MODE_GRADE
+        ):
+            st.session_state["app_mode"] = MODE_GRADE
+
+        def _on_mode_change() -> None:
+            if (
+                st.session_state.get("app_mode") != MODE_GRADE
+                and st.query_params.get("grade")
+            ):
+                st.query_params.pop("grade", None)
+
+        st.selectbox(
+            "功能",
+            MODES,
+            key="app_mode",
+            on_change=_on_mode_change,
+        )
         st.caption(
             f"当前卡片：{st.session_state.engine.card.name} · "
             f"课程：{st.session_state.engine.card.course}"
