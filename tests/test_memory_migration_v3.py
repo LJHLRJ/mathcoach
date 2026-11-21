@@ -11,8 +11,8 @@ def test_fresh_db_has_schema_v3_and_fsrs_columns(tmp_path):
         version = conn.execute("SELECT version FROM schema_version").fetchone()[0]
         cols = {row[1] for row in conn.execute("PRAGMA table_info(mistakes)")}
 
-    assert SCHEMA_VERSION == 3
-    assert version == 3
+    assert SCHEMA_VERSION >= 3
+    assert version == SCHEMA_VERSION
     assert {"stability", "difficulty", "reps", "lapses"} <= cols
 
 
@@ -68,7 +68,7 @@ def test_v2_db_migrates_keeps_rows_and_sets_defaults(tmp_path):
             "FROM mistakes WHERE id = 'm1'"
         ).fetchone()
 
-    assert version == 3
+    assert version == SCHEMA_VERSION
     assert row[0] == "m1"
     assert row[1] == "题干"
     assert row[2] == 2.7

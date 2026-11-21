@@ -45,6 +45,10 @@ class Repository(Protocol):
 
     def list_review_items(self) -> list[ReviewItem]: ...
 
+    def get_mastery(self, card_id: str) -> float | None: ...
+
+    def set_mastery(self, card_id: str, probability: float, now: datetime) -> None: ...
+
     def record_audit(
         self, op: str, result: str, now: datetime | None = None
     ) -> None: ...
@@ -73,6 +77,7 @@ class InMemoryRepository:
         self._audit: list[AuditEntry] = []
         self._daily: dict[str, DailyResult] = {}
         self._challenges: list[ChallengeResult] = []
+        self._mastery: dict[str, float] = {}
 
     def save_consent(self, consent: Consent) -> None:
         self._consent = consent
@@ -116,6 +121,12 @@ class InMemoryRepository:
         ]
         entries.sort(key=lambda entry: entry.created_at, reverse=True)
         return entries if limit is None else entries[:limit]
+
+    def get_mastery(self, card_id: str) -> float | None:
+        return self._mastery.get(card_id)
+
+    def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
+        self._mastery[card_id] = max(0.0, min(1.0, float(probability)))
 
     def record_review(
         self, exercise_id: str, independent: bool, now: datetime

@@ -34,7 +34,7 @@ from ..domain.spaced_repetition import Quality, update_schedule
 from .repository import DEFAULT_CONSENT
 from .scheduler import fsrs_params, next_review, scheduler_mode
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 _SCHEMA = (
     """
@@ -153,6 +153,16 @@ _MIGRATIONS: dict[int, tuple[str, ...]] = {
         "ALTER TABLE mistakes ADD COLUMN reps INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE mistakes ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0",
     ),
+    4: (
+        # BKT 掌握概率按 card_id 独立存储，不改动 mistakes 历史列
+        """
+        CREATE TABLE IF NOT EXISTS mastery (
+            card_id TEXT PRIMARY KEY,
+            probability REAL NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+    ),
 }
 
 
@@ -238,6 +248,27 @@ class SQLiteRepository:
         if row is None:
             return DEFAULT_CONSENT
         return Consent(memory=bool(row["memory"]), mistake_book=bool(row["mistake_book"]))
+
+    def get_mastery(self, card_id: str) -> float | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT probability FROM mastery WHERE card_id = ?", (card_id,)
+            ).fetchone()
+        return float(row["probability"]) if row is not None else None
+
+    def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
+        value = max(0.0, min(1.0, float(probability)))
+        with self._lock, self._connection:
+            self._connection.execute(
+                """
+                INSERT INTO mastery(card_id, probability, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(card_id) DO UPDATE SET
+                    probability = excluded.probability,
+                    updated_at = excluded.updated_at
+                """,
+                (card_id, value, _text(now)),
+            )
 
     def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
         with self._lock, self._connection:
