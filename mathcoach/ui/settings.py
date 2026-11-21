@@ -36,6 +36,12 @@ from ..memory.settings_repo import (
 )
 from ..safety.redlines import sanitize_text
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+from .theme_background import (
+    BACKGROUND_OPTIONS,
+    inject_background_css,
+    load_background,
+    save_background,
+)
 
 FONT_SIZE_LABELS = {"小": "small", "中": "medium", "大": "large"}
 FONT_SIZE_CSS = {
@@ -114,12 +120,14 @@ def apply_runtime_settings(
 
 
 def inject_font_size_css(size: str) -> None:
-    """注入常量字号 CSS；默认字号不注入，避免无谓的布局变化。"""
-    if size == "medium":
-        return
-    css = FONT_SIZE_CSS.get(size)
-    if css:
-        st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    """注入常量字号与背景 CSS；默认字号不注入，避免无谓的布局变化。"""
+    if size != "medium":
+        css = FONT_SIZE_CSS.get(size)
+        if css:
+            st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    consent = st.session_state.get("consent")
+    if consent is not None:
+        inject_background_css(consent)
 
 
 def sanitized_connection_error(exc: Exception, api_key: str) -> str:
@@ -208,6 +216,8 @@ def _render_notices() -> None:
         st.success("设置已保存。")
     if st.session_state.pop("settings_ratio_saved", False):
         st.success("复习配比已保存。")
+    if st.session_state.pop("settings_appearance_saved", False):
+        st.success("外观设置已保存。")
     cleared = st.session_state.pop("settings_cleared", None)
     if cleared is not None:
         st.success(f"学习数据已清除，共删除 {cleared} 条记录。")
@@ -364,6 +374,37 @@ def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
         st.caption("本面板只读，不提供写入口。")
 
 
+def _render_appearance_form(
+    repository: Repository, consent: Consent
+) -> None:
+    st.markdown("### 外观")
+    st.caption(
+        "背景默认关闭；仅使用常量 CSS，不加载外部图片。"
+        "背景随实际生效的浅色/深色主题切换，主题变更需重启。"
+    )
+    current = load_background(consent)
+    labels = list(BACKGROUND_OPTIONS.values())
+    keys = list(BACKGROUND_OPTIONS)
+    index = keys.index(current) if current in keys else 0
+    with st.form("settings_appearance_form"):
+        label = st.selectbox(
+            "背景",
+            labels,
+            index=index,
+            key="settings_background",
+        )
+        saved = st.form_submit_button("保存外观设置")
+    if not saved:
+        return
+    choice = keys[labels.index(label)]
+    if save_background(consent, choice):
+        repository.record_audit("settings_background", "ok")
+        st.session_state["settings_appearance_saved"] = True
+        st.rerun()
+    else:
+        st.error(f"{ICON_ERROR} 背景设置保存失败，请重试。")
+
+
 def _render_review_ratio_form(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
@@ -515,6 +556,7 @@ def render_settings_page(
     elif offline:
         st.caption("未配置 API Key 时使用离线模板，判分逻辑不变。")
 
+    _render_appearance_form(repository, consent)
     _render_review_ratio_form(repository, consent, settings)
     _render_export(repository, consent)
     _render_clear(repository, consent)
