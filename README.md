@@ -12,6 +12,23 @@
 - 导出学习包：Markdown 学习包、独立收据/错题文件、Anki TSV（不生成 `.apkg`）。
 - 安全层：注入守卫、数学伪装检测、写操作红线、脱敏与审计日志。
 
+## 安全与边界
+
+安全判定全部在本地执行，不依赖模型自检；写操作受同意状态、观察状态与确认语句约束。
+
+### 安全测试覆盖
+
+| 项目 | 结果 | 数据来源 |
+|---|---|---|
+| 安全相关测试 | 28 个用例，全部通过 | `tests/test_guards.py` 9、`tests/test_redlines.py` 13、`tests/test_audit.py` 2、`tests/test_engine_safety.py` 4 |
+| 显式注入样本 | 10/10 全部拦截 | `tests/test_guards.py::INJECTION_SAMPLES` |
+| 数学伪装样本 | 3/3 命中 | `tests/test_guards.py::test_math_framing_examples` |
+| 零宽字符样本 | 1/1 拦截 | `tests/test_guards.py::test_zero_width_characters_are_blocked` |
+| 低置信解析 | 1/1 拒绝 | `tests/test_guards.py::test_low_confidence_parsed_answer_is_rejected` |
+| 脱敏样本 | 12/12 替换 | `tests/test_redlines.py` 中 token、API Key、Bearer、手机号、身份证、内网地址、姓名、住址等断言 |
+
+以上由 CI 在 push 到 `main` 与 PR 时运行完整单元测试和截图回归；Release 构建流程也会执行完整回归。结果见 GitHub Actions。
+
 ## 桌面客户端
 
 Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。产物未签名，Windows SmartScreen / macOS Gatekeeper 可能提示。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。

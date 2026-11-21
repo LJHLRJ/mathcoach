@@ -1,9 +1,16 @@
 """文档与提示词评审副本必须与运行时保持一致。"""
+import ast
 from pathlib import Path
 
 from mathcoach.llm.prompts import PROMPT_VERSION, SYSTEM_PARSER, SYSTEM_TUTOR
 
 ROOT = Path(__file__).resolve().parents[1]
+SECURITY_FILES = (
+    ROOT / "tests/test_guards.py",
+    ROOT / "tests/test_redlines.py",
+    ROOT / "tests/test_audit.py",
+    ROOT / "tests/test_engine_safety.py",
+)
 
 
 def test_readme_contains_required_commands():
@@ -29,6 +36,44 @@ def test_readme_points_update_entry_to_settings_tab():
 
     assert "“设置”Tab 中的“关于与更新”" in readme
     assert "侧边栏“关于与更新”" not in readme
+
+
+def test_readme_documents_security_test_coverage():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "## 安全与边界" in readme
+    assert "### 安全测试覆盖" in readme
+    assert "28 个用例" in readme
+    assert "10/10" in readme
+    assert "12/12" in readme
+    assert "GitHub Actions" in readme
+
+
+def test_readme_security_counts_match_test_files():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    total = 0
+    for path in SECURITY_FILES:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        total += sum(
+            1
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
+        )
+    guard_tree = ast.parse(SECURITY_FILES[0].read_text(encoding="utf-8"))
+    injected = next(
+        node
+        for node in guard_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "INJECTION_SAMPLES"
+            for target in node.targets
+        )
+    )
+
+    assert total == 28
+    assert len(injected.value.elts) == 10
+    assert f"{total} 个用例" in readme
+    assert f"{len(injected.value.elts)}/{len(injected.value.elts)}" in readme
 
 
 def test_prompt_copies_match_runtime_constants():

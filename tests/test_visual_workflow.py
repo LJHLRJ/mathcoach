@@ -36,6 +36,13 @@ def test_visual_workflow_runs_test_and_uploads_artifacts():
     assert "git push" not in text
 
 
+def test_visual_workflow_runs_full_unit_tests_on_each_push():
+    text = WORKFLOW.read_text(encoding="utf-8")
+
+    assert "Run unit tests" in text
+    assert "--ignore=tests/test_visual_regression.py" in text
+
+
 def test_visual_dependencies_are_ci_only_and_baselines_exist():
     runtime = RUNTIME_REQUIREMENTS.read_text(encoding="utf-8")
     visual = VISUAL_REQUIREMENTS.read_text(encoding="utf-8")
