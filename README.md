@@ -9,6 +9,7 @@
 - 提示阶梯 L1–L6、连错 2 次错因诊断、连错 3 次收尾、独立/半独立收据。
 - SQLite 本地记忆：收据、错题本、复习队列；游客模式只存内存。
 - 学习仪表盘、每日挑战、挑战赛、学习路径、周报、错因趋势、智能复习包、错题变式。
+- 知识点树与学习卡片：122 个知识点、122 张学习卡片、366 道题绑定、答题前“先学习”入口、解析与错因定位、掌握度/待复习学习闭环。
 - 导出学习包：Markdown 学习包、独立收据/错题文件、Anki TSV（不生成 `.apkg`）。
 - 安全层：注入守卫、数学伪装检测、写操作红线、脱敏与审计日志。
 
@@ -161,6 +162,7 @@ python -m build
 | M15 | 叙事化游戏化 | 已完成 | `mathcoach/domain/narrative.py`、`content/narrative.yaml` |
 | M16 | GitHub Actions 自动打包 | 已完成 | `.github/workflows/build-desktop.yml` |
 | M17 | 界面优化与美化 | 已完成（v0.5.0） | `.streamlit/config.toml`、`mathcoach/ui/layout.py`、`mathcoach/ui/icons.py` |
+| M18 | 知识点树 + 学习卡片 + 解析/错因定位 + 学习闭环 | 已完成 | `content/knowledge_tree.yaml`、`content/learning_cards/`、`mathcoach/domain/explanation.py` |
 
 当前发布：**v0.7.0**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
 
@@ -179,6 +181,10 @@ python -m build
 ## 界面主题与交互
 
 主题使用 Streamlit 原生 `[theme]` 配置；局部常量样式、按钮层级、骨架占位与布局密度集中在 `mathcoach/ui/theme.py` 与 `mathcoach/ui/components.py`。深浅色主题通过 `.streamlit/config.toml` 的 `base` 切换，修改后需重启；设置页“主题”只记录偏好，不会即时生效。完整说明、交互步骤与回退方式见 [docs/ui-polish.md](docs/ui-polish.md)。
+
+## 知识点与学习闭环
+
+知识点 ID 复用卡片 ID，层级与题目绑定集中在 `content/knowledge_tree.yaml`；学习卡片位于 `content/learning_cards/`。讲解页可“先学习此知识点”，答错后展示知识点定位、完整解析与错因定位；知识点页与练习结束页展示掌握度、收据/错题/待复习数量与下一步建议。完整说明、测试与回退方式见 [docs/knowledge-tree.md](docs/knowledge-tree.md)。
 
 ## 免责声明
 
