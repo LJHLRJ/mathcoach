@@ -16,7 +16,7 @@
 - 默认关闭；仅在仪表盘和空状态（目标确认/讲解）显示，不用于做题、提示或收据页。
 - 使用 Radiant 的 Canvas shader 内联 HTML；关闭时不注入 iframe。
 - 受 Streamlit 静态服务限制，shader 显示为组件区域内的低透明度装饰面板，不是浏览器全屏背景。
-- 尊重 `prefers-reduced-motion: reduce`：该模式下隐藏 canvas 并停止动画循环。
+- 尊重 `prefers-reduced-motion: reduce`：该模式下隐藏 canvas 并停止动画循环，面板呈深色静态块；应用内“减少动效”则不渲染整个面板。
 - 不新增 Python 依赖，不加载外部图片或脚本。
 
 ### 庆祝动效与微交互
@@ -101,9 +101,15 @@
 - 全量 pytest：437 passed, 1 skipped
 - 新增测试：背景 5、反馈音 7、专注音频 5、许可证/免责声明 4、动态背景 6、庆祝 8、里程碑 4、静态资源 4、动效许可证 5
 - 静态服务实测：`confetti.html=200`、`confetti.browser.js=200`
-- 未在真实浏览器中验证 confetti 动画/全屏视觉；浏览器策略与 iframe 渲染需人工确认
+- 真实浏览器验证（Playwright + Chrome for Testing 155，1280×800）：动态背景面板 1120×180，canvas 连续变化，opacity 0.25
+- 庆祝 iframe：位置 (0,0)、尺寸 1280×800、`position: fixed`、`z-index: 9999`、`pointer-events: none`；内容区滚动 700px 后仍覆盖视口；点击穿透成功；下一次 rerun 后移除
+- 截图调色板统计：confetti 播放期间 824 个采样像素，结束后 20 个（UI 颜色残差）
+- 应用内“减少动效”：不注入 shader 面板与庆祝 iframe；浏览器 `prefers-reduced-motion`：canvas `display: none`、checksum 0、不创建 confetti canvas
+- 静态服务：源码与打包产物 `confetti.html` / `confetti.browser.js` 均 200；打包产物在 cwd 无 `.streamlit/config.toml`、且未预设环境变量时仍为 200，验证启动器设置 `STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true`
+- PyInstaller onedir 构建成功：`dist/MathCoach` 574MB，入口 50MB；`static/` 位于 `_internal/static/`；health=200，打包应用页面正常渲染
+- CI 截图回归（commit `0569558`）：Screenshot regression pass
 - 默认状态不注入动态背景/庆祝 iframe，不改变既有视觉回归基线
-- 未实际执行桌面 PyInstaller 构建；已更新脚本并加入 `static/`
+- 本地验证截图保存在 `tests/visual/artifacts/motion-verification/`（已在 `.gitignore`，不提交）
 
 ### 未覆盖项与建议
 
@@ -111,5 +117,5 @@
 - 若需要内置专注曲库，需要单独评估文件体积、许可证与打包配置。
 - 外部专注音频的播放/停止/音量由对应网站控制。
 - 动态背景仍是装饰面板；全屏背景需另行评估可读性与性能。
-- confetti 全屏效果依赖浏览器对 iframe 的渲染；本地无浏览器二进制，未做视觉验证。
+- confetti 全屏效果已在 Chrome 155 headless 中验证；Safari/Firefox 与 pywebview 真实窗口仍需人工复核。
 - `bgvault`、Quiz and Game Show Sound Effects、streamlit-animate、matanim 许可证/来源未确认，未集成。
