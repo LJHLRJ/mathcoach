@@ -42,22 +42,25 @@ def test_readme_documents_security_test_coverage():
     assert "## 安全与边界" in readme
     assert "### 安全测试覆盖" in readme
     assert "22 项" in readme
-    assert "9 / 9" in readme
+    assert "9 / 10" in readme
     assert "6 / 6" in readme
     assert "GitHub Actions" in readme
+    assert "9 / 9" not in readme
     assert "28 个用例" not in readme
     assert "10/10" not in readme
     assert "12/12" not in readme
 
 
-def _functions_with(path: Path, markers: tuple[str, ...]) -> list[str]:
+def _functions_with(
+    path: Path, markers: tuple[str, ...], *, include_safe: bool = False
+) -> list[str]:
     text = path.read_text(encoding="utf-8")
     tree = ast.parse(text)
     names: list[str] = []
     for node in tree.body:
         if not (isinstance(node, ast.FunctionDef) and node.name.startswith("test_")):
             continue
-        if node.name.startswith("test_safe_"):
+        if not include_safe and node.name.startswith("test_safe_"):
             continue
         source = (node.name + " " + (ast.get_source_segment(text, node) or "")).lower()
         if any(marker in source for marker in markers):
@@ -80,6 +83,13 @@ def test_readme_security_counts_match_test_files():
             path, ("blocked", "rejected", "injection", "拒绝", "screened")
         )
     ]
+    injection_samples = [
+        name
+        for path in SECURITY_FILES
+        for name in _functions_with(
+            path, ("block", "reject", "inject"), include_safe=True
+        )
+    ]
     redacted = [
         name
         for path in SECURITY_FILES
@@ -90,9 +100,10 @@ def test_readme_security_counts_match_test_files():
 
     assert len(test_functions) == 22
     assert len(blocked) == 9
+    assert len(injection_samples) == 10
     assert len(redacted) == 6
     assert f"{len(test_functions)} 项" in readme
-    assert f"{len(blocked)} / {len(blocked)}" in readme
+    assert f"{len(blocked)} / {len(injection_samples)}" in readme
     assert f"{len(redacted)} / {len(redacted)}" in readme
 
 

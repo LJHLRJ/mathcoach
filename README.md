@@ -19,11 +19,11 @@
 ### 安全测试覆盖
 
 - 安全相关测试用例：22 项（`tests/test_guards.py` 9、`tests/test_redlines.py` 13；`test_safety*.py` 暂无用例）
-- 注入样本拦截：9 / 9（按测试函数统计，全部拦截）
+- 注入样本拦截：9 / 10（按测试函数统计；反向用例计入样本，但不计入拦截）
 - 脱敏样本替换：6 / 6（按测试函数统计）
 - 数据来源：由 CI 在每次 push 时运行，结果见 GitHub Actions 的 pytest 输出。
 
-统计口径：按文件名匹配 `test_safety*.py` / `test_guards*.py` / `test_redlines*.py`，统计以 `test_` 开头的函数；同一函数内多个样本只计 1 项；按函数名或断言中的 blocked / rejected / injection / 拒绝 识别拦截用例，`safe_*` 等反向用例不计入。`test_audit.py`（2 项）与 `test_engine_safety.py`（4 项）不属于本小节文件口径，未计入。
+统计口径：按文件名匹配 `test_safety*.py` / `test_guards*.py` / `test_redlines*.py`，统计以 `test_` 开头的函数；同一函数内多个样本只计 1 项。注入样本按函数名匹配 block / reject / inject，或函数体断言含 blocked / rejected / injection 识别；`test_safe_learning_text_is_allowed` 作为反向用例计入样本但不计入拦截。脱敏样本按 redact / masked / 已脱敏 识别；同一函数可同时命中两类。`test_audit.py`（2 项）与 `test_engine_safety.py`（4 项）不属于本小节文件口径，未计入。
 
 ## 桌面客户端
 
