@@ -41,6 +41,7 @@ from mathcoach.safety.redlines import (
     WriteBlocked,
     assert_write_allowed,
 )
+from mathcoach.ui.layout import card, hint_block, kpi_row
 from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
     build_challenge_state,
@@ -144,39 +145,38 @@ engine: SessionEngine = st.session_state.engine
 
 
 def _render_mistake_book(repository) -> None:
-    with st.expander("错题本", expanded=False):
-        entries = repository.list_mistakes(limit=10)
-        if not entries:
-            st.caption("还没有错题。")
-            return
-        for entry in entries:
-            st.markdown(f"**{entry.stem}**")
-            st.caption(
-                f"你的答案：{entry.user_answer} · 正确答案：{entry.correct_answer} · "
-                f"{entry.error_type.value} · {entry.review_state.value}"
-            )
-            gaps = _collect_gaps(repository, entry.card_id)
-            if gaps:
-                st.markdown(render_gaps(gaps))
+    entries = repository.list_mistakes(limit=10)
+    if not entries:
+        st.caption("还没有错题。")
+        return
+    for entry in entries:
+        st.markdown(f"**{entry.stem}**")
+        st.caption(
+            f"你的答案：{entry.user_answer} · 正确答案：{entry.correct_answer} · "
+            f"{entry.error_type.value} · {entry.review_state.value}"
+        )
+        gaps = _collect_gaps(repository, entry.card_id)
+        if gaps:
+            st.markdown(render_gaps(gaps))
 
 
 def _render_review_plan(repository) -> None:
-    with st.expander("复习清单", expanded=False):
-        items = repository.list_review_items()
-        if not items:
-            st.caption("暂无待复习内容。")
-            return
-        plan = build_plan(items, datetime.now(timezone.utc))
-        for label, group in (
-            ("今天", plan.today),
-            ("明天", plan.tomorrow),
-            ("三天后", plan.in_three_days),
-        ):
-            if not group:
-                continue
-            st.markdown(f"**{label}**")
-            for item in group:
-                st.markdown(f"- {item.mistake.stem}（{item.mistake.error_type.value}）")
+    items = repository.list_review_items()
+    if not items:
+        st.caption("暂无待复习内容。")
+        return
+    st.markdown("**复习清单**")
+    plan = build_plan(items, datetime.now(timezone.utc))
+    for label, group in (
+        ("今天", plan.today),
+        ("明天", plan.tomorrow),
+        ("三天后", plan.in_three_days),
+    ):
+        if not group:
+            continue
+        st.markdown(f"**{label}**")
+        for item in group:
+            st.markdown(f"- {item.mistake.stem}（{item.mistake.error_type.value}）")
 
 
 STAGE_LABELS = {"highschool": "高中", "undergraduate": "本科", "graduate": "研究生"}
@@ -191,7 +191,7 @@ def _render_card_selector() -> None:
     current_id = st.session_state.engine.card.id
     index = card_ids.index(current_id) if current_id in card_ids else 0
     selected = st.selectbox(
-        "选择卡片",
+        "学段 / 课程 / 卡片",
         card_ids,
         index=index,
         format_func=lambda card_id: labels[card_id],
@@ -264,6 +264,10 @@ def _render_sidebar() -> None:
         st.header("学习设置")
         _render_card_selector()
         st.selectbox("功能", MODES, key="app_mode")
+        st.caption(
+            f"当前卡片：{st.session_state.engine.card.name} · "
+            f"课程：{st.session_state.engine.card.course}"
+        )
         memory = st.toggle(
             "保存学习收据（本机）", value=consent.memory, key="consent_memory"
         )
@@ -287,13 +291,30 @@ def _render_sidebar() -> None:
         if not (consent.memory or consent.mistake_book):
             st.info("游客模式：本次学习数据只存在内存中。")
         st.divider()
-        if consent.mistake_book:
-            _render_mistake_book(repository)
-            _render_review_plan(repository)
-        else:
-            st.caption("错题本已关闭。")
-        st.divider()
-        _render_update_section()
+        if st.button("重置会话", key="reset_session"):
+            st.session_state.engine = SessionEngine(
+                card=st.session_state.engine.card,
+                provider=st.session_state.provider,
+                repository=st.session_state.repository,
+                consent=st.session_state.consent,
+            )
+            st.rerun()
+
+
+def _render_mistake_tab() -> None:
+    repository = st.session_state.repository
+    consent: Consent = st.session_state.consent
+    st.subheader("错题本")
+    if not consent.mistake_book:
+        st.info("错题本已关闭。")
+        return
+    _render_mistake_book(repository)
+    _render_review_plan(repository)
+
+
+def _render_settings_tab() -> None:
+    st.subheader("设置")
+    _render_update_section()
 
 
 def _render_hint_actions() -> None:
@@ -311,86 +332,122 @@ def _render_hint_actions() -> None:
 
 def _render_session() -> None:
     view = engine.view
-    st.caption(f"当前卡片：{engine.card.name} · {engine.card.course}")
-    st.subheader(view.title)
-    st.write(view.body)
-    if view.notice:
-        st.info(view.notice)
-    # 收据页只在现有正文后追加依据，不改变判定与布局
-    if view.phase is Phase.RECEIPT and view.receipt and view.receipt.basis:
-        st.caption(f"依据：{view.receipt.basis}")
-    # 叙事层可关闭；关闭后只隐藏展示，不影响收据与统计
-    if (
-        view.phase is Phase.RECEIPT
-        and st.session_state.get("narrative_enabled", True)
-        and narrative_nodes
-    ):
-        progress = _narrative_progress(st.session_state.repository)
-        upcoming = next_node(progress, narrative_nodes)
-        if upcoming is None:
-            st.caption("叙事：本段旅程已全部点亮。")
-        else:
-            st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
-    # 可视化是可选增强：失败时只提示，不阻断讲解/小测
-    if view.phase in (Phase.EXPLAIN, Phase.QUIZ):
-        status = render_visual(engine.card.id)
-        if status == "failed":
-            st.info("可视化暂不可用")
 
     if view.phase is Phase.GOAL_CONFIRM:
-        goal = st.text_input("今天想练到什么？", key="goal_input")
-        if st.button("确认目标", key="confirm_goal"):
-            try:
-                engine.confirm_goal(goal)
-            except Blocked:
-                st.error(REFUSAL_TEXT)
-            except ValueError as exc:
-                st.error(str(exc))
-            else:
+        with card(view.title):
+            st.write(view.body)
+            goal = st.text_input("今天想练到什么？", key="goal_input")
+            if st.button("确认目标", key="confirm_goal"):
+                try:
+                    engine.confirm_goal(goal)
+                except Blocked:
+                    st.error(REFUSAL_TEXT)
+                except ValueError as exc:
+                    st.error(str(exc))
+                else:
+                    st.rerun()
+        return
+
+    if view.phase is Phase.EXPLAIN:
+        with card(view.title, engine.card.course):
+            st.write(view.body)
+            if view.notice:
+                st.info(view.notice)
+            # 可视化是可选增强：失败时只提示，不阻断讲解/小测
+            if render_visual(engine.card.id) == "failed":
+                st.info("可视化暂不可用")
+            kpi_row(
+                [
+                    ("当前卡片", engine.card.name),
+                    ("课程", engine.card.course),
+                    ("难度", engine.card.difficulty.value),
+                ]
+            )
+            if st.button("开始小测", key="begin_quiz"):
+                engine.begin_quiz()
                 st.rerun()
+        return
 
-    elif view.phase is Phase.EXPLAIN:
-        if st.button("开始小测", key="begin_quiz"):
-            engine.begin_quiz()
-            st.rerun()
-
-    elif view.phase is Phase.QUIZ:
-        answer = _render_answer_input(engine.current_exercise)
-        if st.button("提交答案", key="submit_answer"):
-            engine.submit_answer(answer)
-            st.rerun()
+    if view.phase is Phase.QUIZ:
+        with card(view.title):
+            if view.notice:
+                st.caption(view.notice)
+            if render_visual(engine.card.id) == "failed":
+                st.info("可视化暂不可用")
+            answer = _render_answer_input(engine.current_exercise)
+            if st.button("提交答案", key="submit_answer"):
+                engine.submit_answer(answer)
+                st.rerun()
         _render_hint_actions()
+        return
 
-    elif view.phase is Phase.DIAGNOSE:
-        selected = st.radio(
-            "选择更贴近的错因",
-            view.options,
-            key=f"diagnosis_{engine.state.exercise_id}_{len(engine.state.attempts)}",
-        )
-        if st.button("确认错因", key="confirm_diagnosis"):
-            engine.confirm_diagnosis(selected)
-            st.rerun()
+    if view.phase is Phase.DIAGNOSE:
+        with card(view.title):
+            st.write(view.body)
+            if view.notice:
+                st.info(view.notice)
+            selected = st.radio(
+                "选择更贴近的错因",
+                view.options,
+                key=f"diagnosis_{engine.state.exercise_id}_{len(engine.state.attempts)}",
+            )
+            if st.button("确认错因", key="confirm_diagnosis"):
+                engine.confirm_diagnosis(selected)
+                st.rerun()
+        return
 
-    elif view.phase is Phase.HINT:
+    if view.phase is Phase.HINT:
+        hint_block(engine.state.hint_level, view.body)
+        if view.notice:
+            st.caption(view.notice)
         if st.button("再试一次", key="retry"):
             engine.retry()
             st.rerun()
         _render_hint_actions()
+        return
 
-    elif view.phase is Phase.RECEIPT:
+    if view.phase is Phase.RECEIPT:
+        receipt = view.receipt
+        with card("收据已生成"):
+            if receipt is not None:
+                st.caption(f"题型：{receipt.exercise_type.value}")
+                kpi_row(
+                    [
+                        ("用时", f"{receipt.duration_s} 秒"),
+                        ("最高提示层级", f"L{receipt.max_hint_level}"),
+                        ("独立程度", receipt.independence.value),
+                    ]
+                )
+                if receipt.basis:
+                    st.caption(f"依据：{receipt.basis}")
+            # 叙事层可关闭；关闭后只隐藏展示，不影响收据与统计
+            if (
+                st.session_state.get("narrative_enabled", True)
+                and narrative_nodes
+            ):
+                progress = _narrative_progress(st.session_state.repository)
+                upcoming = next_node(progress, narrative_nodes)
+                if upcoming is None:
+                    st.caption("叙事：本段旅程已全部点亮。")
+                else:
+                    st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
         if st.button("继续", key="advance"):
             engine.advance()
             st.rerun()
+        return
 
-    elif view.phase is Phase.WRAPUP:
-        if st.button("重新开始", key="restart"):
-            st.session_state.engine = SessionEngine(
-                card=engine.card,
-                provider=provider,
-                repository=st.session_state.repository,
-                consent=st.session_state.consent,
-            )
-            st.rerun()
+    if view.phase is Phase.WRAPUP:
+        with card("本次闭环完成"):
+            st.write(view.body)
+            if st.button("重新开始", key="restart"):
+                st.session_state.engine = SessionEngine(
+                    card=engine.card,
+                    provider=provider,
+                    repository=st.session_state.repository,
+                    consent=st.session_state.consent,
+                )
+                st.rerun()
+        return
 
 
 def _mastery_rows(repository) -> list[tuple[str, str]]:
@@ -890,28 +947,49 @@ def _render_export() -> None:
             st.success(f"已导出 {len(written)} 个文件到 {directory}")
 
 
+def _render_current_mode() -> None:
+    mode = st.session_state.get("app_mode", MODE_SESSION)
+    if mode == MODE_DASHBOARD:
+        _render_dashboard()
+    elif mode == MODE_DAILY:
+        _render_daily_challenge()
+    elif mode == MODE_CHALLENGE:
+        _render_challenge()
+    elif mode == MODE_PATH:
+        _render_learning_path()
+    elif mode == MODE_WEEKLY:
+        _render_weekly_report()
+    elif mode == MODE_REVIEW:
+        _render_review_package()
+    elif mode == MODE_VARIANTS:
+        _render_variant_practice()
+    elif mode == MODE_EXPORT:
+        _render_export()
+    else:
+        _render_session()
+
+
 _render_sidebar()
 
 st.title("数学陪练")
 if isinstance(provider, OfflineProvider) or getattr(provider, "degraded", False):
     st.caption("离线模板模式：讲解使用确定性模板，判分逻辑不变。")
 
-mode = st.session_state.get("app_mode", MODE_SESSION)
-if mode == MODE_DASHBOARD:
-    _render_dashboard()
-elif mode == MODE_DAILY:
-    _render_daily_challenge()
-elif mode == MODE_CHALLENGE:
-    _render_challenge()
-elif mode == MODE_PATH:
-    _render_learning_path()
-elif mode == MODE_WEEKLY:
-    _render_weekly_report()
-elif mode == MODE_REVIEW:
-    _render_review_package()
-elif mode == MODE_VARIANTS:
-    _render_variant_practice()
-elif mode == MODE_EXPORT:
-    _render_export()
-else:
-    _render_session()
+tabs = st.tabs(
+    ["当前任务", "学习档案", "错题本", "设置"],
+    default="当前任务",
+    key="main_tabs",
+    on_change="rerun",
+)
+with tabs[0]:
+    if tabs[0].open:
+        _render_current_mode()
+with tabs[1]:
+    if tabs[1].open:
+        _render_dashboard()
+with tabs[2]:
+    if tabs[2].open:
+        _render_mistake_tab()
+with tabs[3]:
+    if tabs[3].open:
+        _render_settings_tab()

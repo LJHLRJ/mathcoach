@@ -203,9 +203,11 @@ def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
     assert "收据已生成" in at.subheader[0].value
 
 
-def test_app_sidebar_shows_version_and_update_entry(tmp_path, monkeypatch):
+def test_app_settings_tab_shows_version_and_update_entry(tmp_path, monkeypatch):
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15).run()
+    at.session_state["main_tabs"] = "设置"
+    at.run()
 
     assert not at.exception
     assert any(
@@ -214,7 +216,7 @@ def test_app_sidebar_shows_version_and_update_entry(tmp_path, monkeypatch):
     assert any(button.label == "检查更新" for button in at.button)
 
 
-def test_app_sidebar_shows_persisted_mistake_after_restart(tmp_path, monkeypatch):
+def test_app_mistake_tab_shows_persisted_mistake_after_restart(tmp_path, monkeypatch):
     path = tmp_path / "mathcoach.sqlite3"
     monkeypatch.setenv("MATHCOACH_DB", str(path))
 
@@ -231,9 +233,12 @@ def test_app_sidebar_shows_persisted_mistake_after_restart(tmp_path, monkeypatch
     second = AppTest.from_file(APP_PATH, default_timeout=15)
     second.run()
     assert not second.exception
-    captions = " ".join(caption.value for caption in second.sidebar.caption)
+    second.session_state["main_tabs"] = "错题本"
+    second.run()
+    assert not second.exception
+    captions = " ".join(caption.value for caption in second.caption)
     assert "你的答案：y² = x" in captions
-    assert any("今天" in markdown.value for markdown in second.sidebar.markdown)
+    assert any("今天" in markdown.value for markdown in second.markdown)
 
 
 def test_app_guest_mode_keeps_learning_data_out_of_sqlite(tmp_path, monkeypatch):

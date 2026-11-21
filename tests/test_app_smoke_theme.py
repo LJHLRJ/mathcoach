@@ -25,3 +25,41 @@ def test_theme_config_has_required_keys():
     assert theme["base"] == "light"
     assert theme["primaryColor"] == "#4F8BF9"
     assert theme["font"] == "sans serif"
+
+
+def test_first_screen_has_card_sidebar_and_tabs(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    assert not at.exception
+    assert at.subheader[0].value.startswith("目标确认 · ")
+    assert any(
+        "学段" in box.label or "课程" in box.label for box in at.sidebar.selectbox
+    )
+    assert any(
+        "当前卡片" in caption.value and "课程" in caption.value
+        for caption in at.sidebar.caption
+    )
+    assert "当前任务" in [tab.label for tab in at.tabs]
+
+
+def test_receipt_shows_three_metrics_after_full_loop(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+
+    at.selectbox[0].select("hs-function-intro-001").run()
+    at.text_input[0].set_value("搞懂函数的概念")
+    at.button[0].click().run()
+    at.button[0].click().run()  # 开始小测
+    at.radio[0].set_value("y = x²")
+    at.button[0].click().run()
+
+    assert not at.exception
+    assert at.subheader[0].value == "收据已生成"
+    assert [metric.label for metric in at.metric] == [
+        "用时",
+        "最高提示层级",
+        "独立程度",
+    ]
