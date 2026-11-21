@@ -14,6 +14,23 @@ def test_readme_contains_required_commands():
     assert "python -m build" in readme
 
 
+def test_readme_milestone_table_covers_current_releases():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    for milestone in ("M9", "M12", "M16", "M17"):
+        assert f"| {milestone} |" in readme
+    assert "FSRS" in readme
+    assert "BKT" in readme
+    assert "v0.5.0" in readme
+
+
+def test_readme_points_update_entry_to_settings_tab():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "“设置”Tab 中的“关于与更新”" in readme
+    assert "侧边栏“关于与更新”" not in readme
+
+
 def test_prompt_copies_match_runtime_constants():
     tutor = (ROOT / "prompts" / "tutor.md").read_text(encoding="utf-8")
     parser = (ROOT / "prompts" / "parser.md").read_text(encoding="utf-8")

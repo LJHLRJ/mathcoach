@@ -14,7 +14,7 @@
 
 ## 桌面客户端
 
-Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用侧边栏“关于与更新”可检查新版本并打开下载页，不自动下载或安装。产物未签名，Windows SmartScreen / macOS Gatekeeper 可能提示。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
+Windows 提供 `MathCoachSetup-<version>.exe`（按用户安装，含开始菜单与卸载项）和便携 zip；macOS 提供 `MathCoach-<version>.dmg` 和便携 zip。应用“设置”Tab 中的“关于与更新”可检查新版本并打开下载页，不自动下载或安装。产物未签名，Windows SmartScreen / macOS Gatekeeper 可能提示。构建说明见 [desktop-packaging-plan.md](docs/packaging/desktop-packaging-plan.md)。
 
 ## 目录
 
@@ -111,6 +111,17 @@ python -m build
 | M6a | 仪表盘 + 每日挑战 + 错题变式 | 已完成 |
 | M6b | 学习路径 + 周报 + 挑战赛 + 智能复习包 + 错因趋势 | 已完成 |
 | M7 | 文档与提示词文件 + 导出学习包 | 已完成 |
+| M9 | FSRS 调度 + schema v3 | 已完成 |
+| M10 | 可复核依据字段（收据/先修/掌握度） | 已完成 |
+| M11 | 交互式可视化（切线/三平面） | 已完成 |
+| M12 | BKT 掌握概率 | 已完成 |
+| M13 | 混合复习包（15 分钟 5 题） | 已完成 |
+| M14 | 学习路径推荐 | 已完成 |
+| M15 | 叙事层 | 已完成 |
+| M16 | 桌面 CI 构建与 Release 资产 | 已完成 |
+| M17 | 界面优化与美化 + 截图视觉回归 | 已完成（v0.5.0） |
+
+当前发布：**v0.5.0**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
 
 ## 设计文档
 
