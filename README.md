@@ -27,16 +27,16 @@
 
 ## 下载与安装
 
-当前版本：**v0.6.1**（2026-11-21）。下载入口以 GitHub Releases 为准：
+当前版本：**v0.7.0**（2026-11-21）。下载入口以 GitHub Releases 为准：
 
 - 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
 - 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
 
 | 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.6.1.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoachSetup-0.7.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
-| macOS | `MathCoach-0.6.1.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-0.7.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
 
 - 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
@@ -162,7 +162,7 @@ python -m build
 | M16 | GitHub Actions 自动打包 | 已完成 | `.github/workflows/build-desktop.yml` |
 | M17 | 界面优化与美化 | 已完成（v0.5.0） | `.streamlit/config.toml`、`mathcoach/ui/layout.py`、`mathcoach/ui/icons.py` |
 
-当前发布：**v0.6.1**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
+当前发布：**v0.7.0**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
 
 ## 第三方资源与许可证
 
