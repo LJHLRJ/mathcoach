@@ -34,7 +34,7 @@ from mathcoach.memory.review_package import (
     REVIEW_PACKAGE_LIMIT_S,
     build_review_package,
 )
-from mathcoach.memory.scheduler import build_plan
+from mathcoach.memory.scheduler import ReviewPlan, build_plan
 from mathcoach.safety.guards import REFUSAL_TEXT, Blocked
 from mathcoach.safety.redlines import (
     ConfirmationRequired,
@@ -54,6 +54,12 @@ from mathcoach.ui.icons import (
     ICON_UPDATE,
 )
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
+from mathcoach.ui.settings import (
+    apply_runtime_settings,
+    current_settings,
+    inject_font_size_css,
+    render_settings_page,
+)
 from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
     build_challenge_state,
@@ -154,10 +160,13 @@ def _render_gap_diagnosis(gaps: list[Gap]) -> None:
             st.caption(f"依据：{gap.basis}")
 
 
-if "provider" not in st.session_state:
-    st.session_state.provider = build_provider()
 if "consent" not in st.session_state:
     st.session_state.consent = load_consent()
+if "settings" not in st.session_state:
+    st.session_state.settings = current_settings(st.session_state.consent)
+apply_runtime_settings(st.session_state.settings)
+if "provider" not in st.session_state:
+    st.session_state.provider = build_provider()
 if "repository" not in st.session_state:
     st.session_state.repository = build_repository(st.session_state.consent)
 if "engine" not in st.session_state:
@@ -170,6 +179,7 @@ if "engine" not in st.session_state:
 
 provider = st.session_state.provider
 engine: SessionEngine = st.session_state.engine
+inject_font_size_css(st.session_state.settings.font_size)
 
 
 def _render_mistake_book(repository) -> None:
@@ -194,7 +204,20 @@ def _render_review_plan(repository) -> None:
         st.caption("暂无待复习内容。")
         return
     st.markdown("**复习清单**")
-    plan = build_plan(items, datetime.now(timezone.utc))
+    now = datetime.now(timezone.utc)
+    limit = current_settings(st.session_state.consent).daily_review_limit
+    plan = build_plan(items, now, limit=len(items) if limit == 0 else limit)
+    if limit > 0:
+        today = plan.today[:limit]
+        remaining = max(limit - len(today), 0)
+        tomorrow = plan.tomorrow[:remaining]
+        remaining = max(remaining - len(tomorrow), 0)
+        in_three_days = plan.in_three_days[:remaining]
+        plan = ReviewPlan(
+            today=today,
+            tomorrow=tomorrow,
+            in_three_days=in_three_days,
+        )
     kpi_row(
         [
             ("今天", str(len(plan.today))),
@@ -360,7 +383,11 @@ def _render_mistake_tab() -> None:
 
 
 def _render_settings_tab() -> None:
-    st.subheader("设置")
+    render_settings_page(
+        st.session_state.repository,
+        st.session_state.consent,
+        st.session_state.provider,
+    )
     _render_update_section()
 
 
@@ -895,8 +922,13 @@ def _render_review_package() -> None:
         if gaps:
             _render_gap_diagnosis(gaps)
         priority = {gap.chain[-1] for gap in gaps}
+        new_ratio = current_settings(st.session_state.consent).new_review_ratio
         package = build_review_package(
-            repository, cards, now, priority_card_ids=priority
+            repository,
+            cards,
+            now,
+            priority_card_ids=priority,
+            new_ratio=new_ratio,
         )
         if not package.questions:
             st.info(f"{ICON_INFO} {package.reason}")

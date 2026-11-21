@@ -129,8 +129,9 @@ def build_review_pack(
     now: datetime,
     priority_card_ids: set[str] | None = None,
     total: int = 5,
+    new_ratio: int = 0,
 ) -> list[DailyQuestion]:
-    """混合复习包：缺口 1 + 到期 3 + 拓展 1，不足时从全卡池补齐。"""
+    """混合复习包：缺口 1 + 变式 1 固定，其余按新卡占比分配到到期/新卡。"""
     # 延迟导入，避免 scheduler -> daily -> repository 的循环依赖
     from ..session.daily import DailyQuestion
 
@@ -162,7 +163,31 @@ def build_review_pack(
                 variant_questions.append(DailyQuestion(card=card, exercise=exercise))
                 break
 
-    selected = compose(due_questions, gap_questions, variant_questions, total)
+    seen_card_ids = {
+        receipt.card_id for receipt in repository.list_receipts(limit=None)
+    } | {
+        mistake.card_id for mistake in repository.list_mistakes(limit=None)
+    }
+    excluded = seen_card_ids | set(priority_card_ids or ())
+    new_questions = [
+        DailyQuestion(card=card, exercise=card.exercises[0])
+        for card in cards
+        if card.id not in excluded and card.exercises
+    ]
+
+    if not (
+        due_questions or gap_questions or variant_questions or new_questions
+    ):
+        return []
+
+    selected = compose(
+        due_questions,
+        gap_questions,
+        variant_questions,
+        total,
+        new=new_questions,
+        new_ratio=new_ratio,
+    )
     if len(selected) < total:
         # 混合队列不足时从全卡池补齐，保证首期固定 5 题
         seen = {question.exercise.id for question in selected}
