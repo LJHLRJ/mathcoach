@@ -76,29 +76,40 @@
 | 项目 | 状态 | 说明 |
 |---|---|---|
 | 背景主题 | 已实现 | 3 个 Pattern Craft CSS 图案；默认无背景；浅/深色常量；settings 表持久化 |
+| 动态背景 | 已实现（装饰面板） | Radiant 2 个 shader；默认关闭；仅仪表盘/空状态；Reduced-motion 降级 |
+| 庆祝动效 | 已实现 | canvas-confetti；连对 5 题/复习完成/错题清空触发；全屏静态 iframe |
+| 微交互 | 已实现 | 自写常量 CSS：按钮 hover、expander hover；未使用 streamlit-animate |
+| 静态服务 | 已实现 | `.streamlit/config.toml` 开启；桌面启动器设环境变量；打包包含 `static/` |
 | 反馈音效 | 已实现（无应用内音量滑块） | 4 个 uisfx CC0 cue；默认关闭；答题/完成事件触发；原生播放器控制音量 |
 | 专注音频 | 部分实现（仅外部链接） | Noisekun / Moodist / Open Lo-Fi；默认关闭；不内置曲库，不控制外部播放 |
 | 许可证清单 | 已实现 | `THIRD_PARTY_NOTICES.md`、README 与设置页“关于 / 致谢” |
 | 自动播放 | 受浏览器限制 | 首次进入不播放；反馈音依赖用户手势；未承诺自动播放 |
-| 无障碍 | 已覆盖 | 静态背景、声音默认关闭、视觉反馈不依赖声音 |
+| 无障碍 | 已覆盖 | 静态背景、声音默认关闭、视觉反馈不依赖声音；减少动效优先 |
 
 ### 资源体积
 
 - 反馈音原始 MP3：27,547 字节
 - `mathcoach/ui/sound.py`（含 base64 常量）：46,264 字节
-- 新增二进制资源：0 字节
+- Radiant shader 原始 HTML：26,265 字节
+- `mathcoach/ui/motion.py`（含内联 shader）：29,282 字节
+- canvas-confetti 静态文件：26,950 字节（HTML + JS + ISC 许可证）
+- 新增二进制图片/字体：0 字节
 - 专注音频：0 字节（仅外部链接）
 
 ### 验证
 
-- 全量 pytest：410 passed, 1 skipped
-- 新增测试：背景 5、反馈音 7、专注音频 5、许可证/免责声明 4
-- 未在真实浏览器中验证音频播放；浏览器自动播放策略需人工确认
-- 默认状态不注入背景、不渲染音频，不改变既有视觉回归基线
+- 全量 pytest：437 passed, 1 skipped
+- 新增测试：背景 5、反馈音 7、专注音频 5、许可证/免责声明 4、动态背景 6、庆祝 8、里程碑 4、静态资源 4、动效许可证 5
+- 静态服务实测：`confetti.html=200`、`confetti.browser.js=200`
+- 未在真实浏览器中验证 confetti 动画/全屏视觉；浏览器策略与 iframe 渲染需人工确认
+- 默认状态不注入动态背景/庆祝 iframe，不改变既有视觉回归基线
+- 未实际执行桌面 PyInstaller 构建；已更新脚本并加入 `static/`
 
 ### 未覆盖项与建议
 
 - 若需要应用内音量滑块，需要自定义组件或前端依赖；当前 Streamlit 原生音频不支持。
 - 若需要内置专注曲库，需要单独评估文件体积、许可证与打包配置。
 - 外部专注音频的播放/停止/音量由对应网站控制。
-- `bgvault`、Quiz and Game Show Sound Effects 许可证/来源未确认，未使用。
+- 动态背景仍是装饰面板；全屏背景需另行评估可读性与性能。
+- confetti 全屏效果依赖浏览器对 iframe 的渲染；本地无浏览器二进制，未做视觉验证。
+- `bgvault`、Quiz and Game Show Sound Effects、streamlit-animate、matanim 许可证/来源未确认，未集成。
