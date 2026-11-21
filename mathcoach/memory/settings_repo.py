@@ -2,16 +2,18 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
 from ..config import db_path as default_db_path
 from ..domain.models import Consent
 
+SECRETS_PATH = Path.home() / ".mathcoach" / "secrets.local"
 _SETTINGS_TABLE = """
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
@@ -91,7 +93,7 @@ class SQLiteSettingsStore:
 
     def set_many(self, values: Mapping[str, Any]) -> None:
         """原子写入一批设置，并刷新 updated_at。"""
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         with self._lock, self._connection:
             for key, value in values.items():
                 self._connection.execute(
@@ -151,3 +153,48 @@ def load_settings_values(store: SettingsStore) -> dict[str, Any]:
 def save_settings_values(store: SettingsStore, values: Mapping[str, Any]) -> None:
     """批量写入设置。"""
     store.set_many(values)
+
+
+def secrets_path() -> Path:
+    """返回本地 AI 密钥文件路径；该文件不在 git 仓库内。"""
+    return SECRETS_PATH
+
+
+def load_ai_credentials(path: Path | str | None = None) -> tuple[str, str]:
+    """读取本地 AI 凭据；不存在或损坏时返回空字符串。"""
+    target = Path(path) if path is not None else secrets_path()
+    if not target.is_file():
+        return "", ""
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "", ""
+    if not isinstance(data, dict):
+        return "", ""
+    return str(data.get("api_key") or ""), str(data.get("base_url") or "")
+
+
+def save_ai_credentials(
+    api_key: str, base_url: str, path: Path | str | None = None
+) -> Path:
+    """把 AI 凭据写入本地非跟踪文件；空值表示删除该文件。"""
+    target = Path(path) if path is not None else secrets_path()
+    key = api_key.strip()
+    base = base_url.strip()
+    if not key and not base:
+        target.unlink(missing_ok=True)
+        return target
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(target.parent, 0o700)
+    except OSError:
+        pass
+    target.write_text(
+        json.dumps({"api_key": key, "base_url": base}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    try:
+        os.chmod(target, 0o600)
+    except OSError:
+        pass
+    return target

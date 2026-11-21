@@ -1,12 +1,14 @@
 """设置页：数据与隐私、导出、清除与基础调度设置。"""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import os
+from datetime import UTC, datetime
 from typing import Any
 
 import streamlit as st
 
 from ..config import db_path
+from ..domain.fsrs import DEFAULT_PARAMS
 from ..domain.models import Consent
 from ..domain.settings import (
     AppSettings,
@@ -15,10 +17,32 @@ from ..domain.settings import (
     export_mistakes_csv,
     export_receipts_csv,
 )
-from ..llm import OfflineProvider
+from ..llm import (
+    OfflineProvider,
+    OpenAICompatibleProvider,
+    RenderTask,
+    build_provider,
+)
 from ..memory.repository import Repository
-from ..memory.settings_repo import SQLiteSettingsStore
+from ..memory.settings_repo import (
+    SQLiteSettingsStore,
+    load_ai_credentials,
+    save_ai_credentials,
+    secrets_path,
+)
+from ..safety.redlines import sanitize_text
 from .icons import ICON_CHECK, ICON_ERROR, ICON_INFO
+
+FONT_SIZE_LABELS = {"小": "small", "中": "medium", "大": "large"}
+FONT_SIZE_CSS = {
+    "small": "html{font-size:14px;}",
+    "medium": "html{font-size:16px;}",
+    "large": "html{font-size:18px;}",
+}
+SCHEDULER_LABELS = {
+    "FSRS（当前默认）": "fsrs",
+    "SM-2（兼容）": "sm2",
+}
 
 
 def _is_guest(consent: Consent) -> bool:
@@ -45,15 +69,129 @@ def current_settings(consent: Consent) -> AppSettings:
 
 
 def _save_settings(consent: Consent, settings: AppSettings) -> None:
+    st.session_state["settings"] = settings
+    apply_runtime_settings(
+        settings, clear_ai_env=not settings.ai_enabled
+    )
     if _is_guest(consent):
-        st.session_state["guest_settings"] = settings.to_mapping()
+        st.session_state["guest_settings"] = settings.to_mapping(
+            include_advanced=True
+        )
+    else:
+        store = SQLiteSettingsStore(db_path())
+        try:
+            store.set_many(settings.to_mapping(include_advanced=True))
+        finally:
+            store.close()
+        load_settings.clear()
+    _rebuild_provider()
+
+
+def apply_runtime_settings(
+    settings: AppSettings, *, clear_ai_env: bool = False
+) -> None:
+    """把设置同步到进程环境变量；不把密钥写入 settings 表。"""
+    os.environ["MATHCOACH_SCHEDULER"] = settings.scheduler
+    api_key, base_url = load_ai_credentials()
+    if settings.ai_enabled and api_key:
+        os.environ["OPENAI_API_KEY"] = api_key
+        if base_url:
+            os.environ["OPENAI_BASE_URL"] = base_url
+        else:
+            os.environ.pop("OPENAI_BASE_URL", None)
+    elif clear_ai_env:
+        os.environ.pop("OPENAI_API_KEY", None)
+        os.environ.pop("OPENAI_BASE_URL", None)
+
+
+def inject_font_size_css(size: str) -> None:
+    """注入常量字号 CSS；默认字号不注入，避免无谓的布局变化。"""
+    if size == "medium":
         return
-    store = SQLiteSettingsStore(db_path())
+    css = FONT_SIZE_CSS.get(size)
+    if css:
+        st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+
+def sanitized_connection_error(exc: Exception, api_key: str) -> str:
+    """返回不含 API Key 的连接失败摘要。"""
+    message = sanitize_text(str(exc))
+    if api_key:
+        message = message.replace(api_key, "[已脱敏]")
+    return f"{type(exc).__name__}: {message}"[:240]
+
+
+def _rebuild_provider() -> None:
+    provider = build_provider()
+    st.session_state.provider = provider
+    engine = st.session_state.get("engine")
+    if engine is not None:
+        engine.provider = provider
+
+
+@st.fragment
+def _render_connection_test(existing_key: str, existing_base: str) -> None:
+    st.caption("测试连接不会覆盖已保存的密钥。")
+    with st.form("settings_test_connection"):
+        key = st.text_input(
+            "测试 API Key",
+            type="password",
+            value="",
+            placeholder="留空使用已保存 Key" if existing_key else "",
+        )
+        base_url = st.text_input("测试 Base URL", value=existing_base)
+        submitted = st.form_submit_button("测试连接")
+    if not submitted:
+        return
+    test_key = key.strip() or existing_key
+    if not test_key:
+        st.warning("请先输入 API Key。")
+        return
     try:
-        store.set_many(settings.to_mapping())
-    finally:
-        store.close()
-    load_settings.clear()
+        provider = OpenAICompatibleProvider(
+            api_key=test_key, base_url=base_url.strip() or None
+        )
+        provider.render(
+            RenderTask(
+                kind="explain",
+                card_name="连接测试",
+                content="请只回复 OK",
+            )
+        )
+    except Exception as exc:  # noqa: BLE001 - 需要把任意网络/鉴权错误转成页面提示
+        st.error(f"连接失败：{sanitized_connection_error(exc, test_key)}")
+    else:
+        st.success("连接成功。")
+
+
+def _render_ai_config(
+    repository: Repository, consent: Consent, settings: AppSettings
+) -> None:
+    st.divider()
+    st.markdown("### AI 配置")
+    st.caption(
+        f"API Key 与 Base URL 仅存本机：`{secrets_path()}`；"
+        "不会写入 settings 表、导出文件或 git。"
+    )
+    existing_key, existing_base = load_ai_credentials()
+    with st.form("settings_ai_form"):
+        api_key = st.text_input(
+            "API Key",
+            type="password",
+            value="",
+            placeholder="已保存，留空表示不修改" if existing_key else "",
+        )
+        base_url = st.text_input("Base URL", value=existing_base)
+        saved = st.form_submit_button("保存 AI 配置")
+    if saved:
+        final_key = api_key.strip() or existing_key
+        save_ai_credentials(final_key, base_url)
+        repository.record_audit("settings_ai", "ok")
+        apply_runtime_settings(settings)
+        _rebuild_provider()
+        st.session_state["settings_saved"] = True
+        st.rerun()
+    _render_connection_test(existing_key, existing_base)
 
 
 def _render_notices() -> None:
@@ -74,7 +212,7 @@ def _render_export(repository: Repository, consent: Consent) -> None:
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
     review_items = repository.list_review_items()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     stamp = now.strftime("%Y%m%d-%H%M%S")
     settings = current_settings(consent)
     st.caption("导出不包含 API 密钥、secrets 文件或审计日志。")
@@ -177,7 +315,19 @@ def render_settings_page(
     else:
         st.success(f"{ICON_CHECK} 当前模式：AI")
 
+    _render_ai_config(repository, consent, settings)
+
     st.markdown("### 基础设置")
+    current_scheduler = next(
+        label
+        for label, value in SCHEDULER_LABELS.items()
+        if value == settings.scheduler
+    )
+    current_font = next(
+        label
+        for label, value in FONT_SIZE_LABELS.items()
+        if value == settings.font_size
+    )
     with st.form("settings_general_form"):
         ai_enabled = st.toggle(
             "启用 AI 模式",
@@ -192,21 +342,56 @@ def render_settings_page(
             step=1,
             key="settings_daily_limit",
         )
+        scheduler_label = st.radio(
+            "调度算法",
+            list(SCHEDULER_LABELS),
+            index=list(SCHEDULER_LABELS).index(current_scheduler),
+            horizontal=True,
+            key="settings_scheduler",
+        )
+        st.caption("仅影响后续复习调度，不改写历史收据。")
+        new_review_ratio = st.slider(
+            "新卡占比（%）",
+            min_value=0,
+            max_value=100,
+            value=settings.new_review_ratio,
+            step=5,
+            key="settings_new_review_ratio",
+        )
+        st.caption("当前混合复习包固定为 1+3+1；该配比暂只保存，待后续接入。")
+        font_label = st.select_slider(
+            "界面字号",
+            options=list(FONT_SIZE_LABELS),
+            value=current_font,
+            key="settings_font_size",
+        )
+        with st.expander("高级参数（默认锁定）"):
+            st.caption(
+                f"FSRS 目标记忆率：{DEFAULT_PARAMS.desired_retention}"
+            )
+            st.caption(f"最大复习间隔：{DEFAULT_PARAMS.max_interval_days} 天")
+            st.caption("高级参数使用内置默认值，当前不可编辑。")
         saved = st.form_submit_button("保存设置")
     if saved:
         new_settings = AppSettings(
             ai_enabled=ai_enabled,
             daily_review_limit=int(daily_limit),
+            new_review_ratio=int(new_review_ratio),
+            scheduler=SCHEDULER_LABELS[scheduler_label],
+            font_size=FONT_SIZE_LABELS[font_label],
         )
+        scheduler_changed = new_settings.scheduler != settings.scheduler
         _save_settings(consent, new_settings)
         repository.record_audit("settings_save", "ok")
+        if scheduler_changed:
+            repository.record_audit("settings_scheduler", "ok")
         st.session_state["settings_saved"] = True
         st.rerun()
 
     if offline and settings.ai_enabled:
         st.warning(
             "已启用 AI 模式，但当前未检测到可用 API Key；"
-            "仍使用离线模板。密钥配置将在后续批次提供。"
+            "请在 AI 配置中填写密钥，或关闭 AI 模式。"
         )
     elif offline:
         st.caption("未配置 API Key 时使用离线模板，判分逻辑不变。")

@@ -54,7 +54,12 @@ from mathcoach.ui.icons import (
     ICON_UPDATE,
 )
 from mathcoach.ui.layout import card, hint_block, kpi_row, math_markdown
-from mathcoach.ui.settings import current_settings, render_settings_page
+from mathcoach.ui.settings import (
+    apply_runtime_settings,
+    current_settings,
+    inject_font_size_css,
+    render_settings_page,
+)
 from mathcoach.ui.visuals.registry import render_visual
 from mathcoach.session.challenge import (
     build_challenge_state,
@@ -155,10 +160,13 @@ def _render_gap_diagnosis(gaps: list[Gap]) -> None:
             st.caption(f"依据：{gap.basis}")
 
 
-if "provider" not in st.session_state:
-    st.session_state.provider = build_provider()
 if "consent" not in st.session_state:
     st.session_state.consent = load_consent()
+if "settings" not in st.session_state:
+    st.session_state.settings = current_settings(st.session_state.consent)
+apply_runtime_settings(st.session_state.settings)
+if "provider" not in st.session_state:
+    st.session_state.provider = build_provider()
 if "repository" not in st.session_state:
     st.session_state.repository = build_repository(st.session_state.consent)
 if "engine" not in st.session_state:
@@ -171,6 +179,7 @@ if "engine" not in st.session_state:
 
 provider = st.session_state.provider
 engine: SessionEngine = st.session_state.engine
+inject_font_size_css(st.session_state.settings.font_size)
 
 
 def _render_mistake_book(repository) -> None:

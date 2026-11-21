@@ -14,6 +14,9 @@ from .models import MistakeEntry, Receipt, ReviewItem
 
 DEFAULT_DAILY_REVIEW_LIMIT = 0
 MAX_DAILY_REVIEW_LIMIT = 999
+DEFAULT_NEW_REVIEW_RATIO = 50
+SCHEDULER_MODES = frozenset({"fsrs", "sm2"})
+FONT_SIZES = frozenset({"small", "medium", "large"})
 SETTINGS_EXPORT_KEYS = frozenset({"ai_enabled", "daily_review_limit"})
 
 
@@ -23,6 +26,9 @@ class AppSettings:
 
     ai_enabled: bool = False
     daily_review_limit: int = DEFAULT_DAILY_REVIEW_LIMIT
+    new_review_ratio: int = DEFAULT_NEW_REVIEW_RATIO
+    scheduler: str = "fsrs"
+    font_size: str = "medium"
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, Any] | None) -> AppSettings:
@@ -33,17 +39,40 @@ class AppSettings:
         except (TypeError, ValueError):
             limit = DEFAULT_DAILY_REVIEW_LIMIT
         limit = max(0, min(MAX_DAILY_REVIEW_LIMIT, limit))
+        try:
+            ratio = int(data.get("new_review_ratio", DEFAULT_NEW_REVIEW_RATIO))
+        except (TypeError, ValueError):
+            ratio = DEFAULT_NEW_REVIEW_RATIO
+        ratio = max(0, min(100, ratio))
+        scheduler = str(data.get("scheduler", "fsrs")).lower()
+        if scheduler not in SCHEDULER_MODES:
+            scheduler = "fsrs"
+        font_size = str(data.get("font_size", "medium")).lower()
+        if font_size not in FONT_SIZES:
+            font_size = "medium"
         return cls(
             ai_enabled=bool(data.get("ai_enabled", False)),
             daily_review_limit=limit,
+            new_review_ratio=ratio,
+            scheduler=scheduler,
+            font_size=font_size,
         )
 
-    def to_mapping(self) -> dict[str, Any]:
-        """序列化为可写入 settings 表的 JSON 映射。"""
-        return {
+    def to_mapping(self, *, include_advanced: bool = False) -> dict[str, Any]:
+        """序列化为 settings 表映射；P1 字段可按需一并写入。"""
+        data: dict[str, Any] = {
             "ai_enabled": self.ai_enabled,
             "daily_review_limit": self.daily_review_limit,
         }
+        if include_advanced:
+            data.update(
+                {
+                    "new_review_ratio": self.new_review_ratio,
+                    "scheduler": self.scheduler,
+                    "font_size": self.font_size,
+                }
+            )
+        return data
 
 
 def settings_for_export(
