@@ -2,6 +2,9 @@ name: Verify installer wizard
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/installer-wizard
 
 permissions:
   contents: read
