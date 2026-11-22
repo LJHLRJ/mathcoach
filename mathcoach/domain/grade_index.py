@@ -163,7 +163,7 @@ def _iter_card_dicts(root: Path) -> Iterable[Mapping[str, Any]]:
         for path in sorted((root / stage).glob("*.yaml")):
             try:
                 data = yaml.safe_load(path.read_text(encoding="utf-8"))
-            except (OSError, yaml.YAMLError) as exc:
+            except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
                 raise GradeIndexError(
                     f"读取题目元数据失败：{path}"
                 ) from exc
@@ -192,7 +192,7 @@ def load_grade_spans(
         raise GradeIndexError(f"未找到知识点树：{target}")
     try:
         data = yaml.safe_load(target.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
         raise GradeIndexError(f"读取知识点树失败：{target}") from exc
     if not isinstance(data, Mapping):
         raise GradeIndexError("knowledge_tree.yaml 顶层必须是字典")

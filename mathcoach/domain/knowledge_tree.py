@@ -244,7 +244,7 @@ def load_knowledge_tree(path: Path | None = None) -> KnowledgeTree:
         raise KnowledgeTreeError(f"未找到知识点树：{target}")
     try:
         data = yaml.safe_load(target.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
         raise KnowledgeTreeError(f"读取知识点树失败：{target}") from exc
     if not isinstance(data, dict):
         raise KnowledgeTreeError("knowledge_tree.yaml 顶层必须是字典")
@@ -272,7 +272,7 @@ def load_learning_card(knowledge_point_id: str) -> str | None:
         return None
     try:
         return path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return None
 
 

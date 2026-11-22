@@ -17,8 +17,11 @@ class ContentError(RuntimeError):
 
 
 def _read_yaml(path: Path):
-    with path.open("r", encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or []
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            return yaml.safe_load(handle) or []
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
+        raise ContentError(f"读取内容文件失败：{path}") from exc
 
 
 def load_curriculum(root: Path) -> list[dict]:
