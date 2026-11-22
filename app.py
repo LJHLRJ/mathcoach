@@ -210,8 +210,12 @@ def _load_grade_spans():
 
 with st.spinner("正在准备讲解…"):
     cards = _load_cards()
-prerequisites = load_prerequisites(CONTENT_ROOT)
-narrative_nodes = load_narrative(CONTENT_ROOT)
+try:
+    prerequisites = load_prerequisites(CONTENT_ROOT)
+    narrative_nodes = load_narrative(CONTENT_ROOT)
+except ContentError as exc:
+    st.error(f"{ICON_ERROR} 内容加载失败：\n{exc}")
+    st.stop()
 
 
 def _gaps_from_stats(
@@ -1406,6 +1410,11 @@ def _render_export() -> None:
             st.error(f"{ICON_ERROR} 导出未执行：请输入完整确认语句“我确认执行此操作”。")
         except WriteBlocked as exc:
             st.error(f"{ICON_ERROR} 导出未执行：{exc.reason}")
+        except OSError as exc:
+            st.error(
+                f"{ICON_ERROR} 导出失败：无法写入 {directory}"
+                f"（{exc.strerror or exc}）。"
+            )
         else:
             st.success(f"{ICON_CHECK} 已导出 {len(written)} 个文件到 {directory}")
 

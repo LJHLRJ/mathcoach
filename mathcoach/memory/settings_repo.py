@@ -167,7 +167,7 @@ def load_ai_credentials(path: Path | str | None = None) -> tuple[str, str]:
         return "", ""
     try:
         data = json.loads(target.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return "", ""
     if not isinstance(data, dict):
         return "", ""

@@ -1,10 +1,9 @@
 """可选的动态背景；仅在仪表盘/空状态使用。
 
-Shader HTML 来自 Radiant（MIT，Copyright (c) 2025 Paul Bakaus）：
+Shader 代码来自 Radiant（MIT，Copyright (c) 2025 Paul Bakaus）：
 https://github.com/pbakaus/radiant
 commit 59e9f48c0ad9a3db2fbeb8898b4390d5a1eabb40
-static/flow-field.html（10,086 字节）
-static/topographic.html（16,179 字节）
+flow-field / topographic 源文件已内联为 SHADER_HTML 常量。
 
 仅以内联常量注入，不加载外部图片或脚本；不拼接用户输入。
 """

@@ -280,7 +280,14 @@ def _render_ai_config(
         )
     if saved:
         final_key = api_key.strip() or existing_key
-        save_ai_credentials(final_key, base_url)
+        try:
+            save_ai_credentials(final_key, base_url)
+        except OSError as exc:
+            st.error(
+                f"{ICON_ERROR} 保存 AI 配置失败："
+                f"{exc.strerror or exc}。"
+            )
+            return
         repository.record_audit("settings_ai", "ok")
         apply_runtime_settings(settings)
         _rebuild_provider()
