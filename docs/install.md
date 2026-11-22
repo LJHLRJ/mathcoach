@@ -1,8 +1,8 @@
 # MathCoach 安装指南
 
-本文覆盖从 GitHub Releases 下载桌面版后的安装、首次启动、未签名放行与 SHA256 校验。当前发布版本为 **v0.7.0**（2026-11-21）。
+本文覆盖从 GitHub Releases 下载桌面版后的安装、首次启动、未签名放行与 SHA256 校验。当前发布版本为 **v0.7.1**（2026-11-22）。
 
-> 源码版本已更新至 **v0.7.1**；本页的安装包文件名与 SHA256 仍对应已发布的 v0.7.0，待 v0.7.1 Release 资产构建完成后更新。
+> v0.7.1 资产已发布；下表先列文件名与大小，SHA256 待下载校验后补充。
 
 下载入口：
 
@@ -15,9 +15,9 @@
 
 | 平台 | 发布资产 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.7.0.exe` | Inno Setup 安装器，按用户安装 |
+| Windows x64 | `MathCoachSetup-0.7.1.exe` | Inno Setup 安装器，按用户安装 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版，解压后运行 |
-| macOS | `MathCoach-0.7.0.dmg` | 打开后将应用拖到“应用程序” |
+| macOS | `MathCoach-0.7.1.dmg` | 打开后将应用拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版，解压后打开 |
 | Linux | 无桌面安装包 | 从源码运行，见文末 |
 
@@ -25,7 +25,7 @@ macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silico
 
 ## Windows 安装器
 
-1. 下载 `MathCoachSetup-0.7.0.exe`。
+1. 下载 `MathCoachSetup-0.7.1.exe`。
 2. 双击运行。安装器页面标题和按钮为英文；首屏为中文“安装前说明”页，包含未签名、数据边界与安装选项说明。安装按当前用户进行，不需要管理员权限。
 3. 选择安装目录。默认路径为 `%LOCALAPPDATA%\Programs\MathCoach`，支持自定义路径。
 4. 选择附加任务：桌面快捷方式默认勾选；开机自启默认不勾选，勾选后可在“Windows 设置 → 应用 → 启动”中关闭。开始菜单快捷方式始终创建。
@@ -91,7 +91,7 @@ macOS 产物未签名、未公证；Release 未分别说明 Intel / Apple Silico
 
 ## macOS 安装镜像
 
-1. 下载 `MathCoach-0.7.0.dmg`。
+1. 下载 `MathCoach-0.7.1.dmg`。
 2. 双击打开磁盘映像。窗口内包含 `MathCoach.app` 和 `Applications` 快捷方式（即“应用程序”）。
 3. 将 `MathCoach.app` 拖到“应用程序”。
 4. 推出磁盘映像，然后从“应用程序”启动 MathCoach。
@@ -139,36 +139,36 @@ open /Applications/MathCoach.app
 
 ## SHA256 校验
 
-仓库不提供独立的 `SHA256SUMS` 文件。下表哈希来自 GitHub Release 资产 digest（v0.7.0，2026-11-21 通过 GitHub API 核对），与 v0.7.0 Release Notes 中的值一致。
+仓库不提供独立的 `SHA256SUMS` 文件。下表列出 v0.7.1 资产大小；SHA256 待下载校验后补充，请以 GitHub Release 页面与 Release Notes 为准。
 
 | 文件 | 大小（字节） | SHA256 |
 |---|---|---|
-| `MathCoachSetup-0.7.0.exe` | 86,713,379 | `e7bea15c96e7f53170df9bbb8bf3e903b06533b04723fad7a8df8bfa05f9bad0` |
-| `MathCoach-windows.zip` | 115,371,978 | `607f28b6c4d6d834b98e7c8e5595812f54814081329b5820d966f69983197de9` |
-| `MathCoach-0.7.0.dmg` | 136,293,991 | `6cf699891545a9fb72549054401edea720f9b9044d78a670cacc7164537c7296` |
-| `MathCoach-macos.zip` | 111,224,894 | `5decdd6393de8fe09d981b3934fa2e82f8e0d40acacad48316c6f2b84a4227d8` |
+| `MathCoachSetup-0.7.1.exe` | 86,770,685 | 待补充 |
+| `MathCoach-windows.zip` | 115,502,754 | 待补充 |
+| `MathCoach-0.7.1.dmg` | 136,648,892 | 待补充 |
+| `MathCoach-macos.zip` | 111,374,462 | 待补充 |
 
 macOS / Linux：
 
 ```bash
-shasum -a 256 ~/Downloads/MathCoach-0.7.0.dmg
+shasum -a 256 ~/Downloads/MathCoach-0.7.1.dmg
 # 或
-sha256sum ~/Downloads/MathCoach-0.7.0.dmg
+sha256sum ~/Downloads/MathCoach-0.7.1.dmg
 ```
 
 Windows PowerShell：
 
 ```powershell
-Get-FileHash "$env:USERPROFILE\Downloads\MathCoachSetup-0.7.0.exe" -Algorithm SHA256
+Get-FileHash "$env:USERPROFILE\Downloads\MathCoachSetup-0.7.1.exe" -Algorithm SHA256
 ```
 
-预期输出包含 64 位十六进制哈希；PowerShell 还会显示算法名与文件路径。将输出中的哈希与上表逐字符比较；一致即表示文件完整。`shasum` 的常见格式为：
+预期输出包含 64 位十六进制哈希；PowerShell 还会显示算法名与文件路径。待上表补齐 SHA256 后，将输出与上表逐字符比较；一致即表示文件完整。`shasum` 的常见格式为：
 
 ```text
-6cf699891545a9fb72549054401edea720f9b9044d78a670cacc7164537c7296  MathCoach-0.7.0.dmg
+<64 位十六进制 SHA256>  MathCoach-0.7.1.dmg
 ```
 
-校验值随版本变化。升级后请以对应 Release 的资产 digest 或 Release Notes 为准。
+校验值随版本变化。升级后请以对应 Release 页面公布的 SHA256 为准。
 
 ## 首次启动
 
@@ -191,7 +191,7 @@ Linux 从源码运行时，数据库由 `platformdirs` 决定，通常为 `~/.lo
 
 ## 版本与更新
 
-当前版本：**v0.7.0**（2026-11-21）。仓库没有常驻更新进程，**不支持后台静默更新或自动安装**。
+当前版本：**v0.7.1**（2026-11-22）。仓库没有常驻更新进程，**不支持后台静默更新或自动安装**。
 
 应用“设置”Tab 中的“关于与更新”提供“检查更新”按钮。点击后会查询 GitHub 最新 Release：
 
@@ -202,7 +202,7 @@ Linux 从源码运行时，数据库由 `platformdirs` 决定，通常为 `~/.lo
 
 ### 确认当前版本
 
-“关于与更新”会显示当前版本号；Release 资产文件名也包含版本号，例如 `MathCoachSetup-0.7.0.exe`。
+“关于与更新”会显示当前版本号；Release 资产文件名也包含版本号，例如 `MathCoachSetup-0.7.1.exe`。
 
 ### 更新检查的网络与行为边界
 
