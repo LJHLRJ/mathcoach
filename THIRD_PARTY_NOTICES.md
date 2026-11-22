@@ -38,9 +38,9 @@
 
 ### Radiant
 
-- 使用 commit `59e9f48c0ad9a3db2fbeb8898b4390d5a1eabb40` 的 `static/flow-field.html`（10,086 字节）与 `static/topographic.html`（16,179 字节）。
-- 两个 shader 以内联常量放入 `mathcoach/ui/motion.py`，仅用于仪表盘/空状态装饰面板。
-- 已核实两个文件无外部 `http`/`src` 请求。
+- shader 代码来自 commit `59e9f48c0ad9a3db2fbeb8898b4390d5a1eabb40` 的 flow-field 与 topographic 源文件。
+- 两个 shader 已内联为 `mathcoach/ui/motion.py` 的 `SHADER_HTML` 常量，仓库不单独分发这些 HTML 文件；仅用于仪表盘/空状态装饰面板。
+- 已核实内联代码无外部 `http`/`src` 请求。
 - MIT 版权：Copyright (c) 2025 Paul Bakaus；完整许可见下方 MIT 文本。
 
 ### canvas-confetti
