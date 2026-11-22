@@ -16,6 +16,14 @@ def test_build_config_includes_app_and_content():
     assert 'mathcoach = "mathcoach.launcher:main"' in pyproject
 
 
+def test_build_config_includes_learning_cards_and_static_assets():
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert '"learning_cards/*.md"' in pyproject
+    assert '"static*"' in pyproject
+    assert '"static" = ["overlay/*"]' in pyproject
+    assert (ROOT / "static" / "overlay" / "confetti.html").is_file()
+
+
 def test_app_module_is_discoverable():
     spec = importlib.util.find_spec("app")
     assert spec is not None

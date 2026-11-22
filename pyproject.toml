@@ -23,13 +23,14 @@ build-backend = "setuptools.build_meta"
 py-modules = ["app"]
 
 [tool.setuptools.packages.find]
-include = ["mathcoach*", "content*"]
+include = ["mathcoach*", "content*", "static*"]
 
 [tool.setuptools.package-data]
-content = ["*.yaml"]
+content = ["*.yaml", "learning_cards/*.md"]
 "content.highschool" = ["*.yaml"]
 "content.undergraduate" = ["*.yaml"]
 "content.graduate" = ["*.yaml"]
+"static" = ["overlay/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
