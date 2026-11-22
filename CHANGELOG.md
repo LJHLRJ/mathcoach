@@ -18,7 +18,7 @@
 
 ### 验证
 
-- `MATHCOACH_CONTENT_STRICT=1 python -m pytest -q`：506 passed，1 skipped。
+- `MATHCOACH_CONTENT_STRICT=1 python -m pytest -q`：507 passed，1 skipped。
 - Streamlit 冒烟覆盖 10 个功能模式、g1 空状态、g10 有内容与 390px 移动宽度；无页面错误或控制台错误。
 - Linux PyInstaller 构建成功，产物约 600 MB；打包产物以 `--streamlit-server` 启动后健康检查通过，首页返回 HTTP 200。
 - Linux 原生窗口、Windows/macOS 安装包与 Chrome 视觉基线未在当前环境验证。
