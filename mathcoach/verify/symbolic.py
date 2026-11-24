@@ -42,8 +42,10 @@ ALLOWED_FUNCTIONS = frozenset(
 )
 _BIN_OPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
 _UNARY_OPS = (ast.UAdd, ast.USub)
-DEFAULT_TIMEOUT_S = 5.0 if sys.platform == "win32" else 2.0
-# Windows 只有 spawn，子进程需重新导入 sympy，冷启动明显慢于 fork
+DEFAULT_TIMEOUT_S = 20.0 if sys.platform == "win32" else 2.0
+# Windows 只有 spawn，子进程需重新导入 sympy；在 Streamlit/AppTest 已加载的父进程中，
+# 实测单次验证约 8 秒（2026-11，Python 3.14 + Windows），5 秒会稳定误报 UNVERIFIED。
+# 上限仍需保留，避免病态表达式无限占用子进程。
 
 
 class SymbolicVerdict(str, Enum):
