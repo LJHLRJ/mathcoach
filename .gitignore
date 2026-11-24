@@ -32,6 +32,9 @@ build/
 # 视觉回归产物（基线截图需要入库）
 tests/visual/artifacts/
 
+# 编辑器
+.vscode/
+
 # 系统
 .DS_Store
 Thumbs.db
