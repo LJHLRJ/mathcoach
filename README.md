@@ -1,5 +1,7 @@
 # 数学陪练（MathCoach）
 
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 本地优先的数学陪练 Streamlit 应用。核心循环为：目标确认 → 分层讲解 → 小测 → 错因反馈 → 收据 → 错题本 → 复习。
 
 ## 功能
@@ -13,6 +15,35 @@
 - 年级/难度标注与按年级筛选入口：题目级 `grade`/`difficulty`、知识点 `grade_span`、难度分组与“先学习本年级知识点”。
 - 导出学习包：Markdown 学习包、独立收据/错题文件、Anki TSV（不生成 `.apkg`）。
 - 安全层：注入守卫、数学伪装检测、写操作红线、脱敏与审计日志。
+
+## 界面预览
+
+| 目标确认 / 首屏 | 小测与提示阶梯 | 收据 |
+|---|---|---|
+| ![首屏](tests/visual/baselines/first_screen.png) | ![小测](tests/visual/baselines/quiz.png) | ![收据](tests/visual/baselines/receipt.png) |
+
+截图与视觉回归基线一致，位于 `tests/visual/baselines/`。
+
+## 架构与数据流
+
+```mermaid
+flowchart LR
+  U[浏览器 / 桌面窗口] --> A[app.py<br/>Streamlit 装配]
+  A --> S[session/<br/>状态机]
+  S --> D[domain/<br/>判题 · 诊断 · 收据]
+  S --> V[verify/<br/>AST 白名单 + 子进程符号验证]
+  S --> L[llm/<br/>离线模板 / OpenAI 兼容]
+  S --> SF[safety/<br/>注入守卫 · 写操作红线]
+  A --> M[(SQLite<br/>本机用户数据目录)]
+  M --> R[memory/<br/>仪表盘 · 周报 · 复习调度]
+  C[content/<br/>卡片 YAML · 学习卡片] --> D
+  C --> L
+
+  classDef det fill:#eef,stroke:#446,color:#000;
+  class D,V,SF det;
+```
+
+一句话契约：层级升降、判分、诊断、收据、复习调度与安全红线全部由确定性代码决定；LLM 只输出讲解措辞，请求失败时降级为离线模板，判分结果不变。
 
 ## 安全与边界
 
@@ -29,16 +60,16 @@
 
 ## 下载与安装
 
-当前版本：**v0.7.0**（2026-11-21）。下载入口以 GitHub Releases 为准：
+当前版本：**v0.7.1**（2026-11-22）。下载入口以 GitHub Releases 为准：
 
 - 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
 - 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
 
 | 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.7.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoachSetup-0.7.1.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
-| macOS | `MathCoach-0.7.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-0.7.1.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
 
 - 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
@@ -166,7 +197,7 @@ python -m build
 | M18 | 知识点树 + 学习卡片 + 解析/错因定位 + 学习闭环 | 已完成 | `content/knowledge_tree.yaml`、`content/learning_cards/`、`mathcoach/domain/explanation.py` |
 | M19 | 年级/难度标注与按年级筛选入口 | 已完成 | `mathcoach/domain/grade_index.py`、`mathcoach/ui/grade_page.py`、`docs/grade-navigation.md` |
 
-当前发布：**v0.7.0**（2026-11-21），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。
+当前发布：**v0.7.1**（2026-11-22），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 第三方资源与许可证
 
@@ -215,6 +246,14 @@ python -m build
 若你是权利人并认为本项目使用不当，请通过仓库 Issue 联系，我们将在核实后移除相关内容。
 
 用户自行启用的动效与背景，其性能表现可能因设备而异，本项目不对特定设备上的帧率或耗电作保证。
+
+## 贡献
+
+开发环境、测试命令、代码边界、卡片贡献方式与 PR 流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。参与本项目即表示同意遵守 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)；安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。
+
+## 许可证
+
+本项目以 [Apache License 2.0](LICENSE) 发布。第三方资源的来源与许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 设计文档
 
