@@ -2,6 +2,7 @@
 import ast
 from pathlib import Path
 
+import mathcoach
 from mathcoach.llm.prompts import PROMPT_VERSION, SYSTEM_PARSER, SYSTEM_TUTOR
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,19 @@ def test_readme_contains_required_commands():
     assert "streamlit run app.py" in readme
     assert "MATHCOACH_CONTENT_STRICT=1 python -m pytest -q" in readme
     assert "python -m build" in readme
+
+
+def test_readme_version_matches_package_version():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert f"**v{mathcoach.__version__}**" in readme
+
+
+def test_readme_links_contributing_and_license():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "[CONTRIBUTING.md](CONTRIBUTING.md)" in readme
+    assert "[Apache License 2.0](LICENSE)" in readme
 
 
 def test_readme_milestone_table_covers_current_releases():

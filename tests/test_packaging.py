@@ -39,3 +39,19 @@ def test_content_is_an_importable_package():
 def test_version_matches_pyproject():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert mathcoach.__version__ == data["project"]["version"]
+
+
+def test_runtime_dependencies_include_plotly():
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = data["project"]["dependencies"]
+
+    assert any(dependency.startswith("plotly") for dependency in dependencies)
+
+
+def test_package_declares_license_file():
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    project = data["project"]
+    assert project["license"] == "Apache-2.0"
+    assert "LICENSE" in project["license-files"]
+    assert (ROOT / "LICENSE").is_file()
