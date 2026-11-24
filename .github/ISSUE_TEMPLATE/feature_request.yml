@@ -1,0 +1,47 @@
+name: 功能建议
+description: 提出新功能或改进
+title: "[FEAT] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的教学或学习问题
+      description: 先描述问题，而不是直接给方案。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+    validations:
+      required: true
+
+  - type: textarea
+    id: boundary
+    attributes:
+      label: 与现有边界的关系
+      description: 是否影响 domain/ 判定、提示阶梯、verify/ 符号验证，或“学习数据不出本机”的隐私承诺？
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 影响范围
+      options:
+        - 仅 UI
+        - 内容与卡片
+        - 记忆、统计与导出
+        - LLM 集成
+        - 判定、诊断或安全逻辑
+        - 打包与发布
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 你考虑过的替代方案

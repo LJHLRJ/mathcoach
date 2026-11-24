@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安装与首次启动问题
+    url: https://github.com/LJHLRJ/mathcoach/blob/main/docs/install.md
+    about: 请先阅读安装指南（未签名放行、SmartScreen、Gatekeeper、SHA256 校验）。
+  - name: 安全漏洞
+    url: https://github.com/LJHLRJ/mathcoach/security/advisories/new
+    about: 请勿公开提交安全 Issue，使用私密漏洞报告。
+  - name: 贡献指南
+    url: https://github.com/LJHLRJ/mathcoach/blob/main/CONTRIBUTING.md
+    about: 开发环境、测试命令、代码边界与 PR 流程。
