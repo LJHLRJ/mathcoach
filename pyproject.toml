@@ -2,9 +2,23 @@
 name = "mathcoach"
 version = "0.7.1"
 description = "本地优先的数学陪练软件（Streamlit）"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Xu Shaoyang" }]
 requires-python = ">=3.11"
+classifiers = [
+  "Intended Audience :: Education",
+  "Environment :: Web Environment",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+]
 dependencies = [
   "streamlit>=1.59",
+  "plotly>=5.0",
   "pydantic>=2.7",
   "PyYAML>=6.0",
   "openai>=1.30",
@@ -12,11 +26,17 @@ dependencies = [
   "platformdirs>=4.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/LJHLRJ/mathcoach"
+Releases = "https://github.com/LJHLRJ/mathcoach/releases"
+Issues = "https://github.com/LJHLRJ/mathcoach/issues"
+Changelog = "https://github.com/LJHLRJ/mathcoach/blob/main/CHANGELOG.md"
+
 [project.scripts]
 mathcoach = "mathcoach.launcher:main"
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
