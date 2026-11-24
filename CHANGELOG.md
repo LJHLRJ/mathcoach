@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### 新增
+
+- 以 Apache License 2.0 发布，新增 `LICENSE`、`NOTICE` 与包元数据（license、readme、authors、classifiers、project.urls）。
+- 新增 `CONTRIBUTING.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md`、Issue 表单与 PR 模板。
+- README 新增界面截图与架构数据流图；补充贡献与许可证入口。
+- 新增独立单元测试 CI（PR/push，Ubuntu 3.11/3.12 + Windows 3.12）。
+
+### 修复
+
+- `pip install .` 缺少 `plotly` 依赖，导致可视化页在包安装模式下 ImportError。
+- Windows 上 Streamlit 已加载时，符号验证子进程冷启动约 8 秒，超过 5 秒超时，导致 `expr` 题被判为“无法自动核对”；Windows 超时上限调整为 20 秒。
+- README 版本号与资产文件名由 0.7.0 修正为 0.7.1；`docs/install.md` 关于仓库无 CHANGELOG 的过时说明已更正。
+
 ## [0.7.1] - 2026-11-22
 
 ### 修复
