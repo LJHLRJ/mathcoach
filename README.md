@@ -60,16 +60,16 @@ flowchart LR
 
 ## 下载与安装
 
-当前版本：**v0.7.1**（2026-11-22）。下载入口以 GitHub Releases 为准：
+当前版本：**v0.7.2**（2026-11-24）。下载入口以 GitHub Releases 为准：
 
 - 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
 - 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
 
 | 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.7.1.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoachSetup-0.7.2.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
-| macOS | `MathCoach-0.7.1.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-0.7.2.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
 
 - 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
@@ -197,7 +197,7 @@ python -m build
 | M18 | 知识点树 + 学习卡片 + 解析/错因定位 + 学习闭环 | 已完成 | `content/knowledge_tree.yaml`、`content/learning_cards/`、`mathcoach/domain/explanation.py` |
 | M19 | 年级/难度标注与按年级筛选入口 | 已完成 | `mathcoach/domain/grade_index.py`、`mathcoach/ui/grade_page.py`、`docs/grade-navigation.md` |
 
-当前发布：**v0.7.1**（2026-11-22），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前发布：**v0.7.2**（2026-11-24），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 第三方资源与许可证
 

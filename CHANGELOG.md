@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.2] - 2026-11-24
 
 ### 新增
 
@@ -13,7 +13,7 @@
 
 - `pip install .` 缺少 `plotly` 依赖，导致可视化页在包安装模式下 ImportError。
 - Windows 上 Streamlit 已加载时，符号验证子进程冷启动约 8 秒，超过 5 秒超时，导致 `expr` 题被判为“无法自动核对”；Windows 超时上限调整为 20 秒。
-- README 版本号与资产文件名由 0.7.0 修正为 0.7.1；`docs/install.md` 关于仓库无 CHANGELOG 的过时说明已更正。
+- README 与 `docs/install.md` 的版本号、资产文件名已与当前版本对齐；`docs/install.md` 关于仓库无 CHANGELOG 的过时说明已更正。
 
 ## [0.7.1] - 2026-11-22
 
