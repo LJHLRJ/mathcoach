@@ -480,6 +480,14 @@ class SessionEngine:
         )
 
     def advance(self) -> SessionView:
+        """推进到下一题；最后一题后进入收尾。
+
+        Returns:
+            下一题视图或收尾视图。
+
+        Raises:
+            RuntimeError: 当前不在收据阶段。
+        """
         if self.state.phase is not Phase.RECEIPT:
             raise RuntimeError("当前不在收据阶段")
         if self._exercise_pos + 1 < len(self.card.exercises):
@@ -496,7 +504,9 @@ class SessionEngine:
 
         self.state.phase = Phase.WRAPUP
         independent = sum(
-            1 for receipt in self.receipts if receipt.independence.value == "独立完成"
+            1
+            for receipt in self.receipts
+            if receipt.independence is Independence.INDEPENDENT
         )
         return self._set(
             SessionView(
