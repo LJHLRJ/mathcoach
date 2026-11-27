@@ -29,3 +29,17 @@ def test_max_depth_limits_traversal():
     stats = {"hs-function-intro-001": MistakeStat(total=4, concept_wrong=3)}
     gaps = trace_gap("hs-calculus-derivative-001", PREREQ, stats, max_depth=1)
     assert gaps == []  # 缺口在 2 层外，深度 1 追不到
+
+
+def test_diamond_prerequisite_reported_once():
+    prerequisites = {
+        "root": ["left", "right"],
+        "left": ["shared"],
+        "right": ["shared"],
+    }
+    stats = {"shared": MistakeStat(total=3, concept_wrong=2)}
+
+    gaps = trace_gap("root", prerequisites, stats, max_depth=2)
+
+    assert len(gaps) == 1
+    assert gaps[0].chain == ("root", "left", "shared")
