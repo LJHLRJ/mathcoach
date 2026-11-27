@@ -1,6 +1,6 @@
 """写操作红线：同意校验、逐次确认、禁止写入仓库、脱敏与摘要。
 
-纯函数 + 显式异常，不 import Streamlit；观察状态由调用方传入。
+纯函数 + 显式异常，不 import Streamlit；观察状态由 UI 层传入。
 """
 from __future__ import annotations
 
@@ -35,23 +35,42 @@ _SENSITIVE_KEYS = frozenset(
 
 
 class WriteBlocked(Exception):
-    """写操作被红线拒绝。"""
+    """写操作被红线拒绝。
+
+    Attributes:
+        reason: 机器可读的分类。
+    """
 
     def __init__(self, reason: str) -> None:
+        """记录拒绝原因。"""
         super().__init__(reason)
         self.reason = reason
 
 
 class ConfirmationRequired(Exception):
-    """需要用户逐次确认。"""
+    """高风险操作缺少逐次确认。
+
+    Attributes:
+        reason: 机器可读的分类。
+    """
 
     def __init__(self, reason: str = "confirmation_required") -> None:
+        """记录需要确认的原因。"""
         super().__init__(reason)
         self.reason = reason
 
 
 def sanitize_text(text: str) -> str:
-    """脱敏：Token、手机号、身份证、内网地址、字段上下文中的姓名与住址。"""
+    """脱敏文本。
+
+    覆盖 Token、手机号、身份证、内网地址，以及字段上下文里的姓名与住址。
+
+    Args:
+        text: 原始文本。
+
+    Returns:
+        脱敏后的文本；空串原样返回。
+    """
     if not text:
         return text
     text = re.sub(
@@ -92,6 +111,11 @@ def sanitize_text(text: str) -> str:
 
 
 def sanitize_payload(payload: Any) -> Any:
+    """递归脱敏映射、列表与字符串。
+
+    键名命中 ``_SENSITIVE_KEYS`` 时整项替换为 ``[已脱敏]``，
+    其他键继续向下处理；元组转成列表。
+    """
     if isinstance(payload, Mapping):
         cleaned = {}
         for key, value in payload.items():
@@ -108,7 +132,15 @@ def sanitize_payload(payload: Any) -> Any:
 
 
 def describe_write(op: str, payload: Mapping[str, Any] | None = None) -> str:
-    """生成写入前摘要，任何字段值都先脱敏。"""
+    """生成写入前摘要，任何字段值都先脱敏。
+
+    Args:
+        op: 操作名。
+        payload: 写入内容。
+
+    Returns:
+        单行摘要，最长 500 字符。
+    """
     body = json.dumps(
         sanitize_payload(payload or {}), ensure_ascii=False, default=str
     )
@@ -117,14 +149,27 @@ def describe_write(op: str, payload: Mapping[str, Any] | None = None) -> str:
 
 def assert_write_allowed(
     op: str,
-    payload: Mapping[str, Any] | None = None,
     *,
     consent: Consent,
     observed: bool = False,
     confirmation: str | None = None,
     destination: str = "memory",
 ) -> None:
-    """统一写入门；通过返回 None，否则抛出 WriteBlocked / ConfirmationRequired。"""
+    """统一写入门。
+
+    依次检查目标位置、操作白名单、授权开关与显式确认。
+
+    Args:
+        op: 操作名。
+        consent: 当前授权状态。
+        observed: 观察状态；保留在契约里，当前不参与判定。
+        confirmation: 逐次确认文本。
+        destination: 目标位置。
+
+    Raises:
+        WriteBlocked: 目标被禁止、操作未知或授权不足。
+        ConfirmationRequired: 高风险操作缺少显式确认。
+    """
     if destination.lower() in FORBIDDEN_DESTINATIONS:
         raise WriteBlocked("forbidden_destination")
     if op not in ROUTINE_OPS and op not in CONFIRMATION_OPS:
