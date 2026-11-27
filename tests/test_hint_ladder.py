@@ -39,6 +39,14 @@ def test_request_answer_caps_at_l4():
     assert "L4" in message
 
 
+def test_request_step_keeps_current_level_above_l4():
+    level, _ = grant_requested_level(5, "step", {1, 2, 3, 4})
+    assert level == 5
+
+    level, _ = grant_requested_level(5, "answer", {1, 2, 3, 4})
+    assert level == 5
+
+
 def test_l5_requires_levels_1_to_4():
     level, message = grant_requested_level(4, "level5", {1, 2, 3})
     assert level == 4

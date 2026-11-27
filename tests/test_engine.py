@@ -184,6 +184,20 @@ def test_automatic_hint_never_opens_l5(engine):
     assert engine.state.hint_level == 4  # 答错不自动进 L5
 
 
+def test_explicit_step_at_l5_keeps_level_and_shows_l4(engine):
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+    engine.state.hint_level = 5
+    engine.state.max_hint_level = 5
+
+    view = engine.request_hint("step")
+
+    assert engine.state.hint_level == 5
+    assert engine.state.max_hint_level == 5
+    assert view.title == "提示 L4"
+    assert "关键思路" in view.body
+
+
 def test_diagnosis_can_be_overridden(engine):
     engine.confirm_goal("搞懂函数")
     engine.begin_quiz()

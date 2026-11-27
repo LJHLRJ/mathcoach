@@ -1,12 +1,14 @@
 """会话状态机：只调用 domain 纯函数，不 import Streamlit。"""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from ..domain.diagnosis import diagnose
 from ..domain.hint_ladder import (
+    MAX_REQUESTED_LEVEL,
     automatic_next_level,
     grant_requested_level,
     initial_level,
@@ -36,6 +38,21 @@ from .state import SessionView
 
 
 class SessionEngine:
+    """单卡会话状态机。
+
+    每次操作返回 ``SessionView`` 并同步到 ``self.view``；
+    写仓储前统一过安全写入门，被拦时只记审计、不打断会话。
+
+    Attributes:
+        card: 当前知识点卡。
+        provider: 文案提供方。
+        repository: 仓储。
+        consent: 授权状态。
+        state: 会话状态。
+        receipts: 本次会话已生成的收据。
+        view: 最近一帧视图。
+    """
+
     def __init__(
         self,
         card: KnowledgeCard,
@@ -44,6 +61,15 @@ class SessionEngine:
         repository: Repository | None = None,
         consent: Consent | None = None,
     ) -> None:
+        """创建会话并停在目标确认阶段。
+
+        Args:
+            card: 知识点卡，题量取自卡片。
+            provider: 文案提供方。
+            goal: 初始目标，通常为空。
+            repository: 仓储，缺省用内存实现。
+            consent: 授权状态，缺省全关。
+        """
         self.card = card
         self.provider = provider
         self.repository = repository or InMemoryRepository()
@@ -59,13 +85,30 @@ class SessionEngine:
 
     @property
     def current_exercise(self) -> Exercise:
+        """返回当前题；题号由 ``advance`` 推进。"""
         return self.card.exercises[self._exercise_pos]
 
     def _set(self, view: SessionView) -> SessionView:
+        """记录并返回当前视图。"""
         self.view = view
         return view
 
     def confirm_goal(self, goal: str) -> SessionView:
+        """确认学习目标并进入讲解阶段。
+
+        空目标抛 ValueError；注入检测命中时标记观察会话、记审计并抛出。
+
+        Args:
+            goal: 目标文本，会去掉首尾空白。
+
+        Returns:
+            讲解阶段视图。
+
+        Raises:
+            RuntimeError: 当前不在目标确认阶段。
+            ValueError: 目标为空。
+            Blocked: 目标命中注入规则。
+        """
         if self.state.phase is not Phase.GOAL_CONFIRM:
             raise RuntimeError("当前不在目标确认阶段")
         goal = goal.strip()
@@ -101,6 +144,7 @@ class SessionEngine:
         )
 
     def begin_quiz(self) -> SessionView:
+        """进入小测，重置本题的提示、连错与诊断状态。"""
         if self.state.phase is not Phase.EXPLAIN:
             raise RuntimeError("当前不在讲解阶段")
         self.state.phase = Phase.QUIZ
@@ -113,6 +157,7 @@ class SessionEngine:
         return self._render_quiz()
 
     def _render_quiz(self, notice: str | None = None) -> SessionView:
+        """渲染当前题；notice 为空时显示当前提示层级。"""
         exercise = self.current_exercise
         return self._set(
             SessionView(
@@ -127,6 +172,20 @@ class SessionEngine:
         )
 
     def submit_answer(self, answer: str) -> SessionView:
+        """提交当前题的作答。
+
+        注入命中只提示不计分；无法自动核对时留在本题、不计连错；
+        答对生成收据；答错累计连错，2 次进入错因诊断，3 次收尾。
+
+        Args:
+            answer: 作答文本。
+
+        Returns:
+            下一帧视图。
+
+        Raises:
+            RuntimeError: 当前不在小测阶段。
+        """
         if self.state.phase is not Phase.QUIZ:
             raise RuntimeError("当前不在小测阶段")
         exercise = self.current_exercise
@@ -212,6 +271,7 @@ class SessionEngine:
         )
 
     def _wrong_answers(self, exercise_id: str) -> list[str]:
+        """收集指定题目判错的作答文本。"""
         return [
             attempt["answer"]
             for attempt in self.state.attempts
@@ -219,7 +279,8 @@ class SessionEngine:
             and attempt.get("correct") is False
         ]
 
-    def _safe_write(self, op: str, action) -> bool:
+    def _safe_write(self, op: str, action: Callable[[], None]) -> bool:
+        """过安全写入门；被拦时记审计并返回 False。"""
         try:
             assert_write_allowed(
                 op, consent=self.consent, observed=self.state.observed
@@ -232,6 +293,7 @@ class SessionEngine:
         return True
 
     def _record_mistake(self, exercise: Exercise, answer: str) -> None:
+        """写入错题；错因未确认时先跑一次诊断。"""
         if not self.consent.mistake_book:
             return
         now = datetime.now(timezone.utc)
@@ -267,6 +329,18 @@ class SessionEngine:
         self._safe_write("mistake", lambda: self.repository.save_mistake(entry))
 
     def confirm_diagnosis(self, error_type: str | None = None) -> SessionView:
+        """确认或改选错因，然后升一档提示。
+
+        Args:
+            error_type: 错因值；为空时保留诊断出的结果。
+
+        Returns:
+            提示阶段视图。
+
+        Raises:
+            RuntimeError: 当前不在错因诊断阶段。
+            ValueError: 错因值不在枚举里。
+        """
         if self.state.phase is not Phase.DIAGNOSE:
             raise RuntimeError("当前不在错因诊断阶段")
         if error_type is not None:
@@ -296,6 +370,7 @@ class SessionEngine:
         )
 
     def _hint_text(self, level: int) -> str:
+        """按层级返回提示文案，L6 要求复述思路。"""
         exercise = self.current_exercise
         if level <= 1:
             return "先说说这题在问什么、考哪个概念？"
@@ -304,12 +379,26 @@ class SessionEngine:
         if level == 3:
             return f"回到概念：{self.card.intuition}"
         if level == 4:
-            return f"只演示最关键一步：{exercise.solution_outline}"
+            return f"关键思路：{exercise.solution_outline}"
         if level == 5:
             return f"完整推导：{exercise.solution_outline}"
         return "请用自己的话复述本题思路，再说出答案。"
 
     def request_hint(self, kind: str) -> SessionView:
+        """按门槛发放请求的提示。
+
+        步骤与答案请求只把展示层级压到 L4，状态层级不回退；
+        其余请求按 ``grant_requested_level`` 的结果展示。
+
+        Args:
+            kind: 请求类型，如 ``step`` / ``answer``。
+
+        Returns:
+            提示阶段视图。
+
+        Raises:
+            RuntimeError: 当前不在小测或提示阶段。
+        """
         if self.state.phase not in (Phase.QUIZ, Phase.HINT):
             raise RuntimeError("当前不能请求提示")
         attempted = {attempt["hint_level"] for attempt in self.state.attempts}
@@ -319,22 +408,30 @@ class SessionEngine:
         self.state.hint_level = level
         self.state.max_hint_level = max(self.state.max_hint_level, level)
         self.state.phase = Phase.HINT
+        # 请求步骤/答案只降展示层级，不把 L5 状态退回 L4
+        display_level = (
+            min(level, MAX_REQUESTED_LEVEL)
+            if kind in ("step", "answer")
+            else level
+        )
         return self._set(
             SessionView(
                 phase=Phase.HINT,
-                title=f"提示 L{level}",
-                body=f"{message}\n\n{self._hint_text(level)}",
+                title=f"提示 L{display_level}",
+                body=f"{message}\n\n{self._hint_text(display_level)}",
                 notice="看完提示后回到原题再试一次。",
             )
         )
 
     def retry(self) -> SessionView:
+        """从提示回到小测。"""
         if self.state.phase is not Phase.HINT:
             raise RuntimeError("当前不在提示阶段")
         self.state.phase = Phase.QUIZ
         return self._render_quiz()
 
     def _persist_receipt(self, receipt: Receipt) -> None:
+        """按授权写入收据并登记复习。"""
         exercise = self.current_exercise
         if self.consent.memory:
             self._safe_write(
@@ -352,6 +449,7 @@ class SessionEngine:
             )
 
     def _issue_receipt(self) -> SessionView:
+        """生成收据、写入仓储并返回收据视图。"""
         self.state.phase = Phase.RECEIPT
         elapsed = 0
         if self.state.exercise_started_at is not None:

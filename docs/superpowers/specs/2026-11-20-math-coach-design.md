@@ -219,7 +219,7 @@ exercises:
 | `find_error` | 选出错误的步骤编号 |
 | `match` | 左右配对完全一致 |
 
-每题必须有 `solution_outline`，供 L4 只演示最关键一步。
+每题必须有 `solution_outline`，L4 显示关键思路，L5 显示完整推导。
 
 ### 4.4 加载期校验（`content/validator.py`，启动即跑）
 
