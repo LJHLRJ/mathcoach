@@ -5,7 +5,7 @@ https://github.com/pbakaus/radiant
 commit 59e9f48c0ad9a3db2fbeb8898b4390d5a1eabb40
 flow-field / topographic 源文件已内联为 SHADER_HTML 常量。
 
-仅以内联常量注入，不加载外部图片或脚本；不拼接用户输入。
+仅以内联常量注入，不加载外部图片或脚本；不拼接外部输入。
 """
 from __future__ import annotations
 
@@ -860,6 +860,7 @@ const SimplexNoise = (function() {
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 

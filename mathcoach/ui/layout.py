@@ -22,6 +22,7 @@ def math_markdown(text: str) -> str:
         return text
 
     def _wrap(match: re.Match[str]) -> str:
+        """保留片段两侧空白，只在核心公式外补 ``$``。"""
         raw = match.group(0)
         core = raw.strip()
         if not core:

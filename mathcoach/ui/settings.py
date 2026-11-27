@@ -24,6 +24,7 @@ from ..domain.settings import (
 from ..llm import (
     OfflineProvider,
     OpenAICompatibleProvider,
+    Provider,
     RenderTask,
     build_provider,
 )
@@ -136,12 +137,13 @@ DISCLAIMER_TEXT = """## 免责声明
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 
 @st.cache_data(show_spinner=False)
 def load_settings(path: str) -> dict[str, Any]:
-    """读取指定数据库的 settings 表；保存后由调用方清除缓存。"""
+    """读取指定数据库的 settings 表；保存后由 UI 层清除缓存。"""
     store = SQLiteSettingsStore(path)
     try:
         return store.get_all()
@@ -159,6 +161,7 @@ def current_settings(consent: Consent) -> AppSettings:
 
 
 def _save_settings(consent: Consent, settings: AppSettings) -> None:
+    """写入设置、同步运行时环境并重建 Provider；游客只写会话。"""
     st.session_state["settings"] = settings
     apply_runtime_settings(
         settings, clear_ai_env=not settings.ai_enabled
@@ -214,6 +217,7 @@ def sanitized_connection_error(exc: Exception, api_key: str) -> str:
 
 
 def _rebuild_provider() -> None:
+    """按当前环境变量重建 Provider，并挂到会话与现有 engine。"""
     provider = build_provider()
     st.session_state.provider = provider
     engine = st.session_state.get("engine")
@@ -223,6 +227,7 @@ def _rebuild_provider() -> None:
 
 @st.fragment
 def _render_connection_test(existing_key: str, existing_base: str) -> None:
+    """渲染连接测试表单；测试不会覆盖已保存的密钥。"""
     st.caption("测试连接不会覆盖已保存的密钥。")
     with st.form("settings_test_connection"):
         key = st.text_input(
@@ -260,6 +265,7 @@ def _render_connection_test(existing_key: str, existing_base: str) -> None:
 def _render_ai_config(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
+    """渲染 AI 配置表单，密钥写入本地 secrets 文件。"""
     st.divider()
     st.markdown("### AI 配置")
     st.caption(
@@ -297,6 +303,7 @@ def _render_ai_config(
 
 
 def _render_notices() -> None:
+    """消费并展示各设置表单留下的一次性成功提示。"""
     if st.session_state.pop("settings_saved", False):
         st.success("设置已保存。")
     if st.session_state.pop("settings_ratio_saved", False):
@@ -319,7 +326,7 @@ def _render_notices() -> None:
 def _build_export_payloads(
     repository: Repository, consent: Consent
 ) -> dict[str, str]:
-    """按需构建 4 个导出 payload；仅由用户点击触发。"""
+    """按需构建 4 个导出 payload；仅由界面点击触发。"""
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
     review_items = repository.list_review_items()
@@ -347,6 +354,7 @@ def _build_export_payloads(
 
 
 def _render_export(repository: Repository, consent: Consent) -> None:
+    """渲染导出按钮；payload 按需生成并缓存在会话。"""
     st.divider()
     st.markdown("### 导出学习数据")
     if _is_guest(consent):
@@ -407,6 +415,7 @@ def _render_export(repository: Repository, consent: Consent) -> None:
 
 
 def _render_clear(repository: Repository, consent: Consent) -> None:
+    """渲染清除确认表单；必须输入 DELETE 才执行。"""
     st.divider()
     st.markdown("### 清除全部学习数据")
     if _is_guest(consent):
@@ -446,6 +455,7 @@ def _render_clear(repository: Repository, consent: Consent) -> None:
 
 
 def _render_audit(repository: Repository, consent: Consent) -> None:
+    """渲染只读审计日志与下载入口。"""
     st.divider()
     st.markdown("### 安全审计日志（只读）")
     with st.expander(
@@ -486,6 +496,7 @@ def _render_audit(repository: Repository, consent: Consent) -> None:
 
 
 def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
+    """渲染只读的开发者信息面板。"""
     st.divider()
     with st.expander("开发者信息（只读）", expanded=False):
         st.caption(
@@ -510,6 +521,7 @@ def _render_dev_panel(consent: Consent, settings: AppSettings) -> None:
 def _render_grade_default_form(
     repository: Repository, consent: Consent
 ) -> None:
+    """渲染默认年级设置表单。"""
     st.divider()
     st.markdown("### 学习入口")
     st.caption(
@@ -546,6 +558,7 @@ def _render_grade_default_form(
 def _render_appearance_form(
     repository: Repository, consent: Consent
 ) -> None:
+    """渲染背景、动效、密度与学习卡片开关。"""
     st.markdown("### 外观")
     st.caption(
         "背景默认关闭；仅使用常量 CSS，不加载外部图片。"
@@ -607,6 +620,7 @@ def _render_appearance_form(
 def _render_sound_form(
     repository: Repository, consent: Consent
 ) -> None:
+    """渲染声音开关、反馈音与试听按钮。"""
     st.markdown("### 声音")
     st.caption(
         "默认关闭；音量由浏览器原生播放器控制。"
@@ -660,6 +674,7 @@ def _render_sound_form(
 
 
 def _render_about() -> None:
+    """渲染第三方资源说明与免责声明。"""
     with st.expander("关于 / 致谢", expanded=False):
         st.markdown("**第三方资源**")
         st.markdown(RESOURCE_NOTICE)
@@ -673,6 +688,7 @@ def _render_about() -> None:
 def _render_motion_form(
     repository: Repository, consent: Consent
 ) -> None:
+    """渲染庆祝动效与减少动效开关。"""
     st.markdown("### 动效")
     st.caption(
         "庆祝动效默认开启；减少动效优先；动态背景默认关闭。"
@@ -709,6 +725,7 @@ def _render_motion_form(
 def _render_review_ratio_form(
     repository: Repository, consent: Consent, settings: AppSettings
 ) -> None:
+    """渲染新卡占比设置；保存后重建设置。"""
     st.markdown("### 复习配比")
     st.caption("先修缺口 1 + 错题变式 1 固定；其余题位按新卡占比分配。")
     with st.form("settings_review_ratio_form"):
@@ -738,7 +755,7 @@ def _render_review_ratio_form(
 
 
 def render_settings_page(
-    repository: Repository, consent: Consent, provider
+    repository: Repository, consent: Consent, provider: Provider
 ) -> None:
     """渲染设置 Tab：状态、基础设置、导出与数据清除。"""
     st.subheader("设置")

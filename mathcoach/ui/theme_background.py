@@ -2,7 +2,7 @@
 
 CSS 图案改编自 Pattern Craft（MIT，Copyright (c) 2025 Megh Bari）：
 https://github.com/megh-bari/pattern-craft
-仅使用常量字符串，不加载外部图片，也不拼接用户输入。
+仅使用常量字符串，不加载外部图片，也不拼接外部输入。
 """
 from __future__ import annotations
 
@@ -93,6 +93,7 @@ _BACKGROUND_CSS = {
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 

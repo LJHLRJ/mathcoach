@@ -1,6 +1,6 @@
 """集中管理主题常量 CSS 与布局密度。
 
-仅注入常量字符串，不拼接用户输入；不加载外部字体或图片。
+仅注入常量字符串，不拼接外部输入；不加载外部字体或图片。
 """
 from __future__ import annotations
 
@@ -65,6 +65,7 @@ COMPACT_DENSITY_CSS = """
 
 
 def _is_guest(consent: Consent | None) -> bool:
+    """没有授权或记忆与错题本都关闭时视为游客。"""
     return consent is None or not (consent.memory or consent.mistake_book)
 
 

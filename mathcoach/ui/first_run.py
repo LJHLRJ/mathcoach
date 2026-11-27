@@ -12,7 +12,7 @@ from .settings import current_settings, load_settings
 
 
 class FirstRunError(RuntimeError):
-    """首次启动初始化失败；消息面向用户，可直接展示。"""
+    """首次启动初始化失败；消息面向学生，可直接展示。"""
 
 
 def _database_error(exc: BaseException, path: Path) -> str:

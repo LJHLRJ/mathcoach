@@ -47,14 +47,17 @@ STAGE_ORDER = {"highschool": 0, "undergraduate": 1, "graduate": 2}
 
 
 def grade_label(value: str) -> str:
+    """年级代码转展示文案。"""
     return GRADE_LABELS.get(value, value)
 
 
 def _difficulty_label(value: str) -> str:
+    """难度代码转展示文案。"""
     return DIFFICULTY_LABELS.get(value, value)
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 
@@ -109,6 +112,7 @@ def save_default_grade(
 def _card_metadata(
     index: GradeIndex,
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """按卡汇总题目出现过的年级与难度集合。"""
     grades: dict[str, set[str]] = defaultdict(set)
     difficulties: dict[str, set[str]] = defaultdict(set)
     for record in index.records.values():
@@ -118,6 +122,7 @@ def _card_metadata(
 
 
 def _sort_key(card: KnowledgeCard) -> tuple[int, str, str]:
+    """按学段、课程、名称排序。"""
     return (
         STAGE_ORDER.get(card.stage.value, 9),
         card.course,
@@ -131,6 +136,7 @@ def _filtered_cards(
     grade: str,
     difficulty: str,
 ) -> list[KnowledgeCard]:
+    """按年级与难度筛选卡片，返回排序后的列表。"""
     grades, difficulties = _card_metadata(index)
     result: list[KnowledgeCard] = []
     for card in cards:
@@ -148,6 +154,7 @@ def _filtered_cards(
 def _grouped_cards(
     cards: list[KnowledgeCard], index: GradeIndex
 ) -> dict[str, list[KnowledgeCard]]:
+    """按难度分组；没有难度的卡归入未分类。"""
     _, difficulties = _card_metadata(index)
     groups: dict[str, list[KnowledgeCard]] = {
         value: [] for value in DIFFICULTY_VALUES + (UNCLASSIFIED,)
@@ -164,6 +171,7 @@ def _knowledge_cards_for_grade(
     spans: Mapping[str, tuple[str, ...]],
     grade: str,
 ) -> list[KnowledgeCard]:
+    """取 grade_span 包含指定年级的卡；``all`` 返回全部。"""
     if grade == "all":
         return list(cards)
     return [
@@ -178,6 +186,7 @@ def _render_learning_entry(
     spans: Mapping[str, tuple[str, ...]],
     grade: str,
 ) -> None:
+    """渲染“先学习本年级知识点”入口。"""
     with st.expander("先学习本年级知识点"):
         knowledge_cards = _knowledge_cards_for_grade(
             cards, spans, grade
@@ -208,6 +217,7 @@ def _render_filters_and_groups(
     index: GradeIndex,
     spans: Mapping[str, tuple[str, ...]],
 ) -> None:
+    """渲染年级与难度筛选、数量统计和分组列表。"""
     grade = st.selectbox(
         "年级",
         GRADE_OPTIONS,

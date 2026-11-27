@@ -1,5 +1,6 @@
 """OpenAI 兼容 Provider：超时 30s、重试 1 次、不流式。"""
 import os
+from typing import Any
 
 from openai import OpenAI
 
@@ -9,13 +10,23 @@ from .prompts import SYSTEM_PARSER, SYSTEM_TUTOR
 
 
 class OpenAICompatibleProvider:
+    """OpenAI 兼容接口实现；不流式。"""
+
     def __init__(
         self,
         api_key: str,
         base_url: str | None = None,
         model: str | None = None,
-        client=None,
+        client: Any = None,
     ) -> None:
+        """创建 Provider。
+
+        Args:
+            api_key: 接口密钥。
+            base_url: 兼容接口地址，缺省读 ``OPENAI_BASE_URL``。
+            model: 模型名，缺省读 ``MODEL``，最后回落到 ``gpt-4o-mini``。
+            client: 测试注入的客户端，传入后不再自建。
+        """
         self.model = model or os.getenv("MODEL", "gpt-4o-mini")
         self._client = client or OpenAI(
             api_key=api_key,
@@ -25,6 +36,7 @@ class OpenAICompatibleProvider:
         )
 
     def render(self, task: RenderTask) -> str:
+        """用教学提示词润色讲解文本，返回去掉首尾空白的回复。"""
         response = self._client.chat.completions.create(
             model=self.model,
             messages=[
@@ -35,6 +47,15 @@ class OpenAICompatibleProvider:
         return response.choices[0].message.content.strip()
 
     def parse_freeform(self, text: str, exercise: Exercise) -> ParsedAnswer:
+        """把自由文本作答归一为 JSON。
+
+        Args:
+            text: 学生作答原文。
+            exercise: 当前题目，题干会拼进提示词。
+
+        Returns:
+            校验通过的 ``ParsedAnswer``；校验失败返回 ``UNPARSED``，不猜答案。
+        """
         prompt = (
             "把学生的自由文本作答归一为 JSON，字段：normalized_value（字符串或 null）、"
             f"confidence（0 到 1）、reason（简短理由）。题目：{exercise.stem}"

@@ -19,7 +19,14 @@ FOCUS_ENABLED_KEY = "focus_audio_enabled"
 
 @dataclass(frozen=True)
 class FocusSource:
-    """外部专注音频站点；许可证由对应项目负责。"""
+    """外部专注音频站点。
+
+    Attributes:
+        name: 站点名称。
+        url: 站点地址。
+        repository: 源码仓库地址。
+        license_note: 许可证说明。
+    """
 
     name: str
     url: str
@@ -50,6 +57,7 @@ FOCUS_SOURCES = (
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 

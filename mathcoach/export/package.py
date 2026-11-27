@@ -1,4 +1,7 @@
-"""学习包导出：Markdown、独立收据/错题文件与 Anki TSV。"""
+"""学习包导出：Markdown、独立收据/错题文件与 Anki TSV。
+
+所有文本先经 ``sanitize_text``；目标目录落在仓库内时直接拒绝写入。
+"""
 from __future__ import annotations
 
 import re
@@ -6,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from ..domain.models import KnowledgeCard, MistakeEntry, Receipt
+from ..domain.models import Consent, KnowledgeCard, MistakeEntry, Receipt
 from ..memory.repository import Repository
 from ..safety.redlines import (
     ConfirmationRequired,
@@ -29,6 +32,17 @@ _EXPORT = "export"
 
 @dataclass(frozen=True)
 class ExportArtifact:
+    """一次导出生成的产物。
+
+    Attributes:
+        destination: 输出目录。
+        files: 文件名到内容的映射，固定为 4 个文件。
+        card_count: 有收据或错题的知识点卡数。
+        receipt_count: 收据数。
+        mistake_count: 错题数。
+        generated_at: 生成时间。
+    """
+
     destination: Path
     files: dict[str, str]
     card_count: int
@@ -37,6 +51,7 @@ class ExportArtifact:
     generated_at: datetime
 
     def summary_text(self) -> str:
+        """返回一行导出摘要，供界面展示。"""
         return (
             f"知识点 {self.card_count} 张 · 收据 {self.receipt_count} 条 · "
             f"错题 {self.mistake_count} 条 · {len(self.files)} 个文件"
@@ -44,26 +59,32 @@ class ExportArtifact:
 
 
 def _safe(text: object) -> str:
+    """转成字符串并做注入清洗。"""
     return sanitize_text(str(text))
 
 
 def _md(text: object) -> str:
+    """清洗后转义表格竖线，并把换行压成空格。"""
     return _safe(text).replace("|", r"\|").replace("\n", " ").strip()
 
 
 def _tsv(text: object) -> str:
+    """清洗后把制表符与换行替换为 Anki 可接受的形式。"""
     return _safe(text).replace("\t", " ").replace("\r", " ").replace("\n", "<br>")
 
 
 def _tag(text: object) -> str:
+    """清洗后把空白替换为下划线，得到 Anki 标签。"""
     return re.sub(r"\s+", "_", _safe(text)).strip("_")
 
 
 def _when(value: datetime) -> str:
+    """按本地时区格式化为“年-月-日 时:分”。"""
     return value.astimezone().strftime("%Y-%m-%d %H:%M")
 
 
 def _knowledge_section(cards: list[KnowledgeCard]) -> str:
+    """生成知识点摘要段落。"""
     lines = ["## 知识点摘要", ""]
     if not cards:
         lines.append("暂无已学习卡片。")
@@ -85,6 +106,7 @@ def _knowledge_section(cards: list[KnowledgeCard]) -> str:
 def _receipts_section(
     receipts: list[Receipt], cards_by_id: dict[str, KnowledgeCard]
 ) -> str:
+    """生成收据 Markdown 表格；卡片缺失时退回卡片 ID。"""
     lines = [
         "## 收据摘要",
         "",
@@ -106,6 +128,7 @@ def _receipts_section(
 
 
 def _mistakes_section(mistakes: list[MistakeEntry]) -> str:
+    """生成错题清单，附答案、错因、复习状态与思路。"""
     lines = ["## 错题清单", ""]
     if not mistakes:
         lines.append("暂无错题。")
@@ -126,6 +149,7 @@ def _mistakes_section(mistakes: list[MistakeEntry]) -> str:
 
 
 def _anki_tsv(mistakes: list[MistakeEntry]) -> str:
+    """生成 Anki 导入用的 TSV，第三列为标签。"""
     lines = [
         "#separator:tab",
         "#html:true",
@@ -160,6 +184,17 @@ def build_export_artifact(
     destination: Path,
     now: datetime,
 ) -> ExportArtifact:
+    """构建 4 个导出文件的内容，不落盘。
+
+    Args:
+        repository: 仓储，用于读取收据与错题。
+        cards: 全部知识点卡。
+        destination: 输出目录，仅记录在产物里。
+        now: 生成时间。
+
+    Returns:
+        ``ExportArtifact``。
+    """
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
     cards_by_id = {card.id: card for card in cards}
@@ -199,6 +234,7 @@ def build_export_artifact(
 
 
 def describe_export(artifact: ExportArtifact) -> str:
+    """返回写入前的确认摘要。"""
     return describe_write(
         _EXPORT,
         {
@@ -212,6 +248,7 @@ def describe_export(artifact: ExportArtifact) -> str:
 
 
 def _is_inside_repo(path: Path) -> bool:
+    """判断路径是否落在仓库目录内。"""
     try:
         Path(path).resolve().relative_to(PROJECT_ROOT.resolve())
         return True
@@ -222,10 +259,27 @@ def _is_inside_repo(path: Path) -> bool:
 def write_export(
     artifact: ExportArtifact,
     *,
-    consent,
+    consent: Consent,
     confirmation: str | None,
     repository: Repository,
 ) -> tuple[Path, ...]:
+    """把产物写入目标目录并记审计。
+
+    仓库内目录一律拒绝；写入前校验同意状态与确认口令。
+
+    Args:
+        artifact: 待写入的产物。
+        consent: 同意状态。
+        confirmation: 确认口令，可为 None。
+        repository: 仓储，用于记审计。
+
+    Returns:
+        实际写出的文件路径元组。
+
+    Raises:
+        WriteBlocked: 目标在仓库内，或红线守卫拒绝写入。
+        ConfirmationRequired: 缺少确认口令。
+    """
     if _is_inside_repo(artifact.destination):
         repository.record_audit(_EXPORT, "blocked:forbidden_destination")
         raise WriteBlocked("forbidden_destination")

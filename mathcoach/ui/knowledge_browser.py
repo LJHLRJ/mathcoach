@@ -16,6 +16,7 @@ from ..domain.knowledge_tree import (
     load_learning_card,
 )
 from ..domain.models import Consent, KnowledgeCard, ReviewState
+from ..llm import Provider
 from ..memory.repository import Repository
 from ..memory.settings_repo import SQLiteSettingsStore
 from ..session.engine import SessionEngine
@@ -28,6 +29,17 @@ READY_THRESHOLD = 0.6
 
 @dataclass(frozen=True)
 class LearningStatus:
+    """知识点的学习闭环状态。
+
+    Attributes:
+        state: 未开始 / 学习中 / 待复习 / 已熟练。
+        mastery: BKT 掌握概率，没有记录时为 None。
+        receipt_count: 收据数。
+        mistake_count: 错题数。
+        pending_review: 未掌握的错题数。
+        suggestion: 下一步建议。
+    """
+
     state: str
     mastery: float | None
     receipt_count: int
@@ -84,6 +96,7 @@ def summarize_learning(
 def learning_status_for(
     repository: Repository, card_id: str, tree: KnowledgeTree
 ) -> LearningStatus:
+    """汇总指定知识点的收据、错题、待复习与先修，生成闭环状态。"""
     receipts = [
         receipt
         for receipt in repository.list_receipts(limit=None)
@@ -130,6 +143,7 @@ def render_learning_status(status: LearningStatus) -> None:
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 
@@ -179,6 +193,7 @@ def save_learning_cards_enabled(
 def _first_card(
     tree: KnowledgeTree, cards_by_id: dict[str, KnowledgeCard]
 ) -> KnowledgeNode | None:
+    """按学段、课程、知识点的顺序找第一张有卡的节点。"""
     for stage in tree.nodes.values():
         if stage.parent_id is not None:
             continue
@@ -194,6 +209,7 @@ def _resolve_focus(
     cards_by_id: dict[str, KnowledgeCard],
     focus_id: str | None,
 ) -> KnowledgeNode | None:
+    """解析聚焦节点；无效或没有对应卡片时回退到第一张有卡的节点。"""
     focus = tree.node(focus_id) if focus_id else None
     if focus is not None:
         if focus.id in cards_by_id:
@@ -209,6 +225,7 @@ def _resolve_focus(
 
 
 def _strip_leading_title(text: str) -> str:
+    """去掉学习卡片正文开头的 Markdown 一级标题。"""
     lines = text.splitlines()
     if lines and lines[0].startswith("# "):
         lines = lines[1:]
@@ -216,6 +233,7 @@ def _strip_leading_title(text: str) -> str:
 
 
 def _select_node(node_id: str) -> None:
+    """把知识点写进查询参数并触发重跑。"""
     st.query_params["kp"] = node_id
     st.rerun()
 
@@ -226,6 +244,7 @@ def _render_tree(
     current: KnowledgeNode,
     stage_id: str | None,
 ) -> None:
+    """渲染学段、课程、知识点三级树，当前节点用标记代替按钮。"""
     for stage in tree.nodes.values():
         if stage.parent_id is not None:
             continue
@@ -246,7 +265,7 @@ def _render_tree(
 
 def render_knowledge_browser(
     cards: list[KnowledgeCard],
-    provider,
+    provider: Provider,
     repository: Repository,
     consent: Consent,
     focus_id: str | None = None,

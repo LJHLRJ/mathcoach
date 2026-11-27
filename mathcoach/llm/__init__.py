@@ -1,27 +1,37 @@
 """LLM 层：Provider 装配入口，无 Key 或请求失败时降级为离线模板。"""
 import os
 
+from ..domain.models import Exercise
 from .base import ParsedAnswer, Provider, RenderTask, UNPARSED
 from .offline_provider import OfflineProvider
 from .openai_provider import OpenAICompatibleProvider
 
 
 class FallbackProvider:
-    """主 Provider 失败时切换到离线模板，并记录降级标记供界面明示。"""
+    """主 Provider 失败时切到离线模板，并记录降级标记供界面明示。
 
-    def __init__(self, primary, fallback) -> None:
+    Attributes:
+        primary: 优先使用的 Provider。
+        fallback: 降级用的 Provider。
+        degraded: 是否发生过降级。
+    """
+
+    def __init__(self, primary: Provider, fallback: Provider) -> None:
+        """保存主备 Provider，初始未降级。"""
         self.primary = primary
         self.fallback = fallback
         self.degraded = False
 
     def render(self, task: RenderTask) -> str:
+        """优先走主 Provider；超时、网络或鉴权异常时降级并标记。"""
         try:
             return self.primary.render(task)
         except Exception:
-            self.degraded = True  # 超时/网络错误/鉴权失败统一降级
+            self.degraded = True
             return self.fallback.render(task)
 
-    def parse_freeform(self, text: str, exercise) -> ParsedAnswer:
+    def parse_freeform(self, text: str, exercise: Exercise) -> ParsedAnswer:
+        """优先走主 Provider；异常时降级并标记。"""
         try:
             return self.primary.parse_freeform(text, exercise)
         except Exception:
@@ -30,9 +40,16 @@ class FallbackProvider:
 
 
 def build_provider() -> Provider:
+    """按环境变量装配 Provider。
+
+    有 ``OPENAI_API_KEY`` 时用 OpenAI 兼容实现并套降级；没有则纯离线。
+
+    Returns:
+        可直接调用的 ``Provider``。
+    """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        return OfflineProvider()  # 未配置 Key：纯离线，不发请求
+        return OfflineProvider()
     return FallbackProvider(
         primary=OpenAICompatibleProvider(api_key=api_key),
         fallback=OfflineProvider(),

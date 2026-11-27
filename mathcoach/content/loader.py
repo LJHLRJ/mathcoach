@@ -1,5 +1,6 @@
 """卡片加载：YAML → dataclass，启动即校验，失败中止。"""
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -16,7 +17,7 @@ class ContentError(RuntimeError):
     """内容校验失败：启动中止。"""
 
 
-def _read_yaml(path: Path):
+def _read_yaml(path: Path) -> Any:
     try:
         with path.open("r", encoding="utf-8") as handle:
             return yaml.safe_load(handle) or []
@@ -80,7 +81,7 @@ def load_narrative(root: Path) -> list[NarrativeNode]:
         ) from exc
 
 
-def _canonical_answer(value) -> str:
+def _canonical_answer(value: object) -> str:
     """把 YAML 的列表/字典答案规范成判定器约定的字符串形式。"""
     if isinstance(value, bool):
         return "True" if value else "False"

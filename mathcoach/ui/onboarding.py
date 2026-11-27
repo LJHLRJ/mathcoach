@@ -18,6 +18,7 @@ SESSION_DISMISSED = "onboarding_dismissed"
 
 
 def _is_guest(consent: Consent) -> bool:
+    """记忆与错题本都关闭时视为游客。"""
     return not (consent.memory or consent.mistake_book)
 
 
@@ -32,7 +33,7 @@ def first_use_completed() -> bool:
 
 
 def repository_has_history(repository: Repository) -> bool:
-    """是否存在既往收据或错题；用于避免升级后打扰老用户。"""
+    """是否存在既往收据或错题；用于避免升级后打扰已有学习记录的人。"""
     return bool(
         repository.list_receipts(limit=1)
         or repository.list_mistakes(limit=1)

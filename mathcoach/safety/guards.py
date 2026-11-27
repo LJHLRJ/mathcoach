@@ -14,6 +14,7 @@ _ZERO_WIDTH = frozenset(
     "\u200b\u200c\u200d\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2060\ufeff"
 )
 
+# 形近字母折成拉丁，避免用西里尔/希腊字母绕过关键词
 _CONFUSABLES = str.maketrans(
     {
         "а": "a",
@@ -51,6 +52,7 @@ _INJECTION_PATTERNS = tuple(
     )
 )
 
+# 数学表述与操作意图共现，才判“数学伪装”
 _MATH_HINTS = re.compile(
     r"(\b[A-Za-z]\s*=|∫|∀|∃|∈|证明|公式|函数|评分函数|目标函数|变量|方程)",
     re.IGNORECASE,
@@ -65,14 +67,20 @@ _OPERATION_HINTS = re.compile(
 
 
 class Blocked(Exception):
-    """安全守卫命中；reason 是机器可读分类，不直接展示完整原因。"""
+    """安全守卫命中。
+
+    Attributes:
+        reason: 机器可读的分类，不直接展示完整原因。
+    """
 
     def __init__(self, reason: str) -> None:
+        """记录机器可读的拦截分类。"""
         super().__init__(reason)
         self.reason = reason
 
 
 def _script_of(character: str) -> str | None:
+    """判断字符属于拉丁、西里尔还是希腊字母；其他字符返回 None。"""
     code = ord(character)
     if "a" <= character.lower() <= "z":
         return "latin"
@@ -84,6 +92,7 @@ def _script_of(character: str) -> str | None:
 
 
 def _has_mixed_script(text: str) -> bool:
+    """检测同一词里是否混用了拉丁字母与西里尔/希腊字母。"""
     for token in re.findall(r"[A-Za-z\u0400-\u04FF\u0370-\u03FF]+", text):
         scripts = {script for character in token if (script := _script_of(character))}
         if "cyrillic" in scripts and len(scripts) > 1:
@@ -94,14 +103,30 @@ def _has_mixed_script(text: str) -> bool:
 
 
 def detect_math_framing(text: str) -> bool:
-    """数学形式与操作意图共现时返回 True。"""
+    """判断文本是否同时出现数学表述和操作意图。
+
+    Args:
+        text: 待检测文本。
+
+    Returns:
+        两者同时命中时返回 True。
+    """
     if not text:
         return False
     return bool(_MATH_HINTS.search(text) and _OPERATION_HINTS.search(text))
 
 
 def detect_injection(text: str) -> Blocked | None:
-    """命中返回 Blocked(reason)，否则返回 None。"""
+    """按隐藏字符、混用文字、越权指令、数学伪装的顺序检测注入。
+
+    先做 NFKC 归一，再把形近字母折成拉丁，最后匹配关键词。
+
+    Args:
+        text: 待检测文本。
+
+    Returns:
+        命中时返回带分类的 ``Blocked``；未命中返回 None。
+    """
     if not text:
         return None
     if any(character in _ZERO_WIDTH for character in text):
@@ -120,7 +145,17 @@ def detect_injection(text: str) -> Blocked | None:
 
 
 def check_parsed_answer(parsed: Any, threshold: float) -> Blocked | None:
-    """LLM 解析结果进入引擎前的安全检查。"""
+    """检查模型解析结果能否进入判定。
+
+    先对 ``reason`` 做注入检测，再卡置信度下限。
+
+    Args:
+        parsed: 任意带 ``reason`` / ``confidence`` 属性的解析结果。
+        threshold: 置信度下限，低于它按 ``low_confidence`` 拦截。
+
+    Returns:
+        命中时返回 ``Blocked``，否则返回 None。
+    """
     reason = str(getattr(parsed, "reason", "") or "")
     blocked = detect_injection(reason)
     if blocked is not None:

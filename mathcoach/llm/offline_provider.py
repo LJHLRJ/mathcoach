@@ -4,8 +4,12 @@ from .base import ParsedAnswer, RenderTask, UNPARSED
 
 
 class OfflineProvider:
+    """离线模板实现；渲染原样返回素材，解析一律返回 UNPARSED。"""
+
     def render(self, task: RenderTask) -> str:
-        return task.content  # 素材由代码拼装，模板模式原样返回
+        """原样返回素材，离线模式只做确定性文案。"""
+        return task.content
 
     def parse_freeform(self, text: str, exercise: Exercise) -> ParsedAnswer:
-        return UNPARSED  # 离线模式不做自由文本归一，界面引导改用选项
+        """返回 ``UNPARSED``；离线模式不做自由文本归一。"""
+        return UNPARSED

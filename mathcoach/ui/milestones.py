@@ -1,17 +1,23 @@
 """里程碑事件判定：只在明确事件上触发庆祝。"""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import streamlit as st
 
 from ..domain.models import Consent
 from .motion import queue_celebration
+
+if TYPE_CHECKING:
+    from ..session.daily import DailyState
+    from ..session.engine import SessionEngine
 
 FIVE_KEY = "celebration_five_correct"
 REVIEW_KEY = "celebration_review_complete"
 MISTAKES_KEY = "celebration_mistakes_cleared"
 
 
-def celebrate_five_correct(engine, consent: Consent) -> bool:
+def celebrate_five_correct(engine: SessionEngine, consent: Consent) -> bool:
     """连续答对达到 5 题时登记一次庆祝，同一条连对不重复。"""
     attempts = getattr(engine.state, "attempts", [])
     streak = 0
@@ -31,7 +37,7 @@ def celebrate_five_correct(engine, consent: Consent) -> bool:
     return True
 
 
-def celebrate_review_complete(state, consent: Consent) -> bool:
+def celebrate_review_complete(state: DailyState, consent: Consent) -> bool:
     """复习包完成时登记一次庆祝；同一复习会话只触发一次。"""
     if not getattr(state, "finished", False):
         return False
