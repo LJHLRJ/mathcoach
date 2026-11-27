@@ -67,6 +67,23 @@ def test_settings_round_trip_and_invalid_limit():
     assert AppSettings.from_mapping({"daily_review_limit": "bad"}).daily_review_limit == 0
 
 
+def test_settings_reject_non_boolean_flags():
+    settings = AppSettings.from_mapping(
+        {"ai_enabled": "false", "reminder_enabled": "0"}
+    )
+    assert settings.ai_enabled is False
+    assert settings.reminder_enabled is False
+
+    enabled = AppSettings.from_mapping(
+        {"ai_enabled": "true", "reminder_enabled": 1}
+    )
+    assert enabled.ai_enabled is True
+    assert enabled.reminder_enabled is True
+
+    unknown = AppSettings.from_mapping({"ai_enabled": "secret"})
+    assert unknown.ai_enabled is False
+
+
 def test_settings_export_allowlist_drops_secret_keys():
     exported = settings_for_export(
         {"api_key": "sk-secret", "daily_review_limit": 5, "unknown": "x"}
