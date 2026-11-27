@@ -20,7 +20,23 @@ def compose(
     new: Sequence[T] = (),
     new_ratio: int = 0,
 ) -> list[T]:
-    """按配额组合并去重；缺口/变式固定，剩余题位按新卡占比分配。"""
+    """按配额组合复习包并去重。
+
+    先修缺口固定 1 题且排在最前；错题变式固定 1 题；剩余题位按 ``new_ratio``
+    在到期题与新卡之间分配，比例四舍五入。配额不足时依次用到期题、变式、
+    缺口、新卡补齐，最后截到 ``total``。
+
+    Args:
+        due: 到期复习题，按优先级传入。
+        gaps: 先修缺口题。
+        variants: 错题变式题。
+        total: 总题数，≤ 0 时返回空列表。
+        new: 新卡题。
+        new_ratio: 新卡占比 0–100，越界会被截断。
+
+    Returns:
+        去重后的题目列表，长度不超过 ``total``。
+    """
     if total <= 0:
         return []
 
@@ -32,6 +48,7 @@ def compose(
     result: list[T] = []
 
     def add(item: T) -> bool:
+        """去重后追加；已存在时返回 False。"""
         if item in result:
             return False
         result.append(item)

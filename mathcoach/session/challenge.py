@@ -23,6 +23,16 @@ CHALLENGE_TIME_LIMIT_S = 300
 def build_challenge_state(
     cards: list[KnowledgeCard], now: datetime, seed: int
 ) -> DailyState:
+    """构建 10 题、300 秒的挑战赛状态。
+
+    Args:
+        cards: 知识点卡。
+        now: 开始时间。
+        seed: 抽题种子，同时拼进 ``date_key``。
+
+    Returns:
+        ``DailyState``，题量与时限取挑战赛常量。
+    """
     return DailyState(
         date_key=f"challenge-{seed}",
         questions=build_quiz_questions(
@@ -39,6 +49,19 @@ def save_challenge_result(
     state: DailyState,
     now: datetime,
 ) -> ChallengeResult | None:
+    """保存挑战赛结果。
+
+    写入门被拦时记录审计并返回 None；用时不超过时限。
+
+    Args:
+        repository: 仓储。
+        consent: 授权状态。
+        state: 挑战赛状态。
+        now: 结束时间。
+
+    Returns:
+        保存后的 ``ChallengeResult``；被拦截时为 None。
+    """
     try:
         assert_write_allowed("challenge", consent=consent)
     except (WriteBlocked, ConfirmationRequired) as exc:

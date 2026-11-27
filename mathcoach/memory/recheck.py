@@ -20,12 +20,21 @@ _CONTRADICTION_PATTERNS = re.compile(
 
 @dataclass(frozen=True)
 class RecheckResult:
+    """记忆条目的复核结果。
+
+    Attributes:
+        allowed: 是否允许写入。
+        status: ``通过`` / ``待复核`` / ``拒绝``。
+        reason: 说明。
+    """
+
     allowed: bool
-    status: str  # 通过 / 待复核 / 拒绝
+    status: str
     reason: str
 
 
 def _as_text(value: Any) -> str:
+    """把字符串、映射或其他值摊平成一段文本。"""
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, Mapping):
@@ -34,6 +43,7 @@ def _as_text(value: Any) -> str:
 
 
 def _evidence_texts(evidence: Sequence[Any] | None) -> list[str]:
+    """把独立证据摊平成非空文本列表。"""
     if evidence is None:
         return []
     if isinstance(evidence, (str, Mapping)):
@@ -44,7 +54,18 @@ def _evidence_texts(evidence: Sequence[Any] | None) -> list[str]:
 def recheck_decision(
     memory_entry: Any, independent_evidence: Sequence[Any] | None = None
 ) -> RecheckResult:
-    """记忆触发的写操作必须先通过独立复核，证据不足则待复核。"""
+    """复核记忆条目是否可信。
+
+    记忆里出现绕过确认、永久允许一类说法时转待复核；独立证据与记忆冲突
+    时拒绝；证据少于 2 条转待复核；其余通过。与记忆相同的证据不计入。
+
+    Args:
+        memory_entry: 待写入的记忆内容，字符串或映射。
+        independent_evidence: 独立证据，字符串、映射或它们的序列。
+
+    Returns:
+        ``RecheckResult``。
+    """
     memory_text = _as_text(memory_entry)
     if _OVERRIDE_PATTERNS.search(memory_text):
         return RecheckResult(False, "待复核", "记忆条目试图绕过确认流程")

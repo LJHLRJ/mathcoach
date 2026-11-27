@@ -6,6 +6,15 @@ from dataclasses import dataclass, replace
 
 @dataclass(frozen=True)
 class NarrativeNode:
+    """叙事线节点。
+
+    Attributes:
+        id: 节点 ID。
+        card_id: 解锁该节点要完成的知识点卡。
+        name: 节点名称。
+        description: 节点说明，显示在仪表盘。
+    """
+
     id: str
     card_id: str
     name: str
@@ -14,14 +23,22 @@ class NarrativeNode:
 
 @dataclass(frozen=True)
 class NarrativeProgress:
+    """叙事线进度。
+
+    Attributes:
+        unlocked: 已点亮节点 ID，按点亮顺序排列。
+    """
+
     unlocked: tuple[str, ...] = ()
 
 
 def first_node(nodes: list[NarrativeNode]) -> NarrativeNode | None:
+    """返回第一个节点；列表为空时返回 None。"""
     return nodes[0] if nodes else None
 
 
 def initial_progress(nodes: list[NarrativeNode]) -> NarrativeProgress:
+    """初始进度只点亮第一个节点；列表为空时为空进度。"""
     return NarrativeProgress((nodes[0].id,)) if nodes else NarrativeProgress(())
 
 
@@ -31,7 +48,20 @@ def advance(
     card_id: str,
     enabled: bool = True,
 ) -> NarrativeProgress:
-    """只有完成“下一个节点”的卡片才推进；跳级请求保持原状。"""
+    """完成下一个节点对应的卡后推进一格。
+
+    只在 ``enabled``、进度非空、且 ``card_id`` 正好是下一个节点的卡时生效，
+    跳级或完成其他卡都原样返回。
+
+    Args:
+        progress: 当前进度。
+        nodes: 叙事线节点，按顺序排列。
+        card_id: 本次完成的卡 ID。
+        enabled: 叙事线开关。
+
+    Returns:
+        新的进度；未推进时返回原对象。
+    """
     if not enabled or not nodes or not progress.unlocked:
         return progress
     current_index = next(
@@ -53,7 +83,18 @@ def advance(
 def build_progress(
     nodes: list[NarrativeNode], completed_card_ids: set[str]
 ) -> NarrativeProgress:
-    """按节点顺序消费已完成卡片，天然阻止跳级。"""
+    """从已完成卡片集合重放进度。
+
+    从初始进度开始按节点顺序逐个调用 ``advance``，中间缺卡就停下，
+    所以跳级无法生效。
+
+    Args:
+        nodes: 叙事线节点，按顺序排列。
+        completed_card_ids: 已完成的知识点卡。
+
+    Returns:
+        重放后的进度。
+    """
     progress = initial_progress(nodes)
     for node in nodes[1:]:
         if node.card_id in completed_card_ids:
@@ -64,6 +105,7 @@ def build_progress(
 def next_node(
     progress: NarrativeProgress, nodes: list[NarrativeNode]
 ) -> NarrativeNode | None:
+    """返回下一个未点亮节点；已走完或列表为空时返回 None。"""
     if not nodes:
         return None
     index = len(progress.unlocked)
@@ -73,4 +115,5 @@ def next_node(
 def narrative_closed(
     progress: NarrativeProgress, nodes: list[NarrativeNode]
 ) -> bool:
+    """所有节点都已点亮时返回 True；空列表视为未完成。"""
     return bool(nodes) and len(progress.unlocked) >= len(nodes)

@@ -12,6 +12,22 @@ from .repository import Repository
 
 @dataclass(frozen=True)
 class DashboardSummary:
+    """仪表盘聚合结果。
+
+    Attributes:
+        receipts: 收据总数。
+        independent: 独立完成数。
+        semi_independent: 半独立完成数。
+        mistakes: 错题总数。
+        unreviewed: 未复习的错题数。
+        reviewing: 复习中的错题数。
+        mastered: 已掌握的错题数。
+        due_today: 今天到期的复习项数。
+        average_hint_level: 平均最高提示层级。
+        top_errors: 出现最多的三类错因。
+        top_courses: 错题最多的三门课程。
+    """
+
     receipts: int
     independent: int
     semi_independent: int
@@ -26,6 +42,17 @@ class DashboardSummary:
 
 
 def build_dashboard(repository: Repository, now: datetime) -> DashboardSummary:
+    """聚合收据、错题与复习队列，生成仪表盘数据。
+
+    只读：收据、错题取全量，复习项取当前队列；错因与课程各取前 3。
+
+    Args:
+        repository: 仓储。
+        now: 计算“今天到期”的基准时间。
+
+    Returns:
+        ``DashboardSummary``。
+    """
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
     review_items = repository.list_review_items()

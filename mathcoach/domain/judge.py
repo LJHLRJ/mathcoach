@@ -55,25 +55,43 @@ class Judgement:
 
     @property
     def needs_manual_check(self) -> bool:
+        """``correct`` 为 None 时为 True，界面据此提示人工核对。"""
         return self.correct is None
 
 
 def _normalize_raw(text: str) -> str:
+    """NFKC 归一并去首尾空白；不做符号替换。"""
     return unicodedata.normalize("NFKC", str(text)).strip()
 
 
 def normalize_answer(text: str) -> str:
-    """NFKC + 常见数学符号归一 + 折叠空白。"""
+    """把作答归一成可比较形式：NFKC、常见数学符号替换、折叠空白。
+
+    Args:
+        text: 原始文本，内部先转成字符串。
+
+    Returns:
+        去首尾空白、连续空白压成一个空格的文本。
+    """
     return re.sub(r"\s+", " ", _normalize_raw(text).translate(_TRANSLATE)).strip()
 
 
 def compact_answer(text: str) -> str:
-    """忽略全部空白的比较形式，用于 choice/fill/find_error。"""
+    """在归一化基础上再去掉全部空格，用于选择、填空、找错题。"""
     return normalize_answer(text).replace(" ", "")
 
 
 def parse_tokens(text: str) -> tuple[str, ...]:
-    """多选/序列题的 token 解析；兼容 Python 列表字面量。"""
+    """把多选、排序、步骤作答拆成 token 元组。
+
+    支持逗号、分号、空白、箭头分隔，也兼容 ``["A", "B"]`` 这类 Python 字面量。
+
+    Args:
+        text: 原始作答。
+
+    Returns:
+        归一化后的 token 元组；空作答返回空元组。
+    """
     raw = normalize_answer(text)
     if raw.startswith("[") and raw.endswith("]"):
         try:
@@ -91,7 +109,17 @@ def parse_tokens(text: str) -> tuple[str, ...]:
 
 
 def parse_pairs(text: str) -> dict[str, str] | None:
-    """配对题解析；无法解析返回 None，不猜。"""
+    """把配对作答解析成“左 → 右”字典。
+
+    支持 ``A=1;B=2``、``A:1,B:2``、``A->1`` 等写法，也兼容字典字面量。
+    解析失败，或同一个左值映射到不同右值时返回 None，不猜。
+
+    Args:
+        text: 原始作答。
+
+    Returns:
+        配对字典；无法可靠解析时为 ``None``。
+    """
     raw = normalize_answer(text)
     if raw.startswith("{") and raw.endswith("}"):
         try:
@@ -124,6 +152,7 @@ def parse_pairs(text: str) -> dict[str, str] | None:
 
 
 def _as_number(text: str) -> Fraction | None:
+    """把作答转成有理数；不可解析或不是有限值时返回 None。"""
     value = normalize_answer(text).replace(" ", "")
     if not value:
         return None
@@ -138,12 +167,14 @@ def _as_number(text: str) -> Fraction | None:
 
 
 def _numbers_close(left: Fraction, right: Fraction) -> bool:
+    """数值比较：相对误差 1e-6，绝对误差 1e-9。"""
     return math.isclose(
         float(left), float(right), rel_tol=1e-6, abs_tol=1e-9
     )
 
 
 def _parse_bool(text: str) -> bool | None:
+    """识别 True/False 的中英文与符号写法；无法识别返回 None。"""
     value = _normalize_raw(text).lower()
     if value in _TRUE_WORDS:
         return True
@@ -153,12 +184,14 @@ def _parse_bool(text: str) -> bool | None:
 
 
 def _judge_choice(exercise: Exercise, answer: str) -> Judgement:
+    """选择题：忽略空白后与标准答案或 accepted 精确匹配。"""
     user = compact_answer(answer)
     candidates = (exercise.answer, *exercise.accepted)
     return Judgement(any(user == compact_answer(item) for item in candidates))
 
 
 def _judge_multi(exercise: Exercise, answer: str) -> Judgement:
+    """多选题：集合相等；先比对 accepted，再比对标准答案。"""
     user = set(parse_tokens(answer))
     correct = set(parse_tokens(exercise.answer))
     for alternative in exercise.accepted:
@@ -168,6 +201,7 @@ def _judge_multi(exercise: Exercise, answer: str) -> Judgement:
 
 
 def _judge_truefalse(exercise: Exercise, answer: str) -> Judgement:
+    """判断题：任意一侧识别失败都按答错处理。"""
     user = _parse_bool(answer)
     correct = _parse_bool(exercise.answer)
     if user is None or correct is None:
@@ -176,6 +210,7 @@ def _judge_truefalse(exercise: Exercise, answer: str) -> Judgement:
 
 
 def _judge_fill(exercise: Exercise, answer: str) -> Judgement:
+    """填空题：先去空白精确匹配，再按数值容差匹配。"""
     user_text = compact_answer(answer)
     candidates = (exercise.answer, *exercise.accepted)
     for candidate in candidates:
@@ -193,6 +228,7 @@ def _judge_fill(exercise: Exercise, answer: str) -> Judgement:
 
 
 def _judge_expr(exercise: Exercise, answer: str) -> Judgement:
+    """表达式题：过白名单后做 sympy 等价判定；无法确认时返回 None。"""
     variables: set[str] = set()
     for candidate in (exercise.answer, *exercise.accepted):
         variables |= expr_variables(candidate)
@@ -225,6 +261,7 @@ def _sequence_with_one_adjacent_swap(user: tuple[str, ...], correct: tuple[str, 
 
 
 def _judge_proof_order(exercise: Exercise, answer: str) -> Judgement:
+    """步骤排序：完全一致，或最多一次相邻交换，算答对。"""
     user = parse_tokens(answer)
     correct = parse_tokens(exercise.answer)
     if user == correct:
@@ -238,12 +275,14 @@ def _judge_proof_order(exercise: Exercise, answer: str) -> Judgement:
 
 
 def _judge_find_error(exercise: Exercise, answer: str) -> Judgement:
+    """找错题：忽略空白后与标准答案或 accepted 精确匹配。"""
     user = compact_answer(answer)
     candidates = (exercise.answer, *exercise.accepted)
     return Judgement(any(user == compact_answer(item) for item in candidates))
 
 
 def _judge_match(exercise: Exercise, answer: str) -> Judgement:
+    """配对题：解析成功且与标准或备选完全一致才判对。"""
     user = parse_pairs(answer)
     if user is None:
         return Judgement(False)
@@ -254,6 +293,7 @@ def _judge_match(exercise: Exercise, answer: str) -> Judgement:
     return Judgement(False)
 
 
+# 题型 → 判定函数；evaluate 只做分派
 _JUDGES = {
     ExerciseKind.CHOICE: _judge_choice,
     ExerciseKind.MULTI: _judge_multi,
@@ -267,7 +307,18 @@ _JUDGES = {
 
 
 def evaluate(exercise: Exercise, answer: str) -> Judgement:
-    """返回可区分“答错”和“需人工核对”的判定结果。"""
+    """按题型分派判定，返回可区分“答错”和“需人工核对”的结果。
+
+    Args:
+        exercise: 题目，``kind`` 决定使用哪个判定器。
+        answer: 学生原始作答，内部按题型归一化。
+
+    Returns:
+        ``Judgement``；``correct`` 为 None 表示无法自动核对，界面必须提示人工检查。
+
+    Raises:
+        NotImplementedError: ``exercise.kind`` 没有对应判定器。
+    """
     try:
         return _JUDGES[exercise.kind](exercise, answer)
     except KeyError:

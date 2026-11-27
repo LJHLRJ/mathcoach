@@ -16,6 +16,24 @@ def build_receipt(
     judged: bool = True,
     verified: bool = True,
 ) -> Receipt:
+    """生成一张收据。
+
+    独立程度由 ``max_hint_level`` 推导（≤3 独立，≥4 半独立）；依据文字在创建时
+    写入 ``basis``，展示层不再补算；时间统一用 UTC。
+
+    Args:
+        card: 当前知识卡片。
+        exercise: 刚做对的题目。
+        goal: 本次会话的目标。
+        max_hint_level: 本题用到的最高提示层级。
+        duration_s: 本题用时（秒）。
+        restatement_quality: L6 复述质量；未走复述时为 None。
+        judged: 是否通过判定；False 时依据写“未通过判定，不生成收据”。
+        verified: 符号验证是否通过；False 时按半独立记录。
+
+    Returns:
+        不可变的 ``Receipt``。
+    """
     return Receipt(
         card_id=card.id,
         stage=card.stage,

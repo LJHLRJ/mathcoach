@@ -34,32 +34,45 @@ _CLEAR_TABLES = (
 class SettingsStore(Protocol):
     """设置读写与学习数据清除的最小契约。"""
 
-    def get_all(self) -> dict[str, Any]: ...
+    def get_all(self) -> dict[str, Any]:
+        """返回全部设置映射。"""
+        ...
 
-    def set_many(self, values: Mapping[str, Any]) -> None: ...
+    def set_many(self, values: Mapping[str, Any]) -> None:
+        """批量写入设置。"""
+        ...
 
-    def clear_learning_data(self, *, keep_audit: bool = True) -> dict[str, int]: ...
+    def clear_learning_data(self, *, keep_audit: bool = True) -> dict[str, int]:
+        """清除学习数据表并返回删除行数。"""
+        ...
 
-    def close(self) -> None: ...
+    def close(self) -> None:
+        """关闭底层连接。"""
+        ...
 
 
 class InMemorySettingsStore:
     """游客模式：设置仅存在于当前进程。"""
 
     def __init__(self) -> None:
+        """创建内存设置存储。"""
         self._values: dict[str, Any] = {}
 
     def get_all(self) -> dict[str, Any]:
+        """返回设置副本。"""
         return dict(self._values)
 
     def set_many(self, values: Mapping[str, Any]) -> None:
+        """合并写入设置。"""
         self._values.update(values)
 
     def clear_learning_data(self, *, keep_audit: bool = True) -> dict[str, int]:
+        """游客模式没有落盘数据，固定返回空统计。"""
         # 游客数据由 InMemoryRepository 持有，设置页会禁用清除入口。
         return {}
 
     def close(self) -> None:
+        """内存实现无需关闭。"""
         return None
 
 
@@ -67,6 +80,7 @@ class SQLiteSettingsStore:
     """在现有数据库旁维护独立 settings 表的轻量仓储。"""
 
     def __init__(self, path: Path | str) -> None:
+        """打开设置数据库并建表。"""
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()

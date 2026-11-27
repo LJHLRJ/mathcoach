@@ -3,6 +3,7 @@ from ..domain.prerequisites import Gap
 
 
 def render_gaps(gaps: list[Gap]) -> str:
+    """把先修缺口渲染成 Markdown 文本；没有缺口时返回空串。"""
     if not gaps:
         return ""
     lines = ["**先修诊断**"]

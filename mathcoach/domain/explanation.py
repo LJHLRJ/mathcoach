@@ -28,12 +28,32 @@ NO_PREREQUISITE_STEP = "把解题步骤写全，避免跳步。"
 
 @dataclass(frozen=True)
 class PrerequisiteRef:
+    """先修节点的最小展示信息。
+
+    Attributes:
+        id: 知识点 ID。
+        name: 知识点名称。
+    """
+
     id: str
     name: str
 
 
 @dataclass(frozen=True)
 class Explanation:
+    """一道题的解析内容，全部来自卡片与题目已有字段。
+
+    Attributes:
+        knowledge_point_id: 知识点卡 ID。
+        knowledge_point_name: 知识点名称，知识点树优先。
+        course: 课程名。
+        definition: 定义。
+        answer: 答案。
+        solution_outline: 解题提纲。
+        common_mistakes: 常见错误。
+        prerequisites: 先修节点，按 BFS 顺序。
+    """
+
     knowledge_point_id: str
     knowledge_point_name: str
     course: str
@@ -46,6 +66,20 @@ class Explanation:
 
 @dataclass(frozen=True)
 class ErrorLocalization:
+    """错因落到知识点后的展示数据。
+
+    Attributes:
+        error_type: 错因类型。
+        reason: 错因说明，未传入时用默认文案。
+        knowledge_point_id: 当前知识点卡 ID。
+        knowledge_point_name: 当前知识点名称。
+        course: 课程名。
+        prerequisites: 先修节点。
+        review_id: 建议回看的知识点 ID；概念错和跳步错取最先修节点。
+        review_name: 建议回看的知识点名称。
+        suggestion: 复习建议。
+    """
+
     error_type: ErrorType
     reason: str
     knowledge_point_id: str
@@ -72,6 +106,7 @@ def _prerequisites(
     tree: KnowledgeTree | None,
     max_depth: int,
 ) -> tuple[PrerequisiteRef, ...]:
+    """取知识点树上指定深度内的先修节点；没有树时返回空。"""
     if tree is None:
         return ()
     refs: list[PrerequisiteRef] = []
@@ -89,7 +124,17 @@ def build_explanation(
     *,
     max_depth: int = 2,
 ) -> Explanation:
-    """按题目现有字段生成解析；不调用模型，也不推断新内容。"""
+    """用卡片和题目现有字段拼出解析，不调用模型。
+
+    Args:
+        card: 知识点卡。
+        exercise: 当前题目。
+        tree: 知识点树，用来补名称与先修链；缺省时用卡片自身信息。
+        max_depth: 先修链的 BFS 深度上限。
+
+    Returns:
+        ``Explanation``。
+    """
     name, course = _knowledge_point(card, tree)
     return Explanation(
         knowledge_point_id=card.id,
@@ -111,7 +156,21 @@ def locate_error(
     reason: str = "",
     max_depth: int = 2,
 ) -> ErrorLocalization:
-    """把已确认的错因落到知识点与先修链上，只给复习建议。"""
+    """把已确认的错因落到知识点与先修链上。
+
+    概念错和跳步错回看最先修节点，其余错因留在当前卡；没有先修时换成
+    针对性的通用建议。错因说明为空时用 ``ERROR_REASONS`` 的默认文案。
+
+    Args:
+        card: 知识点卡。
+        error_type: 已确认的错因。
+        tree: 知识点树，缺省时没有先修信息。
+        reason: 自定义错因说明。
+        max_depth: 先修链的 BFS 深度上限。
+
+    Returns:
+        ``ErrorLocalization``。
+    """
     name, course = _knowledge_point(card, tree)
     prerequisites = _prerequisites(card, tree, max_depth)
     review = (
