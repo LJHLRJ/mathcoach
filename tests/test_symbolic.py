@@ -1,4 +1,8 @@
 """符号验证拒绝门：恶意表达式必须全部被拒（设计文档 §7、§9）。"""
+import sys
+import types
+from pathlib import Path
+
 from mathcoach.verify.symbolic import (
     SymbolicVerdict,
     are_equivalent,
@@ -56,6 +60,17 @@ def test_equivalence_rejects_malicious_input():
     assert (
         are_equivalent("__import__('os')", "x", {"x"}) is SymbolicVerdict.REJECTED
     )
+
+
+def test_equivalence_ignores_streamlit_fake_main(monkeypatch):
+    """Streamlit 会把 app.py 装进 __main__；spawn 不应重跑整页。"""
+    fake_main = types.ModuleType("__main__")
+    fake_main.__file__ = str(Path(__file__).resolve().parents[1] / "app.py")
+    monkeypatch.setitem(sys.modules, "__main__", fake_main)
+
+    verdict = are_equivalent("(x + 1)**2", "x**2 + 2*x + 1", {"x"})
+
+    assert verdict is SymbolicVerdict.EQUIVALENT
 
 
 def test_equivalence_timeout_is_unverified():

@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### 修复
+
+- Windows 上 Streamlit 会把 `app.py` 装入 `sys.modules["__main__"]`，符号验证的 spawn 子进程因此重跑整页，`expr` 题始终被判为“无法自动核对”；子进程启动时临时隐藏主脚本路径，只执行验证 worker。
+- 0.7.2 将 Windows 符号验证超时放宽到 20 秒只改变了等待时间，未修复上述根因；本次一并更正。
+
 ## [0.7.2] - 2026-11-24
 
 ### 新增

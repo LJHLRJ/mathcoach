@@ -8,7 +8,8 @@
 3. 用 sympy ``parse_expr`` 转换，``local_dict`` 只含显式变量，
    ``global_dict`` 只含安全子集且不暴露真实 builtins；
 4. 二次检查 ``free_symbols``；
-5. 在子进程内执行 ``simplify(a - b) == 0``，超时/异常返回 UNVERIFIED。
+5. 在子进程内执行 ``simplify(a - b) == 0``，超时/异常返回 UNVERIFIED；
+   显式传 ``timeout_s=None`` 时在当前进程计算，用于已知可控的离线场景。
 
 上层拿到 UNVERIFIED 时必须标注“需人工核对”，不得伪装成确定判分。
 """
@@ -18,6 +19,11 @@ import ast
 import multiprocessing as mp
 import sys
 from enum import Enum
+from multiprocessing.connection import Connection
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import sympy
 
 ALLOWED_FUNCTIONS = frozenset(
     {
@@ -49,10 +55,12 @@ DEFAULT_TIMEOUT_S = 20.0 if sys.platform == "win32" else 2.0
 
 
 class SymbolicVerdict(str, Enum):
-    EQUIVALENT = "equivalent"
-    NOT_EQUIVALENT = "not_equivalent"
-    UNVERIFIED = "unverified"
-    REJECTED = "rejected"
+    """符号比较的四种结论；“不等”和“无法确认”必须分开处理。"""
+
+    EQUIVALENT = "equivalent"          # 差值化简为 0
+    NOT_EQUIVALENT = "not_equivalent"  # 差值化简后不为 0
+    UNVERIFIED = "unverified"          # 超时、解析失败或结果含 nan/oo，需人工核对
+    REJECTED = "rejected"              # 输入未通过 AST 白名单
 
 
 class _Rejected(Exception):
@@ -60,6 +68,11 @@ class _Rejected(Exception):
 
 
 def _check_node(node: ast.AST, variables: frozenset[str]) -> None:
+    """递归检查一个 AST 节点是否落在白名单内。
+
+    只放行数值常量、白名单变量、``+ - * / **``、正负号与白名单数学函数；
+    其余节点一律抛 ``_Rejected``。变量名必须既是合法标识符又在 ``variables`` 中。
+    """
     if isinstance(node, ast.Constant):
         if isinstance(node.value, bool) or not isinstance(node.value, (int, float)):
             raise _Rejected("只允许数值常量，字符串/布尔常量被拒绝")
@@ -97,7 +110,19 @@ def _check_node(node: ast.AST, variables: frozenset[str]) -> None:
 
 
 def validate_expression(expression: str, variables: set[str] | frozenset[str]) -> str | None:
-    """通过则返回 None；否则返回拒绝原因。"""
+    """检查表达式是否只使用白名单语法，返回拒绝原因或 None。
+
+    空串、语法错误、变量不在 ``variables``、函数不在 ``ALLOWED_FUNCTIONS``、
+    关键字参数，以及属性、下标、lambda、推导式、容器、字符串常量都会被拒绝。
+    只做静态检查，不执行表达式，也不判断数学等价。
+
+    Args:
+        expression: 待检查的表达式文本。
+        variables: 允许出现的变量名；通常由标准答案经 ``expr_variables`` 提取。
+
+    Returns:
+        通过时返回 ``None``；否则返回一句可直接展示的中文原因。
+    """
     if not isinstance(expression, str) or not expression.strip():
         return "表达式为空"
     try:
@@ -112,7 +137,17 @@ def validate_expression(expression: str, variables: set[str] | frozenset[str]) -
 
 
 def expr_variables(expression: str) -> set[str]:
-    """从可信内容（标准答案）提取变量名，作为显式白名单。"""
+    """从可信来源（标准答案）提取变量名，供白名单使用。
+
+    只收集 ``ast.Name`` 节点并剔除函数名；语法错误时返回空集合。
+    只能用于标准答案或 accepted，不能拿学生的原始输入放宽白名单。
+
+    Args:
+        expression: 标准答案或被接受答案的表达式文本。
+
+    Returns:
+        变量名集合；解析失败时为空集。
+    """
     try:
         tree = ast.parse(str(expression).strip(), mode="eval")
     except SyntaxError:
@@ -122,6 +157,11 @@ def expr_variables(expression: str) -> set[str]:
 
 
 def _safe_globals() -> dict:
+    """构造 sympy 的全局命名空间。
+
+    只放白名单数学函数与符号构造器，``__builtins__`` 置空，
+    避免 ``parse_expr`` 通过表达式访问导入、文件或系统能力。
+    """
     import sympy
 
     return {
@@ -150,7 +190,19 @@ def _safe_globals() -> dict:
     }
 
 
-def _parse(expression: str, variables: frozenset[str]):
+def _parse(expression: str, variables: frozenset[str]) -> sympy.Expr | None:
+    """把表达式转成 sympy 对象；无法转换时返回 None。
+
+    ``local_dict`` 只含 ``variables`` 中的符号，转换后再检查一次 ``free_symbols``，
+    防止解析器自动引入额外符号。
+
+    Args:
+        expression: 已通过 ``validate_expression`` 的表达式文本。
+        variables: 允许的自由变量集合。
+
+    Returns:
+        ``sympy.Expr``，或无法安全转换时的 ``None``。
+    """
     import sympy
     from sympy.parsing.sympy_parser import parse_expr
 
@@ -172,6 +224,19 @@ def _parse(expression: str, variables: frozenset[str]):
 def _compute_verdict(
     left: str, right: str, variables: frozenset[str]
 ) -> SymbolicVerdict:
+    """化简 ``left - right`` 并给出结论，无法可靠化简时返回 UNVERIFIED。
+
+    差值为 0 才算 EQUIVALENT；``nan``、``zoo``、``±oo`` 视为不可确认，
+    不能当成“不相等”。这里不重复做 AST 检查，使用前必须已过白名单。
+
+    Args:
+        left: 待比较表达式。
+        right: 参照表达式。
+        variables: 允许的自由变量集合。
+
+    Returns:
+        ``EQUIVALENT``、``NOT_EQUIVALENT`` 或 ``UNVERIFIED``。
+    """
     import sympy
 
     a = _parse(left, variables)
@@ -191,7 +256,17 @@ def _compute_verdict(
     )
 
 
-def _worker(connection, left: str, right: str, variables: frozenset[str]) -> None:
+def _worker(
+    connection: Connection,
+    left: str,
+    right: str,
+    variables: frozenset[str],
+) -> None:
+    """子进程入口：计算结论并通过管道回传字符串。
+
+    任何异常都降级为 UNVERIFIED，保证父进程在超时前总能收到一个结论；
+    管道写入失败也不重试。
+    """
     try:
         verdict = _compute_verdict(left, right, variables)
     except Exception:
@@ -202,13 +277,55 @@ def _worker(connection, left: str, right: str, variables: frozenset[str]) -> Non
         connection.close()
 
 
+def _start_process(process: mp.Process) -> None:
+    """启动子进程，并避免 Windows spawn 重跑宿主主脚本。
+
+    Windows 只有 spawn，子进程会按 ``sys.modules["__main__"].__file__`` 重新
+    执行主脚本。Streamlit 会把 ``app.py`` 装进 ``__main__``，于是子进程跑整页
+    UI 而不是 ``_worker``，还在 ``session_state`` 缺失处退出，管道不关闭。
+    启动期间临时隐藏 ``__file__``，子进程只导入 worker 所在模块；prep data 在
+    ``start()`` 内同步采集，返回后立即恢复。
+
+    Args:
+        process: 已构造、尚未启动的 ``mp.Process``。
+    """
+    main = sys.modules.get("__main__")
+    if main is None or "__file__" not in main.__dict__:
+        process.start()
+        return
+    script_path = main.__dict__.pop("__file__")
+    try:
+        process.start()
+    finally:
+        main.__dict__["__file__"] = script_path
+
+
 def are_equivalent(
     left: str,
     right: str,
     variables: set[str] | frozenset[str],
     timeout_s: float = DEFAULT_TIMEOUT_S,
 ) -> SymbolicVerdict:
-    """判断两个表达式是否数学等价；拒绝/超时/异常都不伪装成布尔值。"""
+    """判断两个表达式是否数学等价，无法确认时返回 UNVERIFIED。
+
+    先对两侧做白名单检查，任一不通过即 REJECTED；随后在子进程中化简
+    ``left - right``，超时、解析失败或异常都返回 UNVERIFIED。
+
+    Args:
+        left: 学生作答的表达式。
+        right: 标准答案或被接受答案。
+        variables: 允许的自由变量集合，通常来自标准答案。
+        timeout_s: 子进程等待上限（秒）。传 ``None`` 就在当前进程计算，
+            不设超时，只用于已知可控的离线场景。
+
+    Returns:
+        ``EQUIVALENT``、``NOT_EQUIVALENT``、``UNVERIFIED`` 或 ``REJECTED``。
+
+    Note:
+        返回值不是布尔值：UNVERIFIED 与 REJECTED 必须由上层标注“需人工核对”，
+        不能当成答错。Windows 走 spawn，子进程要重新导入 sympy，超时上限因此
+        设为 20 秒；POSIX 优先 fork，默认 2 秒。
+    """
     scope = frozenset(variables)
     for expression in (left, right):
         if validate_expression(expression, scope) is not None:
@@ -232,7 +349,7 @@ def are_equivalent(
             daemon=True,
         )
         try:
-            process.start()
+            _start_process(process)
         except Exception:
             parent.close()
             child.close()
