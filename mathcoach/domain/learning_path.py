@@ -7,6 +7,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Recommendation:
+    """一条学习路径推荐。
+
+    Attributes:
+        card_id: 推荐的知识点卡 ID。
+        reason: 推荐理由。
+        basis: 依据摘要，供视图直接展示。
+    """
+
     card_id: str
     reason: str
     basis: str
@@ -15,7 +23,21 @@ class Recommendation:
 def topological_order(
     card_ids: list[str], prerequisites: dict[str, list[str]]
 ) -> list[str]:
-    """Kahn 拓扑排序；先修图有环时抛 ValueError。"""
+    """按先修关系排出学习顺序。
+
+    Kahn 算法：入度为 0 的节点按 ID 升序入队，出队后减少子节点入度。
+    只考虑 ``card_ids`` 里的节点，指向集合外的先修边忽略。
+
+    Args:
+        card_ids: 待排序的卡 ID，重复项只保留第一次出现。
+        prerequisites: 子节点 -> 先修节点列表。
+
+    Returns:
+        拓扑序卡 ID 列表。
+
+    Raises:
+        ValueError: 先修图存在环，排不出完整顺序。
+    """
     nodes = list(dict.fromkeys(card_ids))
     node_set = set(nodes)
     indegree = {node: 0 for node in nodes}
@@ -49,7 +71,28 @@ def recommend(
     weak_cards: set[str] | None = None,
     limit: int = 3,
 ) -> list[Recommendation]:
-    """只推荐未掌握卡片；先修已满足的错题卡优先。"""
+    """挑出接下来要学的卡。
+
+    先按拓扑序滤掉已掌握的卡，先修全部满足的算就绪；就绪卡里错题卡排前面，
+    再按拓扑序补到 ``limit`` 条。
+
+    Note:
+        就绪卡不足 ``limit`` 时按拓扑序补未就绪的卡，这些卡会在 ``reason`` /
+        ``basis`` 里标明先修尚未满足。
+
+    Args:
+        card_ids: 全部卡 ID。
+        prerequisites: 子节点 -> 先修节点列表。
+        mastered: 已掌握的卡 ID。
+        weak_cards: 近期错题较多的卡 ID，优先推荐。
+        limit: 最多返回几条。
+
+    Returns:
+        推荐列表，最多 ``limit`` 条。
+
+    Raises:
+        ValueError: 先修图存在环。
+    """
     order = topological_order(card_ids, prerequisites)
     weak = weak_cards or set()
     unmastered = [card_id for card_id in order if card_id not in mastered]
@@ -69,10 +112,15 @@ def recommend(
             if len(chosen) >= limit:
                 break
 
+    ready_set = set(ready)
     recommendations: list[Recommendation] = []
     for card_id in chosen:
         parents = prerequisites.get(card_id, [])
-        if card_id in weak:
+        unmet = [parent for parent in parents if parent not in mastered]
+        if card_id not in ready_set:
+            reason = "先修尚未满足，按拓扑顺序提前预习"
+            basis = f"先修 {len(parents)} 张，待掌握 {len(unmet)} 张"
+        elif card_id in weak:
             reason = "近期错题较多，优先巩固"
             basis = f"先修 {len(parents)} 张；错题优先"
         else:

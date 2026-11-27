@@ -59,3 +59,18 @@ def test_recommend_returns_three():
 def test_cycle_raises():
     with pytest.raises(ValueError):
         topological_order(["a", "b"], {"a": ["b"], "b": ["a"]})
+
+
+def test_recommend_marks_unmet_prerequisites_when_padding():
+    recommendations = recommend(
+        ["a", "b"],
+        {"b": ["a"]},
+        mastered=set(),
+        weak_cards=set(),
+        limit=2,
+    )
+
+    by_id = {item.card_id: item for item in recommendations}
+    assert "先修已满足" in by_id["a"].reason
+    assert "先修尚未满足" in by_id["b"].reason
+    assert "待掌握 1 张" in by_id["b"].basis
