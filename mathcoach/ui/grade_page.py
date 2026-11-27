@@ -4,6 +4,7 @@ from __future__ import annotations
 import sqlite3
 from collections import defaultdict
 from collections.abc import Mapping
+from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
@@ -18,6 +19,7 @@ from ..domain.grade_index import (
 from ..domain.models import Consent, KnowledgeCard
 from ..memory.repository import Repository
 from ..memory.settings_repo import SQLiteSettingsStore
+from ..timeutil import end_of_local_day
 
 DEFAULT_GRADE_KEY = "default_grade"
 
@@ -274,10 +276,12 @@ def render_grade_page(
         "不按年级隔离。"
     )
     review_items = repository.list_review_items()
-    st.metric("今日待复习（跨年级）", str(len(review_items)))
-    if review_items:
+    today_end = end_of_local_day(datetime.now(timezone.utc))
+    due_items = [item for item in review_items if item.due_at <= today_end]
+    st.metric("今日待复习（跨年级）", str(len(due_items)))
+    if due_items:
         preview = "；".join(
-            item.mistake.stem for item in review_items[:3]
+            item.mistake.stem for item in due_items[:3]
         )
         st.caption(f"跨年级已到期：{preview}")
 

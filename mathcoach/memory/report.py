@@ -5,7 +5,12 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from ..domain.models import ErrorType, Independence, MistakeEntry
+from ..domain.models import (
+    ErrorType,
+    Independence,
+    MasterySnapshot,
+    MistakeEntry,
+)
 from ..domain.prerequisites import MistakeStat
 from ..timeutil import end_of_local_day, local_day
 from .repository import Repository
@@ -27,6 +32,26 @@ class ErrorTrend:
 
 
 @dataclass(frozen=True)
+class MasteryChange:
+    """一张卡在本周的掌握度变化。
+
+    Attributes:
+        card_id: 知识点卡 ID。
+        before: 本周基准掌握度。
+        after: 本周最新掌握度。
+    """
+
+    card_id: str
+    before: float
+    after: float
+
+    @property
+    def delta(self) -> float:
+        """掌握度变化量。"""
+        return self.after - self.before
+
+
+@dataclass(frozen=True)
 class WeeklyReport:
     """周报聚合结果。
 
@@ -41,6 +66,7 @@ class WeeklyReport:
         daily_receipts: 每日收据数，按日期补齐。
         top_errors: 出现最多的三类错因。
         trend: 错因趋势。
+        mastery_changes: 本周变化最大的掌握度快照。
     """
 
     start: date
@@ -53,6 +79,7 @@ class WeeklyReport:
     daily_receipts: tuple[tuple[str, int], ...]
     top_errors: tuple[tuple[str, int], ...]
     trend: ErrorTrend
+    mastery_changes: tuple[MasteryChange, ...] = ()
 
 
 def build_mistake_stats(mistakes: list[MistakeEntry]) -> dict[str, MistakeStat]:
@@ -111,6 +138,59 @@ def build_error_trend(
             parts.append(f"{name} {count} 次（较上周 {sign}）")
         summary = "；".join(parts)
     return ErrorTrend(this_week=this_week, last_week=last_week, summary=summary)
+
+
+def build_mastery_changes(
+    history: list[MasterySnapshot],
+    start: date,
+    end: date,
+    limit: int = 5,
+) -> tuple[MasteryChange, ...]:
+    """取本周有更新的卡片，对比基准与最新掌握度。
+
+    基准优先取窗口开始前最后一条快照；没有前置快照时用窗口内第一条。
+    只在窗口内有记录、且掌握度确实变化的卡片会进入结果，按变化绝对值降序。
+
+    Args:
+        history: 掌握度快照，按记录时间升序。
+        start: 窗口起始日期。
+        end: 窗口结束日期。
+        limit: 最多返回几条。
+
+    Returns:
+        ``MasteryChange`` 元组。
+    """
+    grouped: dict[str, list[MasterySnapshot]] = {}
+    for snapshot in history:
+        if local_day(snapshot.recorded_at) <= end:
+            grouped.setdefault(snapshot.card_id, []).append(snapshot)
+
+    changes: list[MasteryChange] = []
+    for card_id, snapshots in grouped.items():
+        snapshots.sort(key=lambda item: item.recorded_at)
+        in_week = [
+            item
+            for item in snapshots
+            if start <= local_day(item.recorded_at) <= end
+        ]
+        if not in_week:
+            continue
+        earlier = [
+            item
+            for item in snapshots
+            if local_day(item.recorded_at) < start
+        ]
+        baseline = earlier[-1] if earlier else in_week[0]
+        latest = snapshots[-1]
+        if abs(latest.probability - baseline.probability) < 1e-12:
+            continue
+        changes.append(
+            MasteryChange(
+                card_id, baseline.probability, latest.probability
+            )
+        )
+    changes.sort(key=lambda item: (-abs(item.delta), item.card_id))
+    return tuple(changes[:limit])
 
 
 def build_weekly_report(
@@ -180,5 +260,8 @@ def build_weekly_report(
         top_errors=tuple(errors.most_common(3)),
         trend=build_error_trend(
             repository.list_mistakes(limit=None), now, days=days
+        ),
+        mastery_changes=build_mastery_changes(
+            repository.list_mastery_history(), start, end
         ),
     )

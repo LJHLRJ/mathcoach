@@ -8,6 +8,11 @@ from typing import Mapping
 
 import yaml
 
+from .spaced_repetition import Quality
+
+# 提示后答对只按一半的学习增益计入掌握概率；独立答对与答错保持标准 BKT 更新
+HINTED_CORRECT_WEIGHT = 0.5
+
 
 def _clamp(value: float, lower: float, upper: float) -> float:
     """把 value 截到 [lower, upper]。"""
@@ -40,17 +45,24 @@ def initial_mastery(params: BKTParams = DEFAULT_BKT_PARAMS) -> float:
 
 
 def update_mastery(
-    prior: float, correct: bool, params: BKTParams = DEFAULT_BKT_PARAMS
+    prior: float,
+    correct: bool,
+    params: BKTParams = DEFAULT_BKT_PARAMS,
+    quality: Quality | None = None,
 ) -> float:
     """一次观察后的掌握概率：先算贝叶斯后验，再加学习转移。
 
     答对时用“已掌握且未失误 / 未掌握但猜对”，答错时用“已掌握但失误 /
     未掌握且未猜对”；最后把未掌握部分按 ``p_transit`` 转成掌握。
 
+    ``quality`` 只用于区分答对时的独立程度：``HINTED`` 按
+    ``HINTED_CORRECT_WEIGHT`` 折减学习增益，其余取值保持标准更新。
+
     Args:
         prior: 观察前的掌握概率，越界会被截到 [0, 1]。
         correct: 本次是否答对。
         params: BKT 四参数。
+        quality: 本次评分；未提供时按独立答对处理。
 
     Returns:
         更新后的掌握概率，范围 [0, 1]。
@@ -67,6 +79,11 @@ def update_mastery(
     posterior = numerator / denominator if denominator > 0 else prior
     # 学习转移：未掌握部分按 p_transit 转化为掌握
     next_mastery = posterior + (1 - posterior) * params.p_transit
+    if correct and quality is Quality.HINTED:
+        # 提示后答对的证据更弱：只计入一半增益，避免掌握度虚高
+        next_mastery = prior + HINTED_CORRECT_WEIGHT * (
+            next_mastery - prior
+        )
     return _clamp(next_mastery, 0.0, 1.0)
 
 

@@ -1,8 +1,16 @@
 """引擎与记忆层联动：写收据/错题、复习流转、游客模式不落盘。"""
 from pathlib import Path
 
+import pytest
+
 from mathcoach.content.loader import load_content
-from mathcoach.domain.models import Consent, ErrorType, ReviewState
+from mathcoach.domain.models import (
+    Consent,
+    ErrorType,
+    Independence,
+    Phase,
+    ReviewState,
+)
 from mathcoach.llm.offline_provider import OfflineProvider
 from mathcoach.memory.repository import InMemoryRepository, build_repository
 from mathcoach.memory.sqlite_repo import SQLiteRepository
@@ -95,6 +103,142 @@ def test_diagnosis_override_updates_mistake_book():
     engine.confirm_diagnosis("计算失误")
 
     assert repository.list_mistakes()[0].error_type is ErrorType.CALCULATION
+
+
+def test_diagnosis_confirmation_keeps_mastery():
+    repository = InMemoryRepository()
+    engine = _engine(repository)
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+    engine.submit_answer("y² = x")
+    engine.retry()
+    engine.submit_answer("x = 1")
+    before = repository.get_mastery(engine.card.id)
+
+    engine.confirm_diagnosis("计算失误")
+
+    assert repository.get_mastery(engine.card.id) == before
+
+
+def test_restatement_records_quality_without_extra_mastery():
+    repository = InMemoryRepository()
+    engine = _engine(repository)
+    _wrong_then_correct(engine)
+    before = repository.get_mastery(engine.card.id)
+
+    view = engine.submit_restatement("每个 x 只有唯一 y 与之对应")
+
+    assert view.receipt is not None
+    assert view.receipt.restatement_quality == "完整"
+    assert repository.list_receipts()[0].restatement_quality == "完整"
+    assert repository.get_mastery(engine.card.id) == before
+    with pytest.raises(ValueError):
+        engine.submit_restatement("   ")
+
+
+def test_hinted_correct_gains_less_mastery_than_independent():
+    def mastery_after(hinted: bool) -> float:
+        repository = InMemoryRepository()
+        engine = _engine(repository)
+        engine.confirm_goal("搞懂函数")
+        engine.begin_quiz()
+        if hinted:
+            engine.request_hint("step")
+            engine.retry()
+        engine.submit_answer("y = x²")
+        value = repository.get_mastery(engine.card.id)
+        assert value is not None
+        return value
+
+    independent = mastery_after(False)
+    hinted = mastery_after(True)
+
+    assert independent > hinted > 0.3
+
+
+def test_sparse_restatement_feeds_back_to_review():
+    repository = InMemoryRepository()
+    engine = _engine(repository)
+    _wrong_then_correct(engine)
+    before = repository.find_mistake("hs-function-intro-001-e1")
+    mastery_before = repository.get_mastery(engine.card.id)
+    assert before is not None and before.consecutive_correct == 1
+
+    view = engine.submit_restatement("先移项再合并同类项")
+
+    entry = repository.find_mistake("hs-function-intro-001-e1")
+    assert entry is not None
+    assert entry.consecutive_correct == 0
+    assert entry.review_count == before.review_count + 1
+    assert repository.get_mastery(engine.card.id) == mastery_before
+    assert "半独立" in view.notice
+
+
+def test_complete_restatement_keeps_review_streak():
+    repository = InMemoryRepository()
+    engine = _engine(repository)
+    _wrong_then_correct(engine)
+    before = repository.find_mistake("hs-function-intro-001-e1")
+    assert before is not None
+
+    view = engine.submit_restatement("每个 x 只有唯一 y 与之对应")
+
+    updated = repository.find_mistake("hs-function-intro-001-e1")
+    assert updated is not None
+    assert updated.consecutive_correct == before.consecutive_correct
+    assert "半独立" not in view.notice
+
+
+def test_hinted_correct_is_not_recorded_as_fsrs_lapse(
+    tmp_path, monkeypatch
+):
+    monkeypatch.delenv("MATHCOACH_SCHEDULER", raising=False)
+    repository = SQLiteRepository(tmp_path / "hinted.sqlite3")
+    try:
+        engine = _engine(repository)
+        engine.confirm_goal("搞懂函数")
+        engine.begin_quiz()
+        engine.submit_answer("y² = x")
+        engine.retry()
+        engine.request_hint("step")
+        engine.retry()
+
+        view = engine.submit_answer("y = x²")
+
+        assert view.phase is Phase.RECEIPT
+        assert view.receipt is not None
+        assert view.receipt.max_hint_level == 4
+        assert view.receipt.independence is Independence.SEMI_INDEPENDENT
+
+        entry = repository.find_mistake("hs-function-intro-001-e1")
+        assert entry is not None
+        assert entry.lapses == 0
+        assert entry.stability > 1.0
+    finally:
+        repository.close()
+
+
+def test_hinted_correct_uses_sm2_hinted_interval(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_SCHEDULER", "sm2")
+    repository = SQLiteRepository(tmp_path / "hinted-sm2.sqlite3")
+    try:
+        engine = _engine(repository)
+        engine.confirm_goal("搞懂函数")
+        engine.begin_quiz()
+        engine.submit_answer("y² = x")
+        engine.retry()
+        engine.request_hint("step")
+        engine.retry()
+
+        engine.submit_answer("y = x²")
+
+        entry = repository.find_mistake("hs-function-intro-001-e1")
+        assert entry is not None
+        assert entry.review_state is ReviewState.REVIEWING
+        assert entry.interval_days == 1
+        assert entry.ease == pytest.approx(2.36)
+    finally:
+        repository.close()
 
 
 def test_consent_off_does_not_write_anything():

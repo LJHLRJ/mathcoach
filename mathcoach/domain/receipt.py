@@ -1,9 +1,73 @@
-"""收据生成：只在独立做对或费曼复述通过时调用。"""
+"""收据生成：答对后生成，独立程度由本题最高提示层级推导。"""
+import re
+import unicodedata
 from datetime import datetime, timezone
 
 from .basis import basis_for_receipt
 from .hint_ladder import independence_for
 from .models import Exercise, KnowledgeCard, Receipt
+
+RESTATEMENT_COMPLETE = "完整"
+RESTATEMENT_PARTIAL = "部分"
+RESTATEMENT_SPARSE = "待补充"
+# 复述完整与部分的关键片段覆盖率门槛；片段总量少时容易波动，门槛取偏宽值
+RESTATEMENT_COMPLETE_MIN = 0.3
+RESTATEMENT_PARTIAL_MIN = 0.1
+
+_CJK_RUN = re.compile(r"[\u4e00-\u9fff]+")
+_ALNUM_RUN = re.compile(r"[a-z0-9]+")
+
+
+def _key_fragments(text: str) -> set[str]:
+    """把文本拆成可比较的关键片段。
+
+    汉字取相邻二字，字母数字取长度至少为 2 的整词；单字与单数字不参与比对，
+    避免“的”“x”这类高频片段把覆盖率撑高。
+
+    Args:
+        text: 原始文本。
+
+    Returns:
+        关键片段集合。
+    """
+    normalized = unicodedata.normalize("NFKC", text).lower()
+    fragments: set[str] = set()
+    for run in _CJK_RUN.findall(normalized):
+        fragments.update(
+            run[index : index + 2] for index in range(len(run) - 1)
+        )
+    for run in _ALNUM_RUN.findall(normalized):
+        if len(run) >= 2:
+            fragments.add(run)
+    return fragments
+
+
+def assess_restatement(restatement: str, reference: str) -> str | None:
+    """按关键片段覆盖率评估复述质量。
+
+    只做确定性比对，不调用模型；覆盖率是参考文本片段被复述命中的比例，
+    因此结论只反映措辞重合度，供自查参考，不改变判分与调度。
+
+    Args:
+        restatement: 复述文本。
+        reference: 标准思路，通常取 ``Exercise.solution_outline``。
+
+    Returns:
+        空复述返回 None；否则返回 ``完整`` / ``部分`` / ``待补充``。
+    """
+    if not restatement.strip():
+        return None
+    reference_fragments = _key_fragments(reference)
+    if not reference_fragments:
+        return RESTATEMENT_PARTIAL
+    hits = reference_fragments & _key_fragments(restatement)
+    coverage = len(hits) / len(reference_fragments)
+    if coverage >= RESTATEMENT_COMPLETE_MIN:
+        return RESTATEMENT_COMPLETE
+    if coverage >= RESTATEMENT_PARTIAL_MIN:
+        return RESTATEMENT_PARTIAL
+    return RESTATEMENT_SPARSE
+
 
 
 def build_receipt(

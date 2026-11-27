@@ -25,13 +25,19 @@ from ..domain.models import (
     ErrorType,
     ExerciseKind,
     Independence,
+    MasterySnapshot,
     MistakeEntry,
     Receipt,
     ReviewItem,
     ReviewState,
     Stage,
 )
-from ..domain.spaced_repetition import Quality, update_schedule
+from ..domain.spaced_repetition import (
+    Quality,
+    quality_from_independence,
+    quality_from_outcome,
+    update_schedule,
+)
 from .repository import DEFAULT_CONSENT
 from .scheduler import fsrs_params, next_review, scheduler_mode
 
@@ -166,6 +172,32 @@ _MIGRATIONS: dict[int, tuple[str, ...]] = {
     ),
 }
 
+# 纯增量表：旧库已停在当前版本，用 IF NOT EXISTS 在每次打开时补齐；
+# 首次升级时把现有 mastery 行回填成一条历史快照
+_ADDITIVE_SCHEMA = (
+    """
+    CREATE TABLE IF NOT EXISTS mastery_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        card_id TEXT NOT NULL,
+        probability REAL NOT NULL,
+        recorded_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_mastery_history_card_time
+    ON mastery_history(card_id, recorded_at)
+    """,
+    """
+    INSERT INTO mastery_history(card_id, probability, recorded_at)
+    SELECT mastery.card_id, mastery.probability, mastery.updated_at
+    FROM mastery
+    WHERE NOT EXISTS (
+        SELECT 1 FROM mastery_history
+        WHERE mastery_history.card_id = mastery.card_id
+    )
+    """,
+)
+
 
 def _migrate(connection: sqlite3.Connection, from_version: int) -> None:
     """从 from_version 逐级迁移到 SCHEMA_VERSION。"""
@@ -239,6 +271,8 @@ class SQLiteRepository:
                 raise RuntimeError(
                     f"数据库版本 {row['version']} 高于当前版本 {SCHEMA_VERSION}"
                 )
+            for statement in _ADDITIVE_SCHEMA:
+                self._connection.execute(statement)
 
     def save_consent(self, consent: Consent) -> None:
         """保存授权状态。"""
@@ -271,8 +305,31 @@ class SQLiteRepository:
             ).fetchone()
         return float(row["probability"]) if row is not None else None
 
+    def list_mastery_history(
+        self, card_id: str | None = None
+    ) -> list[MasterySnapshot]:
+        """按记录时间升序返回掌握度快照；可按卡片过滤。"""
+        query = (
+            "SELECT card_id, probability, recorded_at FROM mastery_history"
+        )
+        params: tuple = ()
+        if card_id is not None:
+            query += " WHERE card_id = ?"
+            params = (card_id,)
+        query += " ORDER BY recorded_at ASC, id ASC"
+        with self._lock:
+            rows = self._connection.execute(query, params).fetchall()
+        return [
+            MasterySnapshot(
+                card_id=row["card_id"],
+                probability=float(row["probability"]),
+                recorded_at=_datetime(row["recorded_at"]),
+            )
+            for row in rows
+        ]
+
     def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
-        """写入掌握概率，截到 [0, 1]。"""
+        """写入掌握概率，截到 [0, 1]，并追加一条历史快照。"""
         value = max(0.0, min(1.0, float(probability)))
         with self._lock, self._connection:
             self._connection.execute(
@@ -285,13 +342,26 @@ class SQLiteRepository:
                 """,
                 (card_id, value, _text(now)),
             )
+            self._connection.execute(
+                """
+                INSERT INTO mastery_history(card_id, probability, recorded_at)
+                VALUES (?, ?, ?)
+                """,
+                (card_id, value, _text(now)),
+            )
 
-    def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float:
+    def record_mastery(
+        self,
+        card_id: str,
+        correct: bool,
+        now: datetime,
+        quality: Quality | None = None,
+    ) -> float:
         """按一次作答更新 BKT 掌握概率并返回新值。"""
         prior = self.get_mastery(card_id)
         if prior is None:
             prior = initial_mastery(bkt_params())
-        updated = update_mastery(prior, correct, bkt_params())
+        updated = update_mastery(prior, correct, bkt_params(), quality=quality)
         self.set_mastery(card_id, updated, now)
         return updated
 
@@ -321,8 +391,25 @@ class SQLiteRepository:
                     _text(receipt.created_at),
                 ),
             )
-        # 收据代表一次通过观察，同步推进 BKT 掌握概率
-        self.record_mastery(receipt.card_id, correct=True, now=receipt.created_at)
+        # 收据代表一次通过观察，按提示层级折减后同步推进 BKT 掌握概率
+        quality = quality_from_outcome(True, receipt.max_hint_level)
+        self.record_mastery(
+            receipt.card_id,
+            correct=True,
+            now=receipt.created_at,
+            quality=quality,
+        )
+
+    def update_receipt_restatement(
+        self, receipt_id: str, quality: str
+    ) -> bool:
+        """只补写 L6 复述质量，不重复推进掌握概率。"""
+        with self._lock, self._connection:
+            cursor = self._connection.execute(
+                "UPDATE receipts SET restatement_quality = ? WHERE id = ?",
+                (quality, receipt_id),
+            )
+        return cursor.rowcount > 0
 
     def list_receipts(self, limit: int | None = 50) -> list[Receipt]:
         """按创建时间倒序返回收据；``limit=None`` 返回全部。"""
@@ -433,6 +520,23 @@ class SQLiteRepository:
             ).fetchone()
         return self._to_mistake(row) if row is not None else None
 
+    def update_mistake_error_type(
+        self, exercise_id: str, error_type: ErrorType
+    ) -> MistakeEntry | None:
+        """只更新错因，不改变复习进度与掌握概率。"""
+        with self._lock, self._connection:
+            row = self._connection.execute(
+                "SELECT * FROM mistakes WHERE exercise_id = ?", (exercise_id,)
+            ).fetchone()
+            if row is None:
+                return None
+            entry = self._to_mistake(row)
+            self._connection.execute(
+                "UPDATE mistakes SET error_type = ? WHERE exercise_id = ?",
+                (error_type.value, exercise_id),
+            )
+        return replace(entry, error_type=error_type)
+
     def add_mistake(self, card_id: str, error_type: str, now: datetime) -> str:
         """测试与内部迁移用的最小错题写入，返回错题 id。"""
         identifier = uuid4().hex
@@ -495,7 +599,8 @@ class SQLiteRepository:
         """登记一次复习。
 
         先把 bool 或 ``Quality`` 统一成评分，再按 ``MATHCOACH_SCHEDULER``
-        选择 FSRS 或 SM-2 路径；成功后同步更新掌握概率。
+        选择 FSRS 或 SM-2 路径；只更新复习状态与到期时间，掌握概率由上层
+        按本次作答单独记录。
 
         Args:
             exercise_id: 题目 ID。
@@ -509,66 +614,13 @@ class SQLiteRepository:
         if isinstance(independent, Quality):
             quality = independent
         else:
-            quality = Quality.INDEPENDENT if independent else Quality.WRONG
+            quality = quality_from_independence(independent)
 
         if scheduler_mode() == "sm2":
-            if isinstance(independent, Quality):
-                result = self.record_sm2_review(exercise_id, quality, now)
-            else:
-                result = self._record_legacy_review(exercise_id, independent, now)
+            result = self.record_sm2_review(exercise_id, quality, now)
         else:
             result = self.record_fsrs_review(exercise_id, quality, now)
-        if result is not None:
-            # 复习结果只更新掌握概率，不改变提示层级或难度规则
-            self.record_mastery(
-                result.card_id, correct=quality is not Quality.WRONG, now=now
-            )
         return result
-
-    def _record_legacy_review(
-        self, exercise_id: str, independent: bool, now: datetime
-    ) -> MistakeEntry | None:
-        """M1—M8 的旧状态机路径，仅在 MATHCOACH_SCHEDULER=sm2 时使用。"""
-        with self._lock, self._connection:
-            row = self._connection.execute(
-                "SELECT * FROM mistakes WHERE exercise_id = ?", (exercise_id,)
-            ).fetchone()
-            if row is None:
-                return None
-            entry = self._to_mistake(row)
-            state, review_count, streak, due_at = next_review(entry, independent, now)
-            self._connection.execute(
-                """
-                UPDATE mistakes SET
-                    review_state = ?, review_count = ?, consecutive_correct = ?
-                WHERE exercise_id = ?
-                """,
-                (state.value, review_count, streak, exercise_id),
-            )
-            if due_at is None:
-                self._connection.execute(
-                    "UPDATE review_queue SET completed = 1 "
-                    "WHERE mistake_id = ? AND completed = 0",
-                    (entry.id,),
-                )
-            else:
-                cursor = self._connection.execute(
-                    "UPDATE review_queue SET due_at = ? "
-                    "WHERE mistake_id = ? AND completed = 0",
-                    (_text(due_at), entry.id),
-                )
-                if cursor.rowcount == 0:
-                    self._connection.execute(
-                        "INSERT INTO review_queue(mistake_id, due_at, completed) "
-                        "VALUES (?, ?, 0)",
-                        (entry.id, _text(due_at)),
-                    )
-            return replace(
-                entry,
-                review_state=state,
-                review_count=review_count,
-                consecutive_correct=streak,
-            )
 
     def record_fsrs_review(
         self, exercise_id: str, quality: Quality, now: datetime

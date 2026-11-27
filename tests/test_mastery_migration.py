@@ -58,3 +58,21 @@ def test_get_and_set_mastery_roundtrip(tmp_path):
 
     repo.set_mastery("hs-001", 0.81, NOW)
     assert repo.get_mastery("hs-001") == 0.81
+
+
+def test_existing_mastery_is_backfilled_into_history(tmp_path):
+    db_path = tmp_path / "backfill.db"
+    repository = SQLiteRepository(db_path)
+    repository.set_mastery("hs-001", 0.62, NOW)
+    repository.close()
+
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("DELETE FROM mastery_history")
+
+    reopened = SQLiteRepository(db_path)
+    try:
+        history = reopened.list_mastery_history("hs-001")
+        assert len(history) == 1
+        assert history[0].probability == 0.62
+    finally:
+        reopened.close()

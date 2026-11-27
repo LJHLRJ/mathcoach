@@ -131,6 +131,50 @@ def test_today_review_counts_all_stages(tmp_path, monkeypatch):
     assert metric.value == "2"
 
 
+def test_today_review_ignores_future_due_items(tmp_path, monkeypatch):
+    path = tmp_path / "grade-review-future.sqlite3"
+    repository = SQLiteRepository(path)
+    for index, (stage, course, card_id) in enumerate(
+        [
+            (Stage.HIGH_SCHOOL, "函数与导数", "hs-function-intro-001"),
+            (Stage.GRADUATE, "泛函分析", "grad-functional-001"),
+        ]
+    ):
+        repository.save_mistake(
+            MistakeEntry(
+                id=f"future-mistake-{index}",
+                exercise_id=f"{card_id}-e1",
+                card_id=card_id,
+                stage=stage,
+                course=course,
+                exercise_type=ExerciseKind.CHOICE,
+                stem=f"跨年级错题 {index}",
+                user_answer="错",
+                correct_answer="对",
+                error_type=ErrorType.CONCEPT,
+                max_hint_level=1,
+                created_at=NOW,
+            )
+        )
+    repository.record_review(
+        "hs-function-intro-001-e1", True, datetime.now(UTC)
+    )
+    repository.close()
+    monkeypatch.setenv("MATHCOACH_DB", str(path))
+
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _open_grade_page(at)
+
+    assert not at.exception
+    metric = next(
+        item
+        for item in at.metric
+        if item.label == "今日待复习（跨年级）"
+    )
+    assert metric.value == "1"
+
+
 def test_difficulty_groups_and_learning_entry(tmp_path, monkeypatch):
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "grade-groups.sqlite3")

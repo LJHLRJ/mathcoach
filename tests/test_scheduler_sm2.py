@@ -54,3 +54,16 @@ def test_sm2_quality_review_updates_mastery_state(tmp_path, monkeypatch):
     )
     assert second.review_state is ReviewState.MASTERED
     assert repo.list_review_items() == []
+
+
+def test_sm2_bool_review_uses_sm2_schedule(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_SCHEDULER", "sm2")
+    repo = SQLiteRepository(tmp_path / "s.db")
+    mid = repo.add_mistake(card_id="hs-001", error_type="概念不清", now=NOW)
+    before = repo.get_mistake(mid)
+
+    updated = repo.record_review(mid, True, now=NOW)
+
+    assert updated.ease > before.ease
+    assert updated.interval_days == 3
+    assert updated.next_review_at > NOW

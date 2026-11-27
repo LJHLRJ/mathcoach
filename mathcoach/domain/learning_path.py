@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Mapping
 from dataclasses import dataclass
+
+from .bkt import initial_mastery
 
 
 @dataclass(frozen=True)
@@ -70,11 +73,13 @@ def recommend(
     mastered: set[str],
     weak_cards: set[str] | None = None,
     limit: int = 3,
+    mastery: Mapping[str, float] | None = None,
 ) -> list[Recommendation]:
     """挑出接下来要学的卡。
 
     先按拓扑序滤掉已掌握的卡，先修全部满足的算就绪；就绪卡里错题卡排前面，
-    再按拓扑序补到 ``limit`` 条。
+    其余按 BKT 掌握度从低到高排列，再补到 ``limit`` 条。没有掌握度记录的卡
+    按初始掌握概率参与排序。
 
     Note:
         就绪卡不足 ``limit`` 时按拓扑序补未就绪的卡，这些卡会在 ``reason`` /
@@ -86,6 +91,7 @@ def recommend(
         mastered: 已掌握的卡 ID。
         weak_cards: 近期错题较多的卡 ID，优先推荐。
         limit: 最多返回几条。
+        mastery: 卡 ID -> BKT 掌握概率，用来在同类候选中从低到高排序。
 
     Returns:
         推荐列表，最多 ``limit`` 条。
@@ -95,14 +101,30 @@ def recommend(
     """
     order = topological_order(card_ids, prerequisites)
     weak = weak_cards or set()
+    probabilities = mastery or {}
+    position = {
+        card_id: index for index, card_id in enumerate(order)
+    }
+
+    def priority(card_id: str) -> tuple[float, int]:
+        """按掌握度升序、拓扑位置升序排序候选项。"""
+        return (
+            probabilities.get(card_id, initial_mastery()),
+            position[card_id],
+        )
+
     unmastered = [card_id for card_id in order if card_id not in mastered]
     ready = [
         card_id
         for card_id in unmastered
         if all(parent in mastered for parent in prerequisites.get(card_id, []))
     ]
-    weak_ready = [card_id for card_id in ready if card_id in weak]
-    other_ready = [card_id for card_id in ready if card_id not in weak]
+    weak_ready = sorted(
+        (card_id for card_id in ready if card_id in weak), key=priority
+    )
+    other_ready = sorted(
+        (card_id for card_id in ready if card_id not in weak), key=priority
+    )
     chosen = (weak_ready + other_ready)[:limit]
     if len(chosen) < limit:
         # 先修尚未满足时仍按拓扑顺序给出后续候选，避免推荐为空
@@ -117,12 +139,24 @@ def recommend(
     for card_id in chosen:
         parents = prerequisites.get(card_id, [])
         unmet = [parent for parent in parents if parent not in mastered]
+        bkt_text = (
+            f"BKT 掌握度 {probabilities[card_id]:.0%}"
+            if card_id in probabilities
+            else "BKT 暂无记录"
+        )
         if card_id not in ready_set:
             reason = "先修尚未满足，按拓扑顺序提前预习"
             basis = f"先修 {len(parents)} 张，待掌握 {len(unmet)} 张"
+            if probabilities:
+                basis += f"；{bkt_text}"
         elif card_id in weak:
             reason = "近期错题较多，优先巩固"
             basis = f"先修 {len(parents)} 张；错题优先"
+            if probabilities:
+                basis += f"；{bkt_text}"
+        elif probabilities:
+            reason = "先修已满足，按掌握度优先补强"
+            basis = f"先修 {len(parents)} 张均已满足；{bkt_text}"
         else:
             reason = "先修已满足，按拓扑顺序推进"
             basis = f"先修 {len(parents)} 张均已满足"

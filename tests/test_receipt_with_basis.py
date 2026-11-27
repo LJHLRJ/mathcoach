@@ -7,7 +7,7 @@ from mathcoach.domain.models import (
     KnowledgeCard,
     Stage,
 )
-from mathcoach.domain.receipt import build_receipt
+from mathcoach.domain.receipt import assess_restatement, build_receipt
 
 
 def _card_and_exercise():
@@ -61,3 +61,15 @@ def test_receipt_records_unverified_basis():
     )
 
     assert "符号验证" in receipt.basis
+
+
+def test_restatement_quality_uses_key_fragment_coverage():
+    reference = "根号内非负，即 x−2≥0。"
+
+    assert (
+        assess_restatement("根号内非负，所以 x 要大于等于 2", reference)
+        == "完整"
+    )
+    assert assess_restatement("根号里面的数要大于等于 0", reference) == "部分"
+    assert assess_restatement("先移项再合并同类项", reference) == "待补充"
+    assert assess_restatement("   ", reference) is None

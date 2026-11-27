@@ -1,6 +1,8 @@
 """记忆仓储：重启持久化、游客不落盘、复习状态流转。"""
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
+from mathcoach.domain.bkt import initial_mastery
 from mathcoach.domain.models import (
     ChallengeResult,
     Consent,
@@ -77,6 +79,45 @@ def test_sqlite_persists_receipts_mistakes_and_review_queue(tmp_path):
         assert items[0].due_at == NOW
     finally:
         reopened.close()
+
+
+def test_receipt_restatement_updates_without_extra_mastery(tmp_path):
+    path = tmp_path / "mathcoach.sqlite3"
+    repository = SQLiteRepository(path)
+    receipt = _receipt()
+    repository.save_receipt(receipt, exercise_id="hs-001-e1")
+    before = repository.get_mastery(receipt.card_id)
+    assert repository.update_receipt_restatement(receipt.id, "完整") is True
+    repository.close()
+
+    reopened = SQLiteRepository(path)
+    try:
+        assert reopened.list_receipts()[0].restatement_quality == "完整"
+        assert reopened.get_mastery(receipt.card_id) == before
+    finally:
+        reopened.close()
+
+
+def test_hinted_receipt_gains_less_mastery(tmp_path):
+    repository = SQLiteRepository(tmp_path / "mathcoach.sqlite3")
+    try:
+        repository.save_receipt(_receipt("r-independent"), exercise_id="e1")
+        repository.save_receipt(
+            replace(
+                _receipt("r-hinted"),
+                card_id="card-2",
+                max_hint_level=4,
+                independence=Independence.SEMI_INDEPENDENT,
+            ),
+            exercise_id="e2",
+        )
+
+        independent = repository.get_mastery("card-1")
+        hinted = repository.get_mastery("card-2")
+        assert independent is not None and hinted is not None
+        assert independent > hinted > initial_mastery()
+    finally:
+        repository.close()
 
 
 def test_consent_roundtrip(tmp_path):
@@ -200,3 +241,65 @@ def test_in_memory_review_accepts_quality():
     assert updated is not None
     assert updated.review_state is ReviewState.REVIEWING
     assert updated.consecutive_correct == 0
+
+
+def test_review_does_not_double_count_mastery(tmp_path):
+    memory = InMemoryRepository()
+    memory.save_mistake(_mistake())
+    memory.record_review("hs-001-e1", True, NOW)
+
+    disk = SQLiteRepository(tmp_path / "mastery.db")
+    try:
+        disk.save_mistake(_mistake())
+        disk.record_review("hs-001-e1", True, NOW)
+        assert memory.get_mastery("card-1") == disk.get_mastery("card-1")
+    finally:
+        disk.close()
+
+
+def test_mastery_history_persists(tmp_path):
+    path = tmp_path / "mastery-history.sqlite3"
+    repository = SQLiteRepository(path)
+    repository.set_mastery("card-1", 0.4, NOW - timedelta(days=1))
+    repository.set_mastery("card-1", 0.6, NOW)
+    repository.close()
+
+    reopened = SQLiteRepository(path)
+    try:
+        history = reopened.list_mastery_history("card-1")
+        assert [round(item.probability, 2) for item in history] == [0.4, 0.6]
+        assert history[0].recorded_at < history[1].recorded_at
+        assert reopened.list_mastery_history("card-2") == []
+    finally:
+        reopened.close()
+
+
+def test_in_memory_mastery_history_appends_updates():
+    repository = InMemoryRepository()
+    repository.set_mastery("card-1", 0.4, NOW)
+    repository.record_mastery("card-1", True, NOW + timedelta(days=1))
+
+    history = repository.list_mastery_history("card-1")
+
+    assert len(history) == 2
+    assert history[0].probability == 0.4
+    assert history[-1].probability > 0.4
+
+
+def test_update_error_type_keeps_review_progress(tmp_path):
+    repository = SQLiteRepository(tmp_path / "error-type.db")
+    try:
+        repository.save_mistake(_mistake())
+        repository.record_review("hs-001-e1", True, NOW)
+        before = repository.find_mistake("hs-001-e1")
+
+        updated = repository.update_mistake_error_type(
+            "hs-001-e1", ErrorType.FORMULA
+        )
+
+        assert updated is not None
+        assert updated.error_type is ErrorType.FORMULA
+        assert updated.review_state is before.review_state
+        assert updated.review_count == before.review_count
+    finally:
+        repository.close()

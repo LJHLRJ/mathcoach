@@ -97,3 +97,44 @@ def test_error_trend_ignores_future_mistakes():
     assert trend.this_week == ()
     assert trend.last_week == ()
     assert "没有新增错题" in trend.summary
+
+
+def test_weekly_report_compares_mastery_with_pre_week_baseline():
+    repository = InMemoryRepository()
+    repository.set_mastery("card-1", 0.40, NOW - timedelta(days=8))
+    repository.set_mastery("card-1", 0.55, NOW - timedelta(days=3))
+    repository.set_mastery("card-1", 0.70, NOW)
+
+    report = build_weekly_report(repository, NOW)
+
+    assert len(report.mastery_changes) == 1
+    change = report.mastery_changes[0]
+    assert change.card_id == "card-1"
+    assert round(change.before, 2) == 0.40
+    assert round(change.after, 2) == 0.70
+    assert round(change.delta, 2) == 0.30
+
+
+def test_weekly_report_skips_mastery_without_change_or_week_activity():
+    repository = InMemoryRepository()
+    repository.set_mastery("card-1", 0.50, NOW - timedelta(days=1))
+    repository.set_mastery("card-2", 0.30, NOW - timedelta(days=10))
+
+    report = build_weekly_report(repository, NOW)
+
+    assert report.mastery_changes == ()
+
+
+def test_mastery_changes_sorted_by_absolute_change():
+    repository = InMemoryRepository()
+    repository.set_mastery("a", 0.40, NOW - timedelta(days=8))
+    repository.set_mastery("a", 0.50, NOW)
+    repository.set_mastery("b", 0.40, NOW - timedelta(days=8))
+    repository.set_mastery("b", 0.90, NOW)
+
+    report = build_weekly_report(repository, NOW)
+
+    assert [change.card_id for change in report.mastery_changes] == [
+        "b",
+        "a",
+    ]

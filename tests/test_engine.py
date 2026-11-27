@@ -198,6 +198,35 @@ def test_explicit_step_at_l5_keeps_level_and_shows_l4(engine):
     assert "关键思路" in view.body
 
 
+def test_l5_gate_accumulates_across_exercises(engine):
+    engine.confirm_goal("搞懂函数")
+    engine.begin_quiz()
+    engine.state.attempts = [
+        {
+            "exercise_id": "other-card-exercise",
+            "answer": "错",
+            "hint_level": level,
+            "correct": False,
+        }
+        for level in (1, 2)
+    ] + [
+        {
+            "exercise_id": engine.current_exercise.id,
+            "answer": "错",
+            "hint_level": level,
+            "correct": False,
+        }
+        for level in (3, 4)
+    ]
+    engine.state.hint_level = 4
+    engine.state.phase = Phase.QUIZ
+
+    view = engine.request_hint("level5")
+
+    assert engine.state.hint_level == 5
+    assert view.title == "提示 L5"
+
+
 def test_diagnosis_can_be_overridden(engine):
     engine.confirm_goal("搞懂函数")
     engine.begin_quiz()

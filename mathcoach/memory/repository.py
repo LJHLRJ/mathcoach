@@ -13,12 +13,14 @@ from ..domain.models import (
     ChallengeResult,
     Consent,
     DailyResult,
+    ErrorType,
+    MasterySnapshot,
     MistakeEntry,
     Receipt,
     ReviewItem,
     ReviewState,
 )
-from ..domain.spaced_repetition import Quality
+from ..domain.spaced_repetition import Quality, quality_from_outcome
 from .scheduler import next_review
 
 DEFAULT_CONSENT = Consent(memory=True, mistake_book=True)
@@ -39,6 +41,12 @@ class Repository(Protocol):
         """保存收据，并按题目 ID 关联。"""
         ...
 
+    def update_receipt_restatement(
+        self, receipt_id: str, quality: str
+    ) -> bool:
+        """只补写 L6 复述质量，不重复推进掌握概率；收据不存在时返回 False。"""
+        ...
+
     def list_receipts(self, limit: int | None = 50) -> list[Receipt]:
         """按时间倒序返回收据；``limit=None`` 返回全部。"""
         ...
@@ -49,6 +57,12 @@ class Repository(Protocol):
 
     def find_mistake(self, exercise_id: str) -> MistakeEntry | None:
         """按题目 ID 取错题。"""
+        ...
+
+    def update_mistake_error_type(
+        self, exercise_id: str, error_type: ErrorType
+    ) -> MistakeEntry | None:
+        """只更新错因，不改变复习进度与掌握概率。"""
         ...
 
     def list_mistakes(
@@ -74,12 +88,24 @@ class Repository(Protocol):
         """读取掌握概率；没有记录时返回 None。"""
         ...
 
+    def list_mastery_history(
+        self, card_id: str | None = None
+    ) -> list[MasterySnapshot]:
+        """按记录时间升序返回掌握度快照；可按卡片过滤。"""
+        ...
+
     def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
         """写入掌握概率。"""
         ...
 
-    def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float:
-        """按一次作答更新掌握概率并返回新值。"""
+    def record_mastery(
+        self,
+        card_id: str,
+        correct: bool,
+        now: datetime,
+        quality: Quality | None = None,
+    ) -> float:
+        """按一次作答更新掌握概率并返回新值；``quality`` 区分独立与提示后答对。"""
         ...
 
     def record_audit(
@@ -126,6 +152,7 @@ class InMemoryRepository:
         self._daily: dict[str, DailyResult] = {}
         self._challenges: list[ChallengeResult] = []
         self._mastery: dict[str, float] = {}
+        self._mastery_history: list[MasterySnapshot] = []
 
     def save_consent(self, consent: Consent) -> None:
         """保存授权状态。"""
@@ -138,8 +165,26 @@ class InMemoryRepository:
     def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
         """追加收据并推进 BKT 掌握概率。"""
         self._receipts.append(receipt)
-        # 收据代表一次通过观察，同步推进 BKT 掌握概率
-        self.record_mastery(receipt.card_id, correct=True, now=receipt.created_at)
+        # 收据代表一次通过观察，按提示层级折减后同步推进掌握概率
+        quality = quality_from_outcome(True, receipt.max_hint_level)
+        self.record_mastery(
+            receipt.card_id,
+            correct=True,
+            now=receipt.created_at,
+            quality=quality,
+        )
+
+    def update_receipt_restatement(
+        self, receipt_id: str, quality: str
+    ) -> bool:
+        """只补写 L6 复述质量，不重复推进掌握概率。"""
+        for index, receipt in enumerate(self._receipts):
+            if receipt.id == receipt_id:
+                self._receipts[index] = replace(
+                    receipt, restatement_quality=quality
+                )
+                return True
+        return False
 
     def list_receipts(self, limit: int | None = 50) -> list[Receipt]:
         """按时间倒序返回收据；``limit=None`` 返回全部。"""
@@ -169,6 +214,17 @@ class InMemoryRepository:
         """按题目 ID 取错题。"""
         return self._mistakes.get(exercise_id)
 
+    def update_mistake_error_type(
+        self, exercise_id: str, error_type: ErrorType
+    ) -> MistakeEntry | None:
+        """只更新错因，不改变复习进度与掌握概率。"""
+        entry = self._mistakes.get(exercise_id)
+        if entry is None:
+            return None
+        updated = replace(entry, error_type=error_type)
+        self._mistakes[exercise_id] = updated
+        return updated
+
     def list_mistakes(
         self, limit: int | None = 50, include_mastered: bool = True
     ) -> list[MistakeEntry]:
@@ -186,15 +242,37 @@ class InMemoryRepository:
         return self._mastery.get(card_id)
 
     def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
-        """写入掌握概率，截到 [0, 1]。"""
-        self._mastery[card_id] = max(0.0, min(1.0, float(probability)))
+        """写入掌握概率，截到 [0, 1]，并追加一条历史快照。"""
+        value = max(0.0, min(1.0, float(probability)))
+        self._mastery[card_id] = value
+        self._mastery_history.append(
+            MasterySnapshot(card_id, value, now)
+        )
 
-    def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float:
+    def list_mastery_history(
+        self, card_id: str | None = None
+    ) -> list[MasterySnapshot]:
+        """按记录时间升序返回掌握度快照；可按卡片过滤。"""
+        snapshots = [
+            snapshot
+            for snapshot in self._mastery_history
+            if card_id is None or snapshot.card_id == card_id
+        ]
+        snapshots.sort(key=lambda snapshot: snapshot.recorded_at)
+        return snapshots
+
+    def record_mastery(
+        self,
+        card_id: str,
+        correct: bool,
+        now: datetime,
+        quality: Quality | None = None,
+    ) -> float:
         """按一次作答更新 BKT 掌握概率并返回新值。"""
         prior = self.get_mastery(card_id)
         if prior is None:
             prior = initial_mastery(bkt_params())
-        updated = update_mastery(prior, correct, bkt_params())
+        updated = update_mastery(prior, correct, bkt_params(), quality=quality)
         self.set_mastery(card_id, updated, now)
         return updated
 

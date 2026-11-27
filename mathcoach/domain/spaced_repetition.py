@@ -97,3 +97,8 @@ def quality_from_outcome(judged: bool, max_hint_level: int) -> Quality:
     if max_hint_level >= 4:
         return Quality.HINTED
     return Quality.INDEPENDENT
+
+
+def quality_from_independence(independent: bool) -> Quality:
+    """把显式自评折成评分：独立完成记 ``INDEPENDENT``，否则记 ``WRONG``。"""
+    return Quality.INDEPENDENT if independent else Quality.WRONG

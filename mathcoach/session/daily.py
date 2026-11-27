@@ -25,6 +25,7 @@ from ..safety.redlines import (
 
 DAILY_QUESTION_COUNT = 5
 DAILY_TIME_LIMIT_S = 300
+SIMILAR_PRACTICE_SIZE = 2
 
 
 @dataclass(frozen=True)
@@ -146,6 +147,31 @@ def build_daily_questions(
         题目元组。
     """
     return build_quiz_questions(cards, day.toordinal(), count)
+
+
+def build_similar_questions(
+    card: KnowledgeCard,
+    exclude_exercise_ids: set[str] | None = None,
+    count: int = SIMILAR_PRACTICE_SIZE,
+) -> tuple[DailyQuestion, ...]:
+    """从同一知识点卡取其他题，组成同类小复习包。
+
+    排除刚诊断过的题，按内容顺序截取，保证同一卡片每次生成顺序一致。
+
+    Args:
+        card: 知识点卡。
+        exclude_exercise_ids: 需要排除的题目 ID。
+        count: 题数上限。
+
+    Returns:
+        最多 ``count`` 道题；没有可用题时为空元组。
+    """
+    excluded = exclude_exercise_ids or set()
+    return tuple(
+        DailyQuestion(card, exercise)
+        for exercise in card.exercises
+        if exercise.id not in excluded
+    )[:count]
 
 
 def elapsed_seconds(state: DailyState, now: datetime) -> int:

@@ -9,6 +9,55 @@ DEFAULT_RANGE = (-5.0, 5.0)
 DEFAULT_POINTS = 40
 
 
+def _plane_grid(
+    a: float,
+    b: float,
+    c: float,
+    d: float,
+    x_range: tuple[float, float],
+    y_range: tuple[float, float],
+    z_range: tuple[float, float],
+    points: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """按平面法向选择参数化网格，竖直平面不退回 z=0。
+
+    ``c`` 非零时用 x/y 网格求 z；否则用 y/z 或 x/z 网格求常值坐标，
+    保证 x=const、y=const 的平面仍画在正确位置。
+
+    Args:
+        a: x 系数。
+        b: y 系数。
+        c: z 系数。
+        d: 常数项。
+        x_range: x 取值范围。
+        y_range: y 取值范围。
+        z_range: z 取值范围，仅竖直平面使用。
+        points: 每个轴的采样点数。
+
+    Returns:
+        三个二维数组 ``(x, y, z)``，可直接传给 Plotly Surface。
+
+    Raises:
+        ValueError: 三个系数都为 0，方程退化，无法渲染。
+    """
+    if abs(c) >= 1e-9:
+        xs = np.linspace(x_range[0], x_range[1], points)
+        ys = np.linspace(y_range[0], y_range[1], points)
+        grid_x, grid_y = np.meshgrid(xs, ys)
+        return grid_x, grid_y, (d - a * grid_x - b * grid_y) / c
+    if abs(a) >= 1e-9:
+        ys = np.linspace(y_range[0], y_range[1], points)
+        zs = np.linspace(z_range[0], z_range[1], points)
+        grid_y, grid_z = np.meshgrid(ys, zs)
+        return (d - b * grid_y) / a, grid_y, grid_z
+    if abs(b) >= 1e-9:
+        xs = np.linspace(x_range[0], x_range[1], points)
+        zs = np.linspace(z_range[0], z_range[1], points)
+        grid_x, grid_z = np.meshgrid(xs, zs)
+        return grid_x, np.full_like(grid_x, d / b), grid_z
+    raise ValueError("平面方程三个系数都为 0，无法渲染")
+
+
 def solve_intersection(equations: list[Plane]) -> tuple[float, float, float] | None:
     """解 Ax=b；矩阵奇异（平行/重合/无唯一交点）时返回 None。"""
     matrix = np.array([equation[:3] for equation in equations], dtype=float)
@@ -25,20 +74,16 @@ def build_planes_figure(
     x_range: tuple[float, float] = DEFAULT_RANGE,
     y_range: tuple[float, float] = DEFAULT_RANGE,
     points: int = DEFAULT_POINTS,
+    z_range: tuple[float, float] = DEFAULT_RANGE,
 ) -> go.Figure:
     if len(equations) != 3:
         raise ValueError("首期只支持三个平面方程")
 
-    xs = np.linspace(x_range[0], x_range[1], points)
-    ys = np.linspace(y_range[0], y_range[1], points)
-    grid_x, grid_y = np.meshgrid(xs, ys)
     figure = go.Figure()
     for index, (a, b, c, d) in enumerate(equations, start=1):
-        if abs(c) < 1e-9:
-            # 竖直平面无法写成 z=...，用 z=0 占位仅用于展示
-            grid_z = np.zeros_like(grid_x)
-        else:
-            grid_z = (d - a * grid_x - b * grid_y) / c
+        grid_x, grid_y, grid_z = _plane_grid(
+            a, b, c, d, x_range, y_range, z_range, points
+        )
         figure.add_trace(
             go.Surface(
                 x=grid_x,

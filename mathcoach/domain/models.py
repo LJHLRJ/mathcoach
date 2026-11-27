@@ -206,6 +206,21 @@ class ReviewItem:
 
 
 @dataclass(frozen=True)
+class MasterySnapshot:
+    """一次掌握度快照，用于周报展示变化。
+
+    Attributes:
+        card_id: 知识点卡 ID。
+        probability: 当时的 BKT 掌握概率。
+        recorded_at: 记录时间。
+    """
+
+    card_id: str
+    probability: float
+    recorded_at: datetime
+
+
+@dataclass(frozen=True)
 class AuditEntry:
     """审计日志：只记操作类型、结果与时间，不含作答内容与密钥。"""
 

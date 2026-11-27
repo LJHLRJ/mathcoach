@@ -1,4 +1,5 @@
 """每日挑战：确定性选题、限时、判题、错题与结果持久化。"""
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from mathcoach.session.daily import (
     DailyQuestion,
     DailyState,
     build_daily_questions,
+    build_similar_questions,
     record_daily_mistake,
     remaining_seconds,
     save_daily_result,
@@ -80,6 +82,36 @@ def test_daily_questions_are_deterministic_and_cover_stages():
         Stage.GRADUATE,
     }
     assert all(evaluate(item.exercise, item.exercise.answer).correct for item in first)
+
+
+def test_similar_questions_skip_current_and_keep_content_order():
+    exercises = tuple(
+        Exercise(
+            id=f"similar-e{index}",
+            card_id="test-card",
+            kind=ExerciseKind.CHOICE,
+            stem=f"题干{index}",
+            answer="4",
+            solution_outline="思路",
+            options=("3", "4"),
+        )
+        for index in range(1, 4)
+    )
+    card = replace(_card(), exercises=exercises)
+
+    questions = build_similar_questions(card, {"similar-e1"})
+
+    assert [item.exercise.id for item in questions] == [
+        "similar-e2",
+        "similar-e3",
+    ]
+    assert all(item.card.id == "test-card" for item in questions)
+    assert (
+        build_similar_questions(
+            card, {"similar-e1", "similar-e2", "similar-e3"}
+        )
+        == ()
+    )
 
 
 def test_correct_answer_advances_and_finishes():

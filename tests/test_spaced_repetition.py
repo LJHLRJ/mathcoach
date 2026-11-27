@@ -7,6 +7,7 @@ from mathcoach.domain.spaced_repetition import (
     MIN_EASE,
     Quality,
     bucket_for,
+    quality_from_independence,
     quality_from_outcome,
     update_schedule,
 )
@@ -52,3 +53,8 @@ def test_quality_from_outcome():
     assert quality_from_outcome(judged=False, max_hint_level=1) is Quality.WRONG
     assert quality_from_outcome(judged=True, max_hint_level=1) is Quality.INDEPENDENT
     assert quality_from_outcome(judged=True, max_hint_level=4) is Quality.HINTED
+
+
+def test_quality_from_independence():
+    assert quality_from_independence(True) is Quality.INDEPENDENT
+    assert quality_from_independence(False) is Quality.WRONG

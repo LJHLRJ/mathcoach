@@ -1,5 +1,5 @@
 """AppTest 冒烟：首屏可渲染，并能完成一次闭环。"""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import mathcoach
@@ -267,3 +267,189 @@ def test_app_guest_mode_keeps_learning_data_out_of_sqlite(tmp_path, monkeypatch)
         assert check.list_receipts() == []
     finally:
         check.close()
+
+
+def _start_session(at, card_id: str) -> None:
+    at.selectbox[0].select(card_id).run()
+    at.text_input[0].set_value("搞懂函数")
+    next(button for button in at.button if button.label == "确认目标").click().run()
+    next(button for button in at.button if button.label == "开始小测").click().run()
+
+
+def _answer_wrong_twice(at, first: str, second: str) -> None:
+    at.radio[0].set_value(first)
+    next(button for button in at.button if button.label == "提交答案").click().run()
+    next(button for button in at.button if button.label == "再试一次").click().run()
+    at.radio[0].set_value(second)
+    next(button for button in at.button if button.label == "提交答案").click().run()
+
+
+def test_diagnosis_learning_card_action_routes(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "diagnosis-card.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _start_session(at, "hs-function-intro-001")
+    _answer_wrong_twice(at, "y² = x", "y² = x")
+
+    assert not at.exception
+    next(
+        button for button in at.button if button.label == "看学习卡片"
+    ).click().run()
+
+    assert not at.exception
+    assert at.query_params.get("kp") == "hs-function-intro-001"
+    assert any(
+        subheader.value == "知识点浏览" for subheader in at.subheader
+    )
+
+
+def test_diagnosis_prerequisite_action_routes(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "diagnosis-prereq.sqlite3"))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _start_session(at, "hs-func-002")
+    _answer_wrong_twice(at, "全体实数", "全体实数")
+
+    assert not at.exception
+    review_button = next(
+        button
+        for button in at.button
+        if button.label.startswith("去复习先修卡")
+    )
+    review_button.click().run()
+
+    assert not at.exception
+    assert at.query_params.get("kp") == "hs-function-intro-001"
+    assert any(
+        subheader.value == "知识点浏览" for subheader in at.subheader
+    )
+    assert any(
+        "函数的概念" in markdown.value for markdown in at.markdown
+    )
+
+
+def test_diagnosis_similar_practice_pack(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "diagnosis-similar.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _start_session(at, "hs-func-002")
+    _answer_wrong_twice(at, "全体实数", "全体实数")
+
+    assert not at.exception
+    next(
+        button
+        for button in at.button
+        if button.label.startswith("练同类题")
+    ).click().run()
+
+    assert not at.exception
+    assert any(subheader.value == "同类练习" for subheader in at.subheader)
+    assert any("f(x)=1/(x−1)" in markdown.value for markdown in at.markdown)
+
+    at.text_input[0].set_value("x≠1")
+    next(
+        button for button in at.button if button.label == "提交答案"
+    ).click().run()
+    assert not at.exception
+    assert any(
+        "f(x)=x² 与 g(x)=x" in markdown.value for markdown in at.markdown
+    )
+
+    at.radio[0].set_value("对")
+    next(
+        button for button in at.button if button.label == "提交答案"
+    ).click().run()
+    assert not at.exception
+    assert any("同类练习完成" in success.value for success in at.success)
+    next(
+        button for button in at.button if button.label == "回到诊断"
+    ).click().run()
+
+    assert not at.exception
+    assert any(
+        radio.label == "选择更贴近的错因" for radio in at.radio
+    )
+
+
+def test_app_weekly_report_shows_mastery_change(tmp_path, monkeypatch):
+    path = tmp_path / "weekly-mastery.sqlite3"
+    repository = SQLiteRepository(path)
+    now = datetime.now(timezone.utc)
+    repository.set_mastery(
+        "hs-function-intro-001", 0.4, now - timedelta(days=8)
+    )
+    repository.set_mastery(
+        "hs-function-intro-001", 0.7, now - timedelta(days=1)
+    )
+    repository.close()
+
+    monkeypatch.setenv("MATHCOACH_DB", str(path))
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    at.selectbox[1].select("周报").run()
+
+    assert not at.exception
+    assert any("掌握度变化" in markdown.value for markdown in at.markdown)
+    assert any("40% → 70%" in markdown.value for markdown in at.markdown)
+
+
+def test_receipt_sparse_restatement_marks_half_independent(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "restatement-sparse.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _start_session(at, "hs-function-intro-001")
+    at.radio[0].set_value("y² = x")
+    next(
+        button for button in at.button if button.label == "提交答案"
+    ).click().run()
+    next(
+        button for button in at.button if button.label == "再试一次"
+    ).click().run()
+    at.radio[0].set_value("y = x²")
+    next(
+        button for button in at.button if button.label == "提交答案"
+    ).click().run()
+
+    at.text_area[0].set_value("先移项再合并同类项")
+    next(
+        button for button in at.button if button.label == "提交复述"
+    ).click().run()
+
+    assert not at.exception
+    assert any(
+        "待补充" in caption.value and "半独立" in caption.value
+        for caption in at.caption
+    )
+
+
+def test_receipt_restatement_records_quality(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "MATHCOACH_DB", str(tmp_path / "restatement.sqlite3")
+    )
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    _start_session(at, "hs-function-intro-001")
+    at.radio[0].set_value("y = x²")
+    next(
+        button for button in at.button if button.label == "提交答案"
+    ).click().run()
+
+    assert not at.exception
+    assert any(
+        box.label == "用自己的话复述本题思路" for box in at.text_area
+    )
+    at.text_area[0].set_value("每个 x 只有唯一 y 与之对应")
+    next(
+        button for button in at.button if button.label == "提交复述"
+    ).click().run()
+
+    assert not at.exception
+    assert any(
+        "L6 复述质量：完整" in caption.value for caption in at.caption
+    )

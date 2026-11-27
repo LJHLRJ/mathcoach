@@ -25,7 +25,8 @@ from ..domain.models import (
     Receipt,
     SessionState,
 )
-from ..domain.receipt import build_receipt
+from ..domain.receipt import RESTATEMENT_SPARSE, assess_restatement, build_receipt
+from ..domain.spaced_repetition import Quality, quality_from_outcome
 from ..llm.base import Provider, RenderTask
 from ..memory.repository import InMemoryRepository, Repository
 from ..safety.guards import REFUSAL_TEXT, detect_injection
@@ -351,14 +352,12 @@ class SessionEngine:
         self.state.phase = Phase.HINT
         self.state.hint_level = automatic_next_level(self.state.hint_level)
         if self.state.diagnosis is not None and self.consent.mistake_book:
-            existing = self.repository.find_mistake(self.current_exercise.id)
-            if existing is not None:
-                self._safe_write(
-                    "mistake",
-                    lambda: self.repository.save_mistake(
-                        replace(existing, error_type=self.state.diagnosis)
-                    ),
-                )
+            self._safe_write(
+                "mistake",
+                lambda: self.repository.update_mistake_error_type(
+                    self.current_exercise.id, self.state.diagnosis
+                ),
+            )
         label = self.state.diagnosis.value if self.state.diagnosis else "未确定"
         return self._set(
             SessionView(
@@ -398,9 +397,14 @@ class SessionEngine:
 
         Raises:
             RuntimeError: 当前不在小测或提示阶段。
+
+        Note:
+            ``level5`` 的门槛按当前卡片会话累计：前面题目提交过 L1–L4 也计入，
+            不要求在同一题内集齐。单题连错 3 次即收尾，跨题累计是唯一可达路径。
         """
         if self.state.phase not in (Phase.QUIZ, Phase.HINT):
             raise RuntimeError("当前不能请求提示")
+        # 门槛按卡片会话累计：单题最多 3 次连错，集不齐 L1–L4
         attempted = {attempt["hint_level"] for attempt in self.state.attempts}
         # M1 只做门槛判定，实际可达性依赖 M2 连错诊断；测试覆盖门槛逻辑即可。
         level, message = grant_requested_level(self.state.hint_level, kind, attempted)
@@ -439,11 +443,13 @@ class SessionEngine:
                 lambda: self.repository.save_receipt(receipt, exercise.id),
             )
         if self.consent.mistake_book:
+            # 半独立答对降为 HINTED，避免被 FSRS 当作遗忘
+            quality = quality_from_outcome(True, receipt.max_hint_level)
             self._safe_write(
                 "review",
                 lambda: self.repository.record_review(
                     exercise.id,
-                    independent=receipt.independence is Independence.INDEPENDENT,
+                    independent=quality,
                     now=datetime.now(timezone.utc),
                 ),
             )
@@ -478,6 +484,80 @@ class SessionEngine:
                 receipts=tuple(self.receipts),
             )
         )
+
+    def submit_restatement(self, text: str) -> SessionView:
+        """记录 L6 费曼复述质量，并把待补充的结果回流到复习状态。
+
+        只补写收据上的 ``restatement_quality``，不重新生成收据、不重复推进掌握概率；
+        复述为 ``RESTATEMENT_SPARSE`` 且本题已有错题记录时，补记一次半独立复习，
+        连续独立次数清零，避免仅凭答对就记为已掌握。
+
+        Args:
+            text: 复述文本，空文本视为未完成。
+
+        Returns:
+            收据阶段视图，``notice`` 带本次质量。
+
+        Raises:
+            RuntimeError: 当前不在收据阶段或没有收据。
+            ValueError: 复述为空。
+        """
+        if self.state.phase is not Phase.RECEIPT:
+            raise RuntimeError("当前不在收据阶段")
+        receipt = self.view.receipt
+        if receipt is None:
+            raise RuntimeError("没有可更新的收据")
+        quality = assess_restatement(
+            text, self.current_exercise.solution_outline
+        )
+        if quality is None:
+            raise ValueError("复述不能为空")
+        updated = replace(receipt, restatement_quality=quality)
+        self.receipts = [
+            updated if item.id == receipt.id else item
+            for item in self.receipts
+        ]
+        if self.consent.memory:
+            self._safe_write(
+                "receipt",
+                lambda: self.repository.update_receipt_restatement(
+                    updated.id, quality
+                ),
+            )
+        notice = f"L6 复述质量：{quality}"
+        if quality is RESTATEMENT_SPARSE and self._record_restatement_review():
+            notice += "；已按半独立记录，需继续复习"
+        return self._set(
+            SessionView(
+                phase=Phase.RECEIPT,
+                title="收据已生成",
+                body=self.view.body,
+                receipt=updated,
+                receipts=tuple(self.receipts),
+                notice=notice,
+            )
+        )
+
+    def _record_restatement_review(self) -> bool:
+        """弱复述补记一次半独立复习；没有错题记录或被拦截时返回 False。"""
+        exercise_id = self.current_exercise.id
+        if self.repository.find_mistake(exercise_id) is None:
+            return False
+        recorded = False
+
+        def _action() -> None:
+            nonlocal recorded
+            recorded = (
+                self.repository.record_review(
+                    exercise_id,
+                    Quality.HINTED,
+                    now=datetime.now(timezone.utc),
+                )
+                is not None
+            )
+
+        self._safe_write("review", _action)
+        return recorded
 
     def advance(self) -> SessionView:
         """推进到下一题；最后一题后进入收尾。

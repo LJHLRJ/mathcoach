@@ -1,6 +1,6 @@
 [project]
 name = "mathcoach"
-version = "0.7.2"
+version = "0.8.0"
 description = "本地优先的数学陪练软件（Streamlit）"
 readme = "README.md"
 license = "Apache-2.0"

@@ -7,6 +7,7 @@ from mathcoach.domain.bkt import (
     initial_mastery,
     update_mastery,
 )
+from mathcoach.domain.spaced_repetition import Quality
 
 
 def test_initial_mastery():
@@ -53,3 +54,23 @@ def test_pure_no_clock_and_deterministic():
     second = update_mastery(0.4, correct=True, params=DEFAULT_BKT_PARAMS)
 
     assert isclose(first, second)
+
+
+def test_hinted_correct_gains_less_than_independent():
+    independent = update_mastery(0.3, correct=True, params=DEFAULT_BKT_PARAMS)
+    hinted = update_mastery(
+        0.3,
+        correct=True,
+        params=DEFAULT_BKT_PARAMS,
+        quality=Quality.HINTED,
+    )
+    labelled = update_mastery(
+        0.3,
+        correct=True,
+        params=DEFAULT_BKT_PARAMS,
+        quality=Quality.INDEPENDENT,
+    )
+
+    assert hinted > 0.3
+    assert independent > hinted
+    assert labelled == independent

@@ -49,9 +49,12 @@
 - 展示位置：
   - HINT L2/L3：显示“知识点定位”（概念回看、常见误区、先修链），不提前泄露标准答案
   - HINT L4/L5：显示“完整解析”
-  - DIAGNOSE：显示“错因定位”，把已确认错因落到知识点与先修链上
-  - RECEIPT：显示完整解析，答对后也能回看标准答案与解题思路
+  - DIAGNOSE：显示“错因定位”，把已确认错因落到知识点与先修链上；结论后提供“去复习先修卡”“看学习卡片”“练同类题”三个动作
+  - RECEIPT：显示完整解析，答对后也能回看标准答案与解题思路；可选填写 L6 费曼复述并记录质量，待补充时回流一次半独立复习
   - WRAPUP：显示完整解析与学习闭环摘要
+- 诊断动作路由：
+  - “去复习先修卡”和“看学习卡片”通过 `st.query_params["kp"]` 打开知识点浏览，不新建会话
+  - “练同类题”复用每日挑战的答题组件，取同卡其他题（默认 2 题）组成小复习包，答完可回到原诊断页；不进侧栏功能列表
 - 收据页改动会进入视觉基线；基线使用 CI Chrome 的实际截图对齐。
 
 ## 学习闭环
@@ -77,6 +80,8 @@
 | `tests/test_knowledge_tree_learning_cards.py` | 122 个卡片文件全部已填充、非法 ID、开关持久化、答题前入口 |
 | `tests/test_knowledge_tree_explanation.py` | 解析字段、先修链、错因定位、HINT/DIAGNOSE/RECEIPT/WRAPUP |
 | `tests/test_knowledge_tree_learning_loop.py` | 状态规则、练习记录、待复习、知识点页与 WRAPUP |
+| `tests/test_app_smoke.py` | 诊断动作与 L6 复述：先修/学习卡跳转、同类题小复习包、复述质量记录 |
+| `tests/test_app_e2e.py` | 全链路：讲解 → 小测 → 收据 → L6 复述 → 结算 → 仪表盘 → 周报 → 重启持久化 |
 
 最终验证：
 
@@ -84,7 +89,7 @@
 MATHCOACH_CONTENT_STRICT=1 python -m pytest -q
 ```
 
-结果：`491 passed, 1 skipped`。
+结果：`553 passed, 5 skipped`。
 
 ## 已知限制
 

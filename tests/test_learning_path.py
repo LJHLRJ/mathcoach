@@ -74,3 +74,46 @@ def test_recommend_marks_unmet_prerequisites_when_padding():
     assert "先修已满足" in by_id["a"].reason
     assert "先修尚未满足" in by_id["b"].reason
     assert "待掌握 1 张" in by_id["b"].basis
+
+
+def test_recommend_orders_ready_cards_by_mastery():
+    recommendations = recommend(
+        ["a", "b", "c"],
+        {},
+        mastered=set(),
+        weak_cards=set(),
+        limit=3,
+        mastery={"a": 0.8, "b": 0.4, "c": 0.2},
+    )
+
+    assert [item.card_id for item in recommendations] == ["c", "b", "a"]
+    assert "掌握度" in recommendations[0].reason
+    assert "20%" in recommendations[0].basis
+
+
+def test_recommend_keeps_weak_cards_first_over_low_mastery():
+    recommendations = recommend(
+        ["a", "b"],
+        {},
+        mastered=set(),
+        weak_cards={"a"},
+        limit=2,
+        mastery={"a": 0.9, "b": 0.2},
+    )
+
+    assert recommendations[0].card_id == "a"
+    assert "错题" in recommendations[0].reason
+
+
+def test_recommend_treats_missing_mastery_as_initial():
+    recommendations = recommend(
+        ["a", "b"],
+        {},
+        mastered=set(),
+        weak_cards=set(),
+        limit=2,
+        mastery={"b": 0.1},
+    )
+
+    assert [item.card_id for item in recommendations] == ["b", "a"]
+    assert "BKT 暂无记录" in recommendations[1].basis

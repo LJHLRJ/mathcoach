@@ -1,4 +1,5 @@
 """3D 平面可视化：三个方程三个 Surface；无唯一交点仍返回 Figure。"""
+import numpy as np
 import pytest
 
 from mathcoach.ui.visuals.planes3d import build_planes_figure, solve_intersection
@@ -18,6 +19,13 @@ def test_intersection_is_solved():
     point = solve_intersection(UNIQUE)
 
     assert point == pytest.approx((1.0, 1.0, 1.0))
+
+
+def test_vertical_planes_keep_constant_coordinate():
+    figure = build_planes_figure(UNIQUE)
+
+    assert np.allclose(np.asarray(figure.data[0].x, dtype=float), 1.0)
+    assert np.allclose(np.asarray(figure.data[1].y, dtype=float), 1.0)
 
 
 def test_no_intersection_returns_none_point_and_figure():

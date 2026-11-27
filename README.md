@@ -8,7 +8,7 @@
 
 - 覆盖高中 11 个模块、本科 6 门课、研究生 6 门课，共 122 张知识卡片、366 道练习。
 - 8 种题型判定：选择、多选、判断、填空、表达式（sympy 等价）、步骤排序、找错、配对。
-- 提示阶梯 L1–L6、连错 2 次错因诊断、连错 3 次收尾、独立/半独立收据。
+- 提示阶梯 L1–L6、连错 2 次错因诊断、连错 3 次收尾、独立/半独立收据；诊断后可去复习先修卡、看学习卡片或练同类题，收据页支持 L6 复述质量记录。
 - SQLite 本地记忆：收据、错题本、复习队列；游客模式只存内存。
 - 学习仪表盘、每日挑战、挑战赛、学习路径、周报、错因趋势、智能复习包、错题变式。
 - 知识点树与学习卡片：122 个知识点、122 张学习卡片、366 道题绑定、答题前“先学习”入口、解析与错因定位、掌握度/待复习学习闭环。
@@ -60,16 +60,16 @@ flowchart LR
 
 ## 下载与安装
 
-当前版本：**v0.7.2**（2026-11-24）。下载入口以 GitHub Releases 为准：
+当前版本：**v0.8.0**（2026-11-27）。下载入口以 GitHub Releases 为准：
 
 - 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
 - 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
 
 | 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.7.2.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoachSetup-0.8.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
-| macOS | `MathCoach-0.7.2.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-0.8.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
 
 - 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
@@ -196,8 +196,9 @@ python -m build
 | M17 | 界面优化与美化 | 已完成（v0.5.0） | `.streamlit/config.toml`、`mathcoach/ui/layout.py`、`mathcoach/ui/icons.py` |
 | M18 | 知识点树 + 学习卡片 + 解析/错因定位 + 学习闭环 | 已完成 | `content/knowledge_tree.yaml`、`content/learning_cards/`、`mathcoach/domain/explanation.py` |
 | M19 | 年级/难度标注与按年级筛选入口 | 已完成 | `mathcoach/domain/grade_index.py`、`mathcoach/ui/grade_page.py`、`docs/grade-navigation.md` |
+| M20 | 做题驱动学习闭环补强 | 已完成（v0.8.0） | `app.py`、`mathcoach/session/engine.py`、`mathcoach/domain/learning_path.py`、`mathcoach/memory/report.py` |
 
-当前发布：**v0.7.2**（2026-11-24），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前发布：**v0.8.0**（2026-11-27），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 第三方资源与许可证
 
