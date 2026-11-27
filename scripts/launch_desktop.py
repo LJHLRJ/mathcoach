@@ -14,10 +14,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-APP_TITLE = "数学陪练"
-HEALTH_PATH = "/_stcore/health"
-HEALTH_TIMEOUT_S = 40.0
-SERVER_FLAG = "--streamlit-server"
+APP_TITLE: str = "数学陪练"
+HEALTH_PATH: str = "/_stcore/health"
+HEALTH_TIMEOUT_S: float = 40.0
+SERVER_FLAG: str = "--streamlit-server"
 
 
 def bundle_root() -> Path:
@@ -29,17 +29,19 @@ def bundle_root() -> Path:
 
 
 def app_script() -> Path:
+    """返回随包分发的 app.py 路径。"""
     return bundle_root() / "app.py"
 
 
 def free_port() -> int:
-    """向系统申请一个空闲端口，避免与用户已有 Streamlit 冲突。"""
+    """向系统申请一个空闲端口，避免与本机已有的 Streamlit 服务冲突。"""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
 
 
 def streamlit_argv(port: int) -> list[str]:
+    """构造启动内置 Streamlit 的命令行参数。"""
     return [
         "streamlit",
         "run",
@@ -55,6 +57,7 @@ def streamlit_argv(port: int) -> list[str]:
 
 
 def run_streamlit_server(port: int) -> None:
+    """在当前进程内启动 Streamlit 服务。"""
     os.environ.setdefault(
         "STREAMLIT_SERVER_ENABLE_STATIC_SERVING", "true"
     )
@@ -65,13 +68,14 @@ def run_streamlit_server(port: int) -> None:
 
 
 def server_command(port: int) -> list[str]:
+    """返回启动本地服务的子进程命令。"""
     if getattr(sys, "frozen", False):
         # 打包后重新调用自身，进入 --streamlit-server 分支
         return [sys.executable, SERVER_FLAG, str(port)]
     return [sys.executable, str(Path(__file__).resolve()), SERVER_FLAG, str(port)]
 
 
-def wait_for_health(port: int, process: subprocess.Popen) -> None:
+def wait_for_health(port: int, process: subprocess.Popen[bytes]) -> None:
     """轮询 Streamlit 健康检查，避免窗口先于服务打开导致白屏。"""
     url = f"http://127.0.0.1:{port}{HEALTH_PATH}"
     deadline = time.monotonic() + HEALTH_TIMEOUT_S
@@ -90,6 +94,7 @@ def wait_for_health(port: int, process: subprocess.Popen) -> None:
 
 
 def run_window(port: int) -> None:
+    """创建并运行原生窗口。"""
     import webview  # 延迟导入，缺少依赖时能给出可读提示
 
     webview.create_window(
@@ -110,6 +115,11 @@ def _ensure_std_streams() -> None:
 
 
 def main() -> int:
+    """启动桌面窗口；带服务标记时改为运行本地服务。
+
+    Returns:
+        进程退出码，0 表示正常。
+    """
     _ensure_std_streams()
     # Windows 控制台默认 cp1252，错误提示里的中文需要 UTF-8 才能正常输出
     for stream in (sys.stdout, sys.stderr):
@@ -137,7 +147,7 @@ def main() -> int:
         return 2
 
     port = free_port()
-    process = subprocess.Popen(server_command(port))
+    process: subprocess.Popen[bytes] = subprocess.Popen(server_command(port))
     try:
         wait_for_health(port, process)
         run_window(port)

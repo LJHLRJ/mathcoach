@@ -1,5 +1,6 @@
 """Streamlit 单页装配：只渲染 session 层给的视图，不写判定逻辑。"""
 import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,13 +17,19 @@ from mathcoach.content.loader import (
 from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
-from mathcoach.domain.explanation import build_explanation, locate_error
+from mathcoach.domain.explanation import (
+    PrerequisiteRef,
+    build_explanation,
+    locate_error,
+)
 from mathcoach.domain.grade_index import (
+    GradeIndex,
     GradeIndexError,
     load_grade_index,
     load_grade_spans,
 )
 from mathcoach.domain.knowledge_tree import (
+    KnowledgeTree,
     KnowledgeTreeError,
     load_knowledge_tree,
 )
@@ -32,11 +39,17 @@ from mathcoach.domain.models import (
     ErrorType,
     Exercise,
     ExerciseKind,
+    KnowledgeCard,
+    MistakeEntry,
     Phase,
     ReviewState,
 )
-from mathcoach.domain.narrative import build_progress, next_node
-from mathcoach.domain.prerequisites import Gap, trace_gap
+from mathcoach.domain.narrative import (
+    NarrativeProgress,
+    build_progress,
+    next_node,
+)
+from mathcoach.domain.prerequisites import Gap, MistakeStat, trace_gap
 from mathcoach.export.package import (
     build_export_artifact,
     describe_export,
@@ -46,7 +59,7 @@ from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.dashboard import build_dashboard
 from mathcoach.memory.path import build_learning_path
 from mathcoach.memory.report import build_mistake_stats, build_weekly_report
-from mathcoach.memory.repository import build_repository
+from mathcoach.memory.repository import Repository, build_repository
 from mathcoach.memory.review_package import (
     REVIEW_PACKAGE_LIMIT_S,
     build_review_package,
@@ -64,6 +77,7 @@ from mathcoach.session.challenge import (
 )
 from mathcoach.session.daily import (
     DailyState,
+    DailySubmission,
     build_daily_questions,
     current_question,
     elapsed_seconds,
@@ -165,7 +179,8 @@ st.set_page_config(page_title="数学陪练", page_icon="📘")
 
 
 @st.cache_resource
-def _load_cards():
+def _load_cards() -> list[KnowledgeCard]:
+    """加载知识点卡并校验先修关系；失败时中止页面。"""
     try:
         cards, result = load_content(CONTENT_ROOT, strict=content_strict())
         # 先修关系是启动硬校验：ID 必须存在且无环
@@ -181,7 +196,7 @@ def _load_cards():
 
 
 @st.cache_resource
-def _load_knowledge_tree():
+def _load_knowledge_tree() -> KnowledgeTree | None:
     """知识点树是只读展示数据；加载失败时回退到卡片字段。"""
     try:
         return load_knowledge_tree(CONTENT_ROOT / "knowledge_tree.yaml")
@@ -191,7 +206,8 @@ def _load_knowledge_tree():
 
 
 @st.cache_resource
-def _load_grade_index():
+def _load_grade_index() -> GradeIndex | None:
+    """加载年级元数据；失败时提示并返回 None。"""
     try:
         return load_grade_index(CONTENT_ROOT)
     except GradeIndexError as exc:
@@ -200,7 +216,8 @@ def _load_grade_index():
 
 
 @st.cache_resource
-def _load_grade_spans():
+def _load_grade_spans() -> dict[str, tuple[str, ...]] | None:
+    """加载知识点年级范围；失败时提示并返回 None。"""
     try:
         return load_grade_spans(CONTENT_ROOT / "knowledge_tree.yaml")
     except GradeIndexError as exc:
@@ -219,7 +236,9 @@ except ContentError as exc:
 
 
 def _gaps_from_stats(
-    stats, entries, card_id: str | None = None
+    stats: dict[str, MistakeStat],
+    entries: list[MistakeEntry],
+    card_id: str | None = None,
 ) -> list[Gap]:
     """用已取好的统计与错题列表计算先修缺口。"""
     if card_id is not None:
@@ -234,7 +253,9 @@ def _gaps_from_stats(
     return gaps
 
 
-def _collect_gaps(repository, card_id: str | None = None) -> list[Gap]:
+def _collect_gaps(
+    repository: Repository, card_id: str | None = None
+) -> list[Gap]:
     """汇总未掌握错题的先修缺口；同一链路只保留一次。"""
     stats = build_mistake_stats(repository.list_mistakes(limit=None))
     entries = repository.list_mistakes(limit=None, include_mastered=False)
@@ -292,7 +313,8 @@ inject_theme(st.session_state.consent)
 inject_font_size_css(st.session_state.settings.font_size)
 
 
-def _render_mistake_book(repository) -> None:
+def _render_mistake_book(repository: Repository) -> None:
+    """渲染最近错题与逐题先修诊断。"""
     entries = repository.list_mistakes(limit=10)
     if not entries:
         st.caption("还没有错题。")
@@ -312,7 +334,8 @@ def _render_mistake_book(repository) -> None:
             _render_gap_diagnosis(gaps)
 
 
-def _render_review_plan(repository) -> None:
+def _render_review_plan(repository: Repository) -> None:
+    """按今日上限渲染复习清单。"""
     items = repository.list_review_items()
     if not items:
         st.caption("暂无待复习内容。")
@@ -355,6 +378,7 @@ STAGE_LABELS = {"highschool": "高中", "undergraduate": "本科", "graduate": "
 
 
 def _render_card_selector() -> None:
+    """渲染卡片下拉框；切换后重建引擎并重跑。"""
     labels = {
         card.id: f"{STAGE_LABELS[card.stage.value]} · {card.course} · {card.name}"
         for card in cards
@@ -382,6 +406,7 @@ def _render_card_selector() -> None:
 
 
 def _render_answer_input(exercise: Exercise, key_suffix: str | None = None) -> str:
+    """按题型渲染答题控件并返回原始输入。"""
     suffix = key_suffix or f"{exercise.id}_{len(engine.state.attempts)}"
     if exercise.kind in (ExerciseKind.CHOICE, ExerciseKind.FIND_ERROR):
         if not exercise.options:
@@ -404,6 +429,7 @@ def _render_answer_input(exercise: Exercise, key_suffix: str | None = None) -> s
 
 
 def _render_update_section() -> None:
+    """渲染版本信息与更新检查入口。"""
     with st.expander("关于与更新", expanded=False):
         st.caption(f"版本 {mathcoach.__version__}")
         if st.button("检查更新", key="check_update", icon=ICON_UPDATE):
@@ -435,6 +461,7 @@ def _render_update_section() -> None:
 
 
 def _render_sidebar() -> None:
+    """渲染侧栏：卡片选择、功能切换与同意开关。"""
     consent: Consent = st.session_state.consent
     repository = st.session_state.repository
     with st.sidebar:
@@ -447,6 +474,7 @@ def _render_sidebar() -> None:
             st.session_state["app_mode"] = MODE_GRADE
 
         def _on_mode_change() -> None:
+            """离开按年级模式时清掉 grade 查询参数。"""
             if (
                 st.session_state.get("app_mode") != MODE_GRADE
                 and st.query_params.get("grade")
@@ -497,6 +525,7 @@ def _render_sidebar() -> None:
 
 
 def _render_mistake_tab() -> None:
+    """渲染错题本的统计、错题与复习清单。"""
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
     st.subheader("错题本")
@@ -519,6 +548,7 @@ def _render_mistake_tab() -> None:
 
 
 def _render_settings_tab() -> None:
+    """渲染设置页并在末尾附更新检查。"""
     render_settings_page(
         st.session_state.repository,
         st.session_state.consent,
@@ -528,6 +558,7 @@ def _render_settings_tab() -> None:
 
 
 def _render_hint_actions() -> None:
+    """渲染提示按钮组。"""
     with st.expander("需要提示？"):
         if st.button("给步骤（最高 L4）", key="hint_step", icon=ICON_HINT):
             engine.request_hint("step")
@@ -542,7 +573,7 @@ def _render_hint_actions() -> None:
             st.rerun()
 
 
-def _render_knowledge_entry(card) -> None:
+def _render_knowledge_entry(card: KnowledgeCard) -> None:
     """答题前入口：打开当前卡片的学习卡片，不阻塞做题。"""
     if not load_learning_cards_enabled(st.session_state.consent):
         return
@@ -555,14 +586,19 @@ def _render_knowledge_entry(card) -> None:
         st.rerun()
 
 
-def _prerequisite_chain_text(prerequisites, current_name: str) -> str:
+def _prerequisite_chain_text(
+    prerequisites: tuple[PrerequisiteRef, ...], current_name: str
+) -> str:
+    """把先修链从基础到当前知识点拼成一行。"""
     if not prerequisites:
         return "无"
     names = [item.name for item in reversed(prerequisites)]
     return " → ".join(names + [current_name])
 
 
-def _render_knowledge_context(card, exercise) -> None:
+def _render_knowledge_context(
+    card: KnowledgeCard, exercise: Exercise
+) -> None:
     """答错后先定位知识点，不提前泄露标准答案。"""
     explanation = build_explanation(
         card, exercise, _load_knowledge_tree()
@@ -585,7 +621,9 @@ def _render_knowledge_context(card, exercise) -> None:
     )
 
 
-def _render_error_localization(card, error_type: ErrorType) -> None:
+def _render_error_localization(
+    card: KnowledgeCard, error_type: ErrorType
+) -> None:
     """把已确认的错因落到知识点与先修链上。"""
     localization = locate_error(
         card, error_type, _load_knowledge_tree()
@@ -607,7 +645,8 @@ def _render_error_localization(card, error_type: ErrorType) -> None:
     )
 
 
-def _render_explanation(card, exercise) -> None:
+def _render_explanation(card: KnowledgeCard, exercise: Exercise) -> None:
+    """渲染完整解析、常见误区与先修链。"""
     explanation = build_explanation(
         card, exercise, _load_knowledge_tree()
     )
@@ -629,6 +668,7 @@ def _render_explanation(card, exercise) -> None:
 
 
 def _render_session() -> None:
+    """按当前阶段渲染陪练主流程。"""
     view = engine.view
     if view.phase in (Phase.GOAL_CONFIRM, Phase.EXPLAIN):
         render_dynamic_background(st.session_state.consent, "empty")
@@ -852,7 +892,7 @@ def _render_session() -> None:
         return
 
 
-def _mastery_rows(repository) -> list[tuple[str, str]]:
+def _mastery_rows(repository: Repository) -> list[tuple[str, str]]:
     """把 BKT 概率整理成现有仪表盘上的掌握度列表。"""
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
@@ -881,13 +921,18 @@ def _mastery_rows(repository) -> list[tuple[str, str]]:
     return rows
 
 
-def _narrative_progress(repository):
+def _narrative_progress(repository: Repository) -> NarrativeProgress:
+    """用已完成卡片计算叙事进度。"""
     receipts = repository.list_receipts(limit=None)
     completed_cards = {receipt.card_id for receipt in receipts}
     return build_progress(narrative_nodes, completed_cards)
 
 
-def _next_recommendations(repository, cards, prerequisites) -> list[Recommendation]:
+def _next_recommendations(
+    repository: Repository,
+    cards: list[KnowledgeCard],
+    prerequisites: dict[str, list[str]],
+) -> list[Recommendation]:
     """按先修复拓扑顺序推荐 3 张未掌握卡片，错题卡优先。"""
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
@@ -912,6 +957,7 @@ def _next_recommendations(repository, cards, prerequisites) -> list[Recommendati
 
 
 def _render_dashboard() -> None:
+    """渲染学习仪表盘与下一步推荐。"""
     render_dynamic_background(st.session_state.consent)
     summary = build_dashboard(
         st.session_state.repository, datetime.now(timezone.utc)
@@ -976,6 +1022,7 @@ def _render_dashboard() -> None:
 
 
 def _render_quiz_summary(state: DailyState, now: datetime, title: str) -> None:
+    """渲染限时小测的结算摘要。"""
     used = min(state.time_limit_s, elapsed_seconds(state, now))
     st.success(
         f"{ICON_CHECK} {title}：{state.correct}/{len(state.questions)} 正确，"
@@ -1004,10 +1051,11 @@ def _render_active_quiz(
     state: DailyState,
     *,
     key_prefix: str,
-    on_submission=None,
-    on_finish=None,
+    on_submission: Callable[[DailySubmission, str, datetime], None] | None = None,
+    on_finish: Callable[[DailyState, datetime], None] | None = None,
     summary_title: str = "挑战结束",
 ) -> None:
+    """渲染进行中的限时小测；超时自动结算。"""
     now = datetime.now(timezone.utc)
     if not state.finished and time_is_up(state, now):
         finish_daily(state, now, timed_out=True)
@@ -1054,6 +1102,7 @@ def _render_active_quiz(
 
 
 def _render_daily_challenge() -> None:
+    """渲染每日挑战；同一天只展示一次结果。"""
     now = datetime.now(timezone.utc)
     day_key = local_day_key(now)
     repository = st.session_state.repository
@@ -1090,13 +1139,17 @@ def _render_daily_challenge() -> None:
             st.rerun()
         return
 
-    def _on_submission(submission, answer, moment) -> None:
+    def _on_submission(
+        submission: DailySubmission, answer: str, moment: datetime
+    ) -> None:
+        """答错时写入错题本。"""
         if submission.correct is False:
             record_daily_mistake(
                 repository, consent, submission.question, answer, moment
             )
 
-    def _on_finish(finished_state, moment) -> None:
+    def _on_finish(finished_state: DailyState, moment: datetime) -> None:
+        """保存每日挑战结果。"""
         save_daily_result(repository, consent, finished_state, moment)
 
     _render_active_quiz(
@@ -1108,6 +1161,7 @@ def _render_daily_challenge() -> None:
 
 
 def _render_challenge() -> None:
+    """渲染挑战赛与本地最好成绩。"""
     now = datetime.now(timezone.utc)
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
@@ -1136,13 +1190,17 @@ def _render_challenge() -> None:
             st.rerun()
         return
 
-    def _on_submission(submission, answer, moment) -> None:
+    def _on_submission(
+        submission: DailySubmission, answer: str, moment: datetime
+    ) -> None:
+        """答错时写入错题本。"""
         if submission.correct is False:
             record_daily_mistake(
                 repository, consent, submission.question, answer, moment
             )
 
-    def _on_finish(finished_state, moment) -> None:
+    def _on_finish(finished_state: DailyState, moment: datetime) -> None:
+        """保存挑战赛结果。"""
         save_challenge_result(repository, consent, finished_state, moment)
 
     _render_active_quiz(
@@ -1160,6 +1218,7 @@ def _render_challenge() -> None:
 
 
 def _render_learning_path() -> None:
+    """渲染按课程分组的完成度与下一张建议。"""
     repository = st.session_state.repository
     path = build_learning_path(
         cards,
@@ -1196,6 +1255,7 @@ def _render_learning_path() -> None:
 
 
 def _render_weekly_report() -> None:
+    """渲染最近 7 天的周报与错因趋势。"""
     report = build_weekly_report(
         st.session_state.repository, datetime.now(timezone.utc)
     )
@@ -1229,6 +1289,7 @@ def _render_weekly_report() -> None:
 
 
 def _record_review_write(exercise_id: str, independent: bool) -> None:
+    """校验写入门后记录一次复习结果。"""
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
     now = datetime.now(timezone.utc)
@@ -1243,6 +1304,7 @@ def _record_review_write(exercise_id: str, independent: bool) -> None:
 
 
 def _render_review_package() -> None:
+    """渲染智能复习包；错题本关闭时直接提示。"""
     now = datetime.now(timezone.utc)
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
@@ -1287,7 +1349,10 @@ def _render_review_package() -> None:
             st.rerun()
         return
 
-    def _on_submission(submission, answer, moment) -> None:
+    def _on_submission(
+        submission: DailySubmission, answer: str, moment: datetime
+    ) -> None:
+        """答对记为独立复习，答错记复习并写入错题本。"""
         if submission.correct is True:
             _record_review_write(submission.question.exercise.id, True)
         elif submission.correct is False:
@@ -1312,7 +1377,10 @@ def _render_review_package() -> None:
         st.rerun()
 
 
-def _mistake_variants(entry, exercises_by_id: dict) -> list[str]:
+def _mistake_variants(
+    entry: MistakeEntry, exercises_by_id: dict[str, Exercise]
+) -> list[str]:
+    """取错题的变式，旧数据回退到题目快照。"""
     variants = entry.exercise_snapshot.get("variants") or []
     if variants:
         return list(variants)
@@ -1321,6 +1389,7 @@ def _mistake_variants(entry, exercises_by_id: dict) -> list[str]:
 
 
 def _render_variant_practice() -> None:
+    """渲染错题变式练习与掌握按钮。"""
     st.subheader("错题变式")
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
@@ -1367,6 +1436,7 @@ def _render_variant_practice() -> None:
 
 
 def _render_export() -> None:
+    """渲染导出目录、预览与确认流程。"""
     st.subheader("导出学习包")
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
@@ -1420,6 +1490,7 @@ def _render_export() -> None:
 
 
 def _render_grade_mode(initial_grade: str | None = None) -> None:
+    """渲染按年级浏览页面。"""
     index = _load_grade_index()
     if index is None:
         return
@@ -1435,6 +1506,7 @@ def _render_grade_mode(initial_grade: str | None = None) -> None:
 
 
 def _render_current_mode() -> None:
+    """按查询参数或侧栏选项渲染当前页面。"""
     focus = st.query_params.get("kp")
     if isinstance(focus, list):
         focus = focus[0] if focus else None

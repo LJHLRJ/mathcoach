@@ -9,10 +9,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_NAME = "MathCoach"
-MIN_PYTHON = (3, 11)
-UNVERIFIED_PYTHON = (3, 13)
+ROOT: Path = Path(__file__).resolve().parents[1]
+DEFAULT_NAME: str = "MathCoach"
+MIN_PYTHON: tuple[int, int] = (3, 11)
+UNVERIFIED_PYTHON: tuple[int, int] = (3, 13)
 
 
 def _data_separator() -> str:
@@ -21,6 +21,7 @@ def _data_separator() -> str:
 
 
 def _missing(module: str) -> bool:
+    """判断打包依赖是否缺失。"""
     return importlib.util.find_spec(module) is None
 
 
@@ -33,6 +34,7 @@ def _configure_utf8_stdio() -> None:
 
 
 def _print_prerequisites() -> None:
+    """打印需要手动安装的打包依赖。"""
     print("缺少打包依赖。请先手动执行（脚本不会自动安装）：")
     print("  python -m pip install -r requirements.txt")
     print("  python -m pip install -r requirements-packaging.txt")
@@ -41,7 +43,8 @@ def _print_prerequisites() -> None:
 def _pyinstaller_command(
     name: str, onefile: bool, console: bool, output_dir: str
 ) -> list[str]:
-    sep = _data_separator()
+    """拼出 PyInstaller 命令；输出目录按仓库根目录解析。"""
+    sep: str = _data_separator()
     extras: list[str] = []
     if onefile:
         extras.append("--onefile")
@@ -85,6 +88,11 @@ def _pyinstaller_command(
 
 
 def main() -> int:
+    """解析参数并调用 PyInstaller 构建桌面客户端。
+
+    Returns:
+        子进程退出码；参数或环境不满足时返回 2。
+    """
     _configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="构建 MathCoach 桌面客户端")
     parser.add_argument("--name", default=DEFAULT_NAME, help="产物名称")
