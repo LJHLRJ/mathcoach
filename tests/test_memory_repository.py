@@ -13,6 +13,7 @@ from mathcoach.domain.models import (
     ReviewState,
     Stage,
 )
+from mathcoach.domain.spaced_repetition import Quality
 from mathcoach.memory.repository import (
     InMemoryRepository,
     build_repository,
@@ -188,3 +189,14 @@ def test_challenge_results_persist_and_sort(tmp_path):
         ]
     finally:
         reopened.close()
+
+
+def test_in_memory_review_accepts_quality():
+    repository = InMemoryRepository()
+    repository.save_mistake(_mistake())
+
+    updated = repository.record_review("hs-001-e1", Quality.HINTED, NOW)
+
+    assert updated is not None
+    assert updated.review_state is ReviewState.REVIEWING
+    assert updated.consecutive_correct == 0

@@ -176,10 +176,12 @@ def _migrate(connection: sqlite3.Connection, from_version: int) -> None:
 
 
 def _text(value: datetime) -> str:
+    """时间转 ISO 字符串。"""
     return value.isoformat()
 
 
 def _datetime(value: str) -> datetime:
+    """ISO 字符串转时间。"""
     return datetime.fromisoformat(value)
 
 
@@ -193,9 +195,17 @@ def _rating_for_quality(quality: Quality) -> Rating:
 
 
 class SQLiteRepository:
+    """SQLite 实现；WAL、busy_timeout 5 秒，写操作由单把锁串行化。
+
+    Attributes:
+        path: 数据库文件路径。
+        db_path: 路径的字符串形式，供外部按路径检查。
+    """
+
     def __init__(
         self, path: Path | str, consent: Consent | None = None
     ) -> None:
+        """打开数据库，建表并按需迁移；传入 consent 时立即写入。"""
         self.path = Path(path)
         self.db_path = str(self.path)  # 兼容迁移测试与外部按路径检查 schema
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -210,6 +220,7 @@ class SQLiteRepository:
             self.save_consent(consent)
 
     def _create_schema(self) -> None:
+        """建表、初始化版本号并按需迁移。"""
         with self._lock, self._connection:
             # v1 建表脚本全部使用 IF NOT EXISTS，可安全用于全新库和旧库
             for statement in _SCHEMA:
@@ -230,6 +241,7 @@ class SQLiteRepository:
                 )
 
     def save_consent(self, consent: Consent) -> None:
+        """保存授权状态。"""
         with self._lock, self._connection:
             self._connection.execute(
                 """
@@ -242,6 +254,7 @@ class SQLiteRepository:
             )
 
     def load_consent(self) -> Consent:
+        """读取授权状态；没有记录时返回默认值。"""
         with self._lock:
             row = self._connection.execute(
                 "SELECT memory, mistake_book FROM consent WHERE id = 1"
@@ -251,6 +264,7 @@ class SQLiteRepository:
         return Consent(memory=bool(row["memory"]), mistake_book=bool(row["mistake_book"]))
 
     def get_mastery(self, card_id: str) -> float | None:
+        """读取掌握概率；没有记录时返回 None。"""
         with self._lock:
             row = self._connection.execute(
                 "SELECT probability FROM mastery WHERE card_id = ?", (card_id,)
@@ -258,6 +272,7 @@ class SQLiteRepository:
         return float(row["probability"]) if row is not None else None
 
     def set_mastery(self, card_id: str, probability: float, now: datetime) -> None:
+        """写入掌握概率，截到 [0, 1]。"""
         value = max(0.0, min(1.0, float(probability)))
         with self._lock, self._connection:
             self._connection.execute(
@@ -272,6 +287,7 @@ class SQLiteRepository:
             )
 
     def record_mastery(self, card_id: str, correct: bool, now: datetime) -> float:
+        """按一次作答更新 BKT 掌握概率并返回新值。"""
         prior = self.get_mastery(card_id)
         if prior is None:
             prior = initial_mastery(bkt_params())
@@ -280,6 +296,7 @@ class SQLiteRepository:
         return updated
 
     def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
+        """写入或替换收据，并推进掌握概率。"""
         with self._lock, self._connection:
             self._connection.execute(
                 """
@@ -308,6 +325,7 @@ class SQLiteRepository:
         self.record_mastery(receipt.card_id, correct=True, now=receipt.created_at)
 
     def list_receipts(self, limit: int | None = 50) -> list[Receipt]:
+        """按创建时间倒序返回收据；``limit=None`` 返回全部。"""
         query = "SELECT * FROM receipts ORDER BY created_at DESC"
         params: tuple = ()
         if limit is not None:
@@ -318,6 +336,7 @@ class SQLiteRepository:
         return [self._to_receipt(row) for row in rows]
 
     def save_mistake(self, entry: MistakeEntry) -> MistakeEntry:
+        """写入错题；同题已存在时保留 id 与创建时间、重置复习进度，并把队列重置到创建时间。"""
         with self._lock, self._connection:
             row = self._connection.execute(
                 "SELECT id, created_at, receipt_ids FROM mistakes WHERE exercise_id = ?",
@@ -407,6 +426,7 @@ class SQLiteRepository:
         return stored
 
     def find_mistake(self, exercise_id: str) -> MistakeEntry | None:
+        """按题目 ID 取错题。"""
         with self._lock:
             row = self._connection.execute(
                 "SELECT * FROM mistakes WHERE exercise_id = ?", (exercise_id,)
@@ -435,6 +455,7 @@ class SQLiteRepository:
         return identifier
 
     def get_mistake(self, mistake_id: str) -> MistakeEntry | None:
+        """按错题 id 取错题。"""
         with self._lock:
             row = self._connection.execute(
                 "SELECT * FROM mistakes WHERE id = ?", (mistake_id,)
@@ -454,6 +475,7 @@ class SQLiteRepository:
     def list_mistakes(
         self, limit: int | None = 50, include_mastered: bool = True
     ) -> list[MistakeEntry]:
+        """按创建时间倒序返回错题，可含或排除已掌握。"""
         query = "SELECT * FROM mistakes"
         params: list[object] = []
         if not include_mastered:
@@ -470,6 +492,19 @@ class SQLiteRepository:
     def record_review(
         self, exercise_id: str, independent: bool | Quality, now: datetime
     ) -> MistakeEntry | None:
+        """登记一次复习。
+
+        先把 bool 或 ``Quality`` 统一成评分，再按 ``MATHCOACH_SCHEDULER``
+        选择 FSRS 或 SM-2 路径；成功后同步更新掌握概率。
+
+        Args:
+            exercise_id: 题目 ID。
+            independent: 是否独立完成，或直接给 ``Quality``。
+            now: 复习时间。
+
+        Returns:
+            更新后的错题；题目不存在时为 None。
+        """
         # bool 与 Quality 两种调用都映射到统一评分，再按环境变量选择调度器
         if isinstance(independent, Quality):
             quality = independent
@@ -575,7 +610,7 @@ class SQLiteRepository:
                     elapsed_days,
                     params,
                 )
-            # 掌握状态和连续独立次数仍由旧状态机决定，FSRS 只负责间隔
+            # 掌握状态和连续独立次数仍由旧状态机决定，FSRS 只管间隔
             review_state, review_count, streak, _ = next_review(
                 entry, quality is Quality.INDEPENDENT, now
             )
@@ -635,7 +670,7 @@ class SQLiteRepository:
     def record_sm2_review(
         self, mistake_id: str, quality: Quality, now: datetime
     ) -> MistakeEntry | None:
-        """按 SM-2 更新难度因子与间隔；不改动旧状态机的掌握计数。"""
+        """按 SM-2 更新难度因子与间隔，并同步旧状态机的掌握计数。"""
         with self._lock, self._connection:
             row = self._connection.execute(
                 "SELECT * FROM mistakes WHERE id = ? OR exercise_id = ?",
@@ -647,38 +682,56 @@ class SQLiteRepository:
             schedule = update_schedule(
                 entry.ease, entry.interval_days, quality, now
             )
+            review_state, review_count, streak, _ = next_review(
+                entry, quality is Quality.INDEPENDENT, now
+            )
             self._connection.execute(
                 """
-                UPDATE mistakes SET ease = ?, interval_days = ?, next_review_at = ?
+                UPDATE mistakes SET ease = ?, interval_days = ?, next_review_at = ?,
+                    review_state = ?, review_count = ?, consecutive_correct = ?
                 WHERE id = ?
                 """,
                 (
                     schedule.ease,
                     schedule.interval_days,
                     _text(schedule.next_review_at),
+                    review_state.value,
+                    review_count,
+                    streak,
                     entry.id,
                 ),
             )
-            # 同步旧复习队列，避免复习清单与 SM-2 到期时间分叉
-            cursor = self._connection.execute(
-                "UPDATE review_queue SET due_at = ? "
-                "WHERE mistake_id = ? AND completed = 0",
-                (_text(schedule.next_review_at), entry.id),
-            )
-            if cursor.rowcount == 0:
+            if review_state is ReviewState.MASTERED:
                 self._connection.execute(
-                    "INSERT INTO review_queue(mistake_id, due_at, completed) "
-                    "VALUES (?, ?, 0)",
-                    (entry.id, _text(schedule.next_review_at)),
+                    "UPDATE review_queue SET completed = 1 "
+                    "WHERE mistake_id = ? AND completed = 0",
+                    (entry.id,),
                 )
+            else:
+                # 同步旧复习队列，避免复习清单与 SM-2 到期时间分叉
+                cursor = self._connection.execute(
+                    "UPDATE review_queue SET due_at = ? "
+                    "WHERE mistake_id = ? AND completed = 0",
+                    (_text(schedule.next_review_at), entry.id),
+                )
+                if cursor.rowcount == 0:
+                    self._connection.execute(
+                        "INSERT INTO review_queue(mistake_id, due_at, completed) "
+                        "VALUES (?, ?, 0)",
+                        (entry.id, _text(schedule.next_review_at)),
+                    )
             return replace(
                 entry,
                 ease=schedule.ease,
                 interval_days=schedule.interval_days,
                 next_review_at=schedule.next_review_at,
+                review_state=review_state,
+                review_count=review_count,
+                consecutive_correct=streak,
             )
 
     def list_review_items(self) -> list[ReviewItem]:
+        """返回未掌握且未完成的复习项，按到期时间排序。"""
         with self._lock:
             rows = self._connection.execute(
                 """
@@ -698,6 +751,7 @@ class SQLiteRepository:
     def record_audit(
         self, op: str, result: str, now: datetime | None = None
     ) -> None:
+        """追加一条审计记录。"""
         timestamp = _text(now or datetime.now(timezone.utc))
         with self._lock, self._connection:
             self._connection.execute(
@@ -706,6 +760,7 @@ class SQLiteRepository:
             )
 
     def list_audit(self, limit: int = 50) -> list[AuditEntry]:
+        """按时间倒序返回审计记录。"""
         with self._lock:
             rows = self._connection.execute(
                 "SELECT id, op, result, created_at FROM audit_log "
@@ -723,6 +778,7 @@ class SQLiteRepository:
         ]
 
     def save_daily_result(self, result: DailyResult) -> None:
+        """按日期键保存每日挑战结果。"""
         with self._lock, self._connection:
             self._connection.execute(
                 """
@@ -740,6 +796,7 @@ class SQLiteRepository:
             )
 
     def get_daily_result(self, day: str) -> DailyResult | None:
+        """按日期键取每日挑战结果。"""
         with self._lock:
             row = self._connection.execute(
                 "SELECT * FROM daily_challenge WHERE date = ?", (day,)
@@ -755,6 +812,7 @@ class SQLiteRepository:
         )
 
     def save_challenge_result(self, result: ChallengeResult) -> ChallengeResult:
+        """保存挑战赛成绩，返回带自增 id 的结果。"""
         with self._lock, self._connection:
             cursor = self._connection.execute(
                 """
@@ -772,6 +830,7 @@ class SQLiteRepository:
         return replace(result, id=result_id)
 
     def list_challenge_results(self, limit: int = 10) -> list[ChallengeResult]:
+        """按分数降序、用时升序返回挑战成绩。"""
         with self._lock:
             rows = self._connection.execute(
                 "SELECT * FROM challenge_results "
@@ -790,10 +849,12 @@ class SQLiteRepository:
         ]
 
     def close(self) -> None:
+        """关闭数据库连接。"""
         with self._lock:
             self._connection.close()
 
     def _to_receipt(self, row: sqlite3.Row) -> Receipt:
+        """把查询行转成收据。"""
         return Receipt(
             id=row["id"],
             card_id=row["card_id"],
@@ -810,6 +871,7 @@ class SQLiteRepository:
         )
 
     def _to_mistake(self, row: sqlite3.Row) -> MistakeEntry:
+        """把查询行转成错题。"""
         return MistakeEntry(
             id=row["id"],
             exercise_id=row["exercise_id"],

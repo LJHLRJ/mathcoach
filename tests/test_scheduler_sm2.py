@@ -1,6 +1,7 @@
 """调度改用 next_review_at 过滤，bucket 只做展示分组。"""
 from datetime import datetime, timedelta, timezone
 
+from mathcoach.domain.models import ReviewState
 from mathcoach.domain.spaced_repetition import Bucket, Quality
 from mathcoach.memory.scheduler import build_review_queue
 from mathcoach.memory.sqlite_repo import SQLiteRepository
@@ -36,3 +37,20 @@ def test_update_after_review_persists_new_schedule(tmp_path, monkeypatch):
     assert row.interval_days == 3
     assert row.ease > 2.5
     assert row.next_review_at > NOW
+
+
+def test_sm2_quality_review_updates_mastery_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATHCOACH_SCHEDULER", "sm2")
+    repo = SQLiteRepository(tmp_path / "s.db")
+    mid = repo.add_mistake(card_id="hs-001", error_type="概念不清", now=NOW)
+
+    first = repo.record_review(mid, Quality.INDEPENDENT, now=NOW)
+    assert first.review_state is ReviewState.REVIEWING
+    assert first.consecutive_correct == 1
+    assert repo.list_review_items()
+
+    second = repo.record_review(
+        mid, Quality.INDEPENDENT, now=NOW + timedelta(days=3)
+    )
+    assert second.review_state is ReviewState.MASTERED
+    assert repo.list_review_items() == []

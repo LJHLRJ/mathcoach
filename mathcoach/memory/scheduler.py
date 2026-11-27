@@ -26,6 +26,7 @@ from ..timeutil import end_of_local_day, start_of_local_day_after
 
 if TYPE_CHECKING:
     from ..session.daily import DailyQuestion
+    from .repository import Repository
 
 REVIEW_LIMIT = 3
 MASTERY_STREAK = 2
@@ -49,6 +50,14 @@ def fsrs_params() -> FsrsParams:
 
 @dataclass(frozen=True)
 class ReviewPlan:
+    """按到期时间分档的复习清单。
+
+    Attributes:
+        today: 今天到期的条目。
+        tomorrow: 明天到期的条目。
+        in_three_days: 三天内到期的条目。
+    """
+
     today: tuple[ReviewItem, ...]
     tomorrow: tuple[ReviewItem, ...]
     in_three_days: tuple[ReviewItem, ...]
@@ -115,7 +124,9 @@ def build_plan(
     )
 
 
-def build_review_queue(repo, now: datetime) -> dict[Bucket, list[MistakeEntry]]:
+def build_review_queue(
+    repo: Repository, now: datetime
+) -> dict[Bucket, list[MistakeEntry]]:
     """只返回 next_review_at <= now 的条目，按 interval_days 映射到三档。"""
     queue: dict[Bucket, list[MistakeEntry]] = defaultdict(list)
     for item in repo.list_due_mistakes(now):
@@ -124,7 +135,7 @@ def build_review_queue(repo, now: datetime) -> dict[Bucket, list[MistakeEntry]]:
 
 
 def build_review_pack(
-    repository,
+    repository: Repository,
     cards: list[KnowledgeCard],
     now: datetime,
     priority_card_ids: set[str] | None = None,
