@@ -87,3 +87,13 @@ def test_error_trend_empty_week_text():
     trend = build_error_trend([], NOW)
     assert trend.this_week == ()
     assert "没有新增错题" in trend.summary
+
+
+def test_error_trend_ignores_future_mistakes():
+    future = _mistake("m5", -3, ErrorType.CONCEPT, "e5")
+
+    trend = build_error_trend([future], NOW)
+
+    assert trend.this_week == ()
+    assert trend.last_week == ()
+    assert "没有新增错题" in trend.summary

@@ -13,6 +13,14 @@ from .repository import Repository
 
 @dataclass(frozen=True)
 class ErrorTrend:
+    """错因趋势对比。
+
+    Attributes:
+        this_week: 本期错因与次数，按次数降序。
+        last_week: 上期错因与次数。
+        summary: 一句趋势说明。
+    """
+
     this_week: tuple[tuple[str, int], ...]
     last_week: tuple[tuple[str, int], ...]
     summary: str
@@ -20,6 +28,21 @@ class ErrorTrend:
 
 @dataclass(frozen=True)
 class WeeklyReport:
+    """周报聚合结果。
+
+    Attributes:
+        start: 起始日期。
+        end: 结束日期。
+        receipts: 收据数。
+        independent: 独立完成数。
+        mistakes: 错题数。
+        due_today: 今天到期的复习项数。
+        average_hint_level: 平均最高提示层级。
+        daily_receipts: 每日收据数，按日期补齐。
+        top_errors: 出现最多的三类错因。
+        trend: 错因趋势。
+    """
+
     start: date
     end: date
     receipts: int
@@ -49,6 +72,19 @@ def build_mistake_stats(mistakes: list[MistakeEntry]) -> dict[str, MistakeStat]:
 def build_error_trend(
     mistakes: list[MistakeEntry], now: datetime, days: int = 7
 ) -> ErrorTrend:
+    """对比相邻两个窗口的错因分布。
+
+    本期为最近 ``days`` 天（含今天），上期为紧邻的前 ``days`` 天；
+    本期为空时给一句无新增错题的说明。
+
+    Args:
+        mistakes: 错题。
+        now: 计算窗口的基准时间。
+        days: 单个窗口的天数。
+
+    Returns:
+        ``ErrorTrend``。
+    """
     today = local_day(now)
     this_start = today - timedelta(days=days - 1)
     last_start = this_start - timedelta(days=days)
@@ -58,7 +94,7 @@ def build_error_trend(
     last_counter: Counter[str] = Counter()
     for mistake in mistakes:
         day = local_day(mistake.created_at)
-        if day >= this_start:
+        if this_start <= day <= today:
             this_counter[mistake.error_type.value] += 1
         elif last_start <= day <= last_end:
             last_counter[mistake.error_type.value] += 1
@@ -80,6 +116,19 @@ def build_error_trend(
 def build_weekly_report(
     repository: Repository, now: datetime, days: int = 7
 ) -> WeeklyReport:
+    """生成最近 ``days`` 天的学习周报。
+
+    收据与错题按本地日期过滤；每日收据数补齐没有数据的日期；
+    到期数取当前复习队列里今天到期的条目。
+
+    Args:
+        repository: 仓储。
+        now: 计算窗口的基准时间。
+        days: 统计天数。
+
+    Returns:
+        ``WeeklyReport``。
+    """
     end = local_day(now)
     start = end - timedelta(days=days - 1)
 
