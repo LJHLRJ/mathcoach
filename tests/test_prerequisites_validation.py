@@ -5,24 +5,28 @@ from mathcoach.content.validator import ValidationError, validate_prerequisites
 
 
 def test_happy_path():
+    """线性先修链可以顺利通过校验。"""
     prereq = {"hs-002": ["hs-001"], "hs-003": ["hs-002"]}
     cards = ["hs-001", "hs-002", "hs-003"]
     validate_prerequisites(prereq, cards)  # 不抛异常
 
 
 def test_unknown_ancestor_rejected():
+    """指向不存在的先修节点会被拒绝。"""
     prereq = {"hs-002": ["hs-999"]}
     with pytest.raises(ValidationError):
         validate_prerequisites(prereq, ["hs-002"])
 
 
 def test_cycle_rejected():
+    """先修关系成环会被拒绝。"""
     prereq = {"hs-001": ["hs-002"], "hs-002": ["hs-001"]}
     with pytest.raises(ValidationError):
         validate_prerequisites(prereq, ["hs-001", "hs-002"])
 
 
 def test_self_reference_rejected():
+    """节点引用自身会被拒绝。"""
     prereq = {"hs-001": ["hs-001"]}
     with pytest.raises(ValidationError):
         validate_prerequisites(prereq, ["hs-001"])

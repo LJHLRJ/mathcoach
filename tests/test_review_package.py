@@ -17,6 +17,7 @@ NOW = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
 
 
 def _card(card_id: str, course: str) -> KnowledgeCard:
+    """构造含三道选择题的卡片。"""
     exercises = tuple(
         Exercise(
             id=f"{card_id}-e{index}",
@@ -46,6 +47,7 @@ def _card(card_id: str, course: str) -> KnowledgeCard:
 
 
 def _mistake(identifier: str, exercise_id: str) -> MistakeEntry:
+    """构造指定练习的错题。"""
     return MistakeEntry(
         id=identifier,
         exercise_id=exercise_id,
@@ -63,6 +65,7 @@ def _mistake(identifier: str, exercise_id: str) -> MistakeEntry:
 
 
 def test_package_prioritizes_due_mistakes_and_fills_to_five():
+    """到期错题优先并补齐到五题，理由注明混合复习包。"""
     cards = [_card("c1", "函数与导数"), _card("c2", "高等数学")]
     repository = InMemoryRepository()
     repository.save_mistake(_mistake("m1", "c1-e1"))
@@ -81,6 +84,7 @@ def test_package_prioritizes_due_mistakes_and_fills_to_five():
 
 
 def test_package_without_mistakes_is_empty():
+    """无待复习错题时返回空包并说明原因。"""
     package = build_review_package(
         InMemoryRepository(), [_card("c1", "函数与导数")], NOW
     )
@@ -89,6 +93,7 @@ def test_package_without_mistakes_is_empty():
 
 
 def test_due_items_come_before_future_items():
+    """已到期项排在未到期项之前。"""
     cards = [_card("c1", "函数与导数"), _card("c2", "高等数学")]
     repository = InMemoryRepository()
     repository.save_mistake(_mistake("m1", "c1-e1"))

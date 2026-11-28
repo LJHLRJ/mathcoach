@@ -13,6 +13,7 @@ STATES = ("first_screen", "quiz", "receipt")
 
 
 def test_visual_workflow_is_valid_yaml_and_triggered():
+    """视觉回归 workflow 是合法 YAML 且由 PR 与手动触发。"""
     data = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
 
     assert isinstance(data, dict)
@@ -24,6 +25,7 @@ def test_visual_workflow_is_valid_yaml_and_triggered():
 
 
 def test_visual_workflow_runs_test_and_uploads_artifacts():
+    """workflow 安装视觉依赖并上传截图产物。"""
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "requirements-visual.txt" in text
@@ -37,6 +39,7 @@ def test_visual_workflow_runs_test_and_uploads_artifacts():
 
 
 def test_visual_workflow_runs_full_unit_tests_on_each_push():
+    """每次推送同时运行除视觉外的全量单测。"""
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "Run unit tests" in text
@@ -44,6 +47,7 @@ def test_visual_workflow_runs_full_unit_tests_on_each_push():
 
 
 def test_visual_dependencies_are_ci_only_and_baselines_exist():
+    """浏览器依赖只在 CI 安装，三态基线齐全。"""
     runtime = RUNTIME_REQUIREMENTS.read_text(encoding="utf-8")
     visual = VISUAL_REQUIREMENTS.read_text(encoding="utf-8")
     test_text = VISUAL_TEST.read_text(encoding="utf-8")

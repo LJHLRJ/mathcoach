@@ -13,6 +13,7 @@ SECURITY_FILES = (
 
 
 def test_readme_contains_required_commands():
+    """README 包含安装、运行、测试与构建命令。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "pip install -r requirements.txt" in readme
     assert "streamlit run app.py" in readme
@@ -21,12 +22,14 @@ def test_readme_contains_required_commands():
 
 
 def test_readme_version_matches_package_version():
+    """README 版本号与包版本一致。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert f"**v{mathcoach.__version__}**" in readme
 
 
 def test_readme_links_contributing_and_license():
+    """README 链接贡献指南与许可证。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "[CONTRIBUTING.md](CONTRIBUTING.md)" in readme
@@ -34,6 +37,7 @@ def test_readme_links_contributing_and_license():
 
 
 def test_readme_milestone_table_covers_current_releases():
+    """里程碑表覆盖当前版本。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     for milestone in ("M9", "M12", "M16", "M17"):
@@ -44,6 +48,7 @@ def test_readme_milestone_table_covers_current_releases():
 
 
 def test_readme_points_update_entry_to_settings_tab():
+    """更新入口指向设置页。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "“设置”Tab 中的“关于与更新”" in readme
@@ -51,6 +56,7 @@ def test_readme_points_update_entry_to_settings_tab():
 
 
 def test_readme_documents_security_test_coverage():
+    """README 记录安全测试覆盖数字。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "## 安全与边界" in readme
@@ -68,6 +74,7 @@ def test_readme_documents_security_test_coverage():
 def _functions_with(
     path: Path, markers: tuple[str, ...], *, include_safe: bool = False
 ) -> list[str]:
+    """按名称与源码标记筛选测试函数。"""
     text = path.read_text(encoding="utf-8")
     tree = ast.parse(text)
     names: list[str] = []
@@ -83,6 +90,7 @@ def _functions_with(
 
 
 def test_readme_security_counts_match_test_files():
+    """README 安全计数与测试文件一致。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     test_functions = [
         node.name
@@ -122,6 +130,7 @@ def test_readme_security_counts_match_test_files():
 
 
 def test_readme_documents_unsigned_first_run_steps():
+    """README 记录未签名首次运行步骤。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "未签名" in readme
@@ -131,6 +140,7 @@ def test_readme_documents_unsigned_first_run_steps():
 
 
 def test_prompt_copies_match_runtime_constants():
+    """提示词副本与运行时常量一致。"""
     tutor = (ROOT / "prompts" / "tutor.md").read_text(encoding="utf-8")
     parser = (ROOT / "prompts" / "parser.md").read_text(encoding="utf-8")
 
@@ -141,5 +151,6 @@ def test_prompt_copies_match_runtime_constants():
 
 
 def test_prompts_directory_is_review_only():
+    """提示词目录声明仅用于评审。"""
     readme = (ROOT / "prompts" / "README.md").read_text(encoding="utf-8")
     assert "运行时不读取" in readme or "运行时不会读取" in readme

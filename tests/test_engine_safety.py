@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from mathcoach.content.loader import load_content
-from mathcoach.domain.models import Phase
+from mathcoach.domain.models import Exercise, Phase
 from mathcoach.llm.base import ParsedAnswer, RenderTask, UNPARSED
 from mathcoach.memory.repository import InMemoryRepository
 from mathcoach.safety.guards import Blocked
@@ -14,18 +14,23 @@ CONTENT_ROOT = Path(__file__).resolve().parents[1] / "content"
 
 
 class CountingProvider:
+    """记录渲染次数的假 Provider。"""
     def __init__(self) -> None:
+        """初始化渲染计数。"""
         self.renders = 0
 
     def render(self, task: RenderTask) -> str:
+        """原样返回素材并累加计数。"""
         self.renders += 1
         return task.content
 
-    def parse_freeform(self, text: str, exercise) -> ParsedAnswer:
+    def parse_freeform(self, text: str, exercise: Exercise) -> ParsedAnswer:
+        """自由文本一律视为未解析。"""
         return UNPARSED
 
 
-def _engine(repository: InMemoryRepository, provider=None) -> SessionEngine:
+def _engine(repository: InMemoryRepository, provider: CountingProvider | None = None) -> SessionEngine:
+    """构造指定内容卡的最小引擎。"""
     cards, _ = load_content(CONTENT_ROOT, strict=False)
     card = next(card for card in cards if card.id == "hs-function-intro-001")
     return SessionEngine(
@@ -36,6 +41,7 @@ def _engine(repository: InMemoryRepository, provider=None) -> SessionEngine:
 
 
 def test_blocked_goal_is_not_sent_to_provider():
+    """被拦截的目标不送 Provider，也不写记忆。"""
     repository = InMemoryRepository()
     provider = CountingProvider()
     engine = _engine(repository, provider)
@@ -51,6 +57,7 @@ def test_blocked_goal_is_not_sent_to_provider():
 
 
 def test_math_framing_answer_is_not_recorded():
+    """数学伪装答案不入错题，审计标记拦截。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     engine.confirm_goal("搞懂函数")
@@ -68,6 +75,7 @@ def test_math_framing_answer_is_not_recorded():
 
 
 def test_routine_writes_are_audited():
+    """常规写入产生收据并记录审计。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     engine.confirm_goal("搞懂函数")
@@ -80,6 +88,7 @@ def test_routine_writes_are_audited():
 
 
 def test_observed_session_still_allows_routine_memory_writes():
+    """观察会话仍允许常规记忆写入。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     with pytest.raises(Blocked):

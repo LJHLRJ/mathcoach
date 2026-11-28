@@ -2,6 +2,7 @@
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
 
@@ -27,6 +28,7 @@ GUEST = Consent(memory=False, mistake_book=False)
 
 
 def _tables(path: Path) -> set[str]:
+    """列出数据库中的表名。"""
     with sqlite3.connect(str(path)) as connection:
         rows = connection.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
@@ -35,6 +37,7 @@ def _tables(path: Path) -> set[str]:
 
 
 def _receipt() -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         card_id="hs-function-intro-001",
         stage=Stage.HIGH_SCHOOL,
@@ -49,6 +52,7 @@ def _receipt() -> Receipt:
 
 
 def test_first_run_creates_database_and_required_tables(tmp_path):
+    """首次启动创建数据库与必需表。"""
     path = tmp_path / "nested" / "mathcoach.sqlite3"
 
     settings = initialize_settings(PERSISTENT, path)
@@ -68,6 +72,7 @@ def test_first_run_creates_database_and_required_tables(tmp_path):
 
 
 def test_guest_first_run_stays_in_memory_and_is_usable(tmp_path):
+    """游客模式使用内存仓储且可正常写入。"""
     path = tmp_path / "guest.sqlite3"
 
     settings = initialize_settings(GUEST, path)
@@ -85,9 +90,11 @@ def test_guest_first_run_stays_in_memory_and_is_usable(tmp_path):
 
 
 def test_permission_failure_reports_actionable_error(tmp_path, monkeypatch):
+    """目录权限失败转换为可操作提示。"""
     path = tmp_path / "readonly" / "mathcoach.sqlite3"
 
-    def fail(*_args, **_kwargs):
+    def fail(*_args: object, **_kwargs: object) -> NoReturn:
+        """模拟数据目录权限失败。"""
         raise PermissionError(path.parent)
 
     monkeypatch.setattr(first_run, "build_repository", fail)
@@ -103,9 +110,11 @@ def test_permission_failure_reports_actionable_error(tmp_path, monkeypatch):
 
 
 def test_sqlite_failure_reports_actionable_error(tmp_path, monkeypatch):
+    """数据库失败转换为可操作提示。"""
     path = tmp_path / "broken.sqlite3"
 
-    def fail(*_args, **_kwargs):
+    def fail(*_args: object, **_kwargs: object) -> NoReturn:
+        """模拟数据库打开失败。"""
         raise sqlite3.OperationalError("unable to open database file")
 
     monkeypatch.setattr(first_run, "load_settings", fail)
@@ -120,9 +129,11 @@ def test_sqlite_failure_reports_actionable_error(tmp_path, monkeypatch):
 
 
 def test_newer_database_schema_reports_upgrade_hint(tmp_path, monkeypatch):
+    """版本过高时提示升级应用。"""
     path = tmp_path / "future.sqlite3"
 
-    def fail(*_args, **_kwargs):
+    def fail(*_args: object, **_kwargs: object) -> NoReturn:
+        """模拟数据库版本过高。"""
         raise RuntimeError("数据库版本 5 高于当前版本 4")
 
     monkeypatch.setattr(first_run, "build_repository", fail)

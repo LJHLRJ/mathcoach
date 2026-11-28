@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _dry_run(*args: str) -> subprocess.CompletedProcess:
+    """以 dry-run 模式调用桌面打包脚本。"""
     return subprocess.run(
         [sys.executable, "scripts/build_desktop.py", "--dry-run", *args],
         cwd=ROOT,
@@ -17,6 +18,7 @@ def _dry_run(*args: str) -> subprocess.CompletedProcess:
 
 
 def test_build_script_supports_output_dir():
+    """--output-dir 会透传为 PyInstaller 的 --distpath。"""
     result = _dry_run("--output-dir", "custom-dist")
 
     assert result.returncode == 0
@@ -25,6 +27,7 @@ def test_build_script_supports_output_dir():
 
 
 def test_build_script_defaults_to_dist():
+    """未指定输出目录时落到仓库 dist/。"""
     result = _dry_run()
 
     assert result.returncode == 0

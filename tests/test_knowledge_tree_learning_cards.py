@@ -24,16 +24,19 @@ FILLED_SECTIONS = ("## 概念", "## 直觉", "## 常见误区", "## 诊断例题
 
 
 def _card_ids() -> list[str]:
+    """加载全部卡片 ID。"""
     cards, result = load_content(ROOT / "content", strict=False)
     assert result.ok
     return [card.id for card in cards]
 
 
-def _click(at, label: str) -> None:
+def _click(at: AppTest, label: str) -> None:
+    """点击唯一匹配的按钮。"""
     next(button for button in at.button if button.label == label).click().run()
 
 
 def test_every_card_has_a_learning_card_file():
+    """每张卡片都有学习卡文件。"""
     card_ids = _card_ids()
     files = {path.stem for path in LEARNING_CARDS_DIR.glob("*.md")}
 
@@ -42,6 +45,7 @@ def test_every_card_has_a_learning_card_file():
 
 
 def test_card_files_are_all_filled():
+    """学习卡均标记已填充且章节齐全。"""
     filled: list[str] = []
     for card_id in _card_ids():
         text = load_learning_card(card_id)
@@ -57,6 +61,7 @@ def test_card_files_are_all_filled():
 
 
 def test_learning_card_path_rejects_missing_or_unsafe_ids():
+    """缺失或越界 ID 返回 None。"""
     assert learning_card_path("") is None
     assert learning_card_path("..") is None
     assert learning_card_path("../app") is None
@@ -68,6 +73,7 @@ def test_learning_card_path_rejects_missing_or_unsafe_ids():
 
 
 def test_learning_cards_toggle_persists_in_settings_store(tmp_path):
+    """学习卡开关可持久化。"""
     path = tmp_path / "learning-cards.sqlite3"
 
     assert load_learning_cards_enabled(PERSISTENT, path) is True
@@ -78,6 +84,7 @@ def test_learning_cards_toggle_persists_in_settings_store(tmp_path):
 
 
 def test_answer_page_entry_opens_learning_card(tmp_path, monkeypatch):
+    """答题页入口可打开学习卡并返回。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "learning-cards-ui.sqlite3")
     )
@@ -105,6 +112,7 @@ def test_answer_page_entry_opens_learning_card(tmp_path, monkeypatch):
 def test_knowledge_browser_can_start_practice_for_focused_card(
     tmp_path, monkeypatch
 ):
+    """知识点浏览可直接开始练习。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "learning-cards-practice.sqlite3")
     )
@@ -122,6 +130,7 @@ def test_knowledge_browser_can_start_practice_for_focused_card(
 
 
 def test_settings_page_shows_learning_cards_toggle(tmp_path, monkeypatch):
+    """设置页展示学习卡开关。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "learning-cards-settings.sqlite3")
     )
@@ -138,6 +147,7 @@ def test_settings_page_shows_learning_cards_toggle(tmp_path, monkeypatch):
 
 
 def test_disabled_learning_cards_hide_entry(tmp_path, monkeypatch):
+    """关闭学习卡后隐藏入口。"""
     path = tmp_path / "learning-cards-hidden.sqlite3"
     assert save_learning_cards_enabled(PERSISTENT, False, path) is True
     monkeypatch.setenv("MATHCOACH_DB", str(path))

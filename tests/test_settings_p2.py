@@ -17,6 +17,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
 
 
 def test_theme_and_reminder_validation():
+    """主题与提醒时间合法时保留，非法时回退默认。"""
     settings = AppSettings.from_mapping(
         {
             "theme": "dark",
@@ -39,6 +40,7 @@ def test_theme_and_reminder_validation():
 
 
 def test_audit_export_redacts_sensitive_text():
+    """审计导出会脱敏敏感文本。"""
     entry = AuditEntry(
         id=1,
         op="settings_clear",
@@ -57,6 +59,7 @@ def test_audit_export_redacts_sensitive_text():
 def test_settings_page_has_read_only_audit_and_dev_panels(
     tmp_path, monkeypatch
 ):
+    """设置页提供只读审计与开发者面板及说明。"""
     path = tmp_path / "p2.sqlite3"
     repository = SQLiteRepository(path)
     repository.record_audit("seed", "ok")

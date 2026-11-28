@@ -23,6 +23,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
 
 
 def _receipt() -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         card_id="hs-001",
         stage=Stage.HIGH_SCHOOL,
@@ -38,6 +39,7 @@ def _receipt() -> Receipt:
 
 
 def _mistake() -> MistakeEntry:
+    """构造错题样例。"""
     return MistakeEntry(
         id="m1",
         exercise_id="ex-1",
@@ -55,6 +57,7 @@ def _mistake() -> MistakeEntry:
 
 
 def test_sqlite_settings_round_trip(tmp_path):
+    """设置值跨连接往返一致。"""
     path = tmp_path / "settings.sqlite3"
     store = SQLiteSettingsStore(path)
     save_settings_values(
@@ -72,6 +75,7 @@ def test_sqlite_settings_round_trip(tmp_path):
 
 
 def test_guest_settings_use_memory_and_do_not_touch_disk(tmp_path):
+    """游客模式使用内存存储且不落盘。"""
     path = tmp_path / "guest.sqlite3"
     store = build_settings_store(
         Consent(memory=False, mistake_book=False), path
@@ -84,6 +88,7 @@ def test_guest_settings_use_memory_and_do_not_touch_disk(tmp_path):
 
 
 def test_clear_learning_data_keeps_audit(tmp_path):
+    """清除学习数据时保留审计日志。"""
     path = tmp_path / "clear.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_receipt(_receipt(), "ex-1")
@@ -105,6 +110,7 @@ def test_clear_learning_data_keeps_audit(tmp_path):
 
 
 def test_clear_learning_data_can_purge_audit(tmp_path):
+    """可选择同时清空审计日志。"""
     path = tmp_path / "purge.sqlite3"
     repository = SQLiteRepository(path)
     repository.record_audit("seed", "ok")
@@ -119,6 +125,7 @@ def test_clear_learning_data_can_purge_audit(tmp_path):
 
 
 def test_in_memory_settings_store_round_trip():
+    """内存设置存储读写往返且清除返回空。"""
     store = InMemorySettingsStore()
     store.set_many({"ai_enabled": True, "daily_review_limit": 3})
     assert store.get_all() == {"ai_enabled": True, "daily_review_limit": 3}

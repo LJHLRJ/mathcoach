@@ -16,6 +16,7 @@ TREE_PATH = ROOT / "content" / "knowledge_tree.yaml"
 
 
 def test_every_card_and_exercise_is_bound():
+    """全部卡片与练习都绑定到知识点。"""
     cards, result = load_content(ROOT / "content", strict=False)
     tree = load_knowledge_tree(TREE_PATH)
 
@@ -37,6 +38,7 @@ def test_every_card_and_exercise_is_bound():
 
 
 def test_problems_are_queryable_by_knowledge_point():
+    """可按知识点查询其题目绑定。"""
     tree = load_knowledge_tree(TREE_PATH)
 
     bindings = tree.problems_for("hs-function-intro-001")
@@ -54,6 +56,7 @@ def test_problems_are_queryable_by_knowledge_point():
 
 
 def test_unmapped_marker_is_queryable(tmp_path):
+    """未映射标记可被查询。"""
     path = tmp_path / "unmapped.yaml"
     path.write_text(
         yaml.safe_dump(

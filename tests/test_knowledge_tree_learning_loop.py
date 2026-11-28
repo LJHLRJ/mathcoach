@@ -10,6 +10,7 @@ from mathcoach.content.loader import load_content
 from mathcoach.domain.models import (
     ErrorType,
     ExerciseKind,
+    KnowledgeCard,
     MistakeEntry,
     Stage,
 )
@@ -22,7 +23,8 @@ APP_PATH = ROOT / "app.py"
 NOW = datetime(2026, 11, 22, 12, 0, tzinfo=UTC)
 
 
-def _open_knowledge_page(at) -> None:
+def _open_knowledge_page(at: AppTest) -> None:
+    """打开知识点浏览页。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     at.text_input[0].set_value("搞懂函数的概念")
     at.button[0].click().run()
@@ -33,29 +35,34 @@ def _open_knowledge_page(at) -> None:
     ).click().run()
 
 
-def _captions(at) -> list[str]:
+def _captions(at: AppTest) -> list[str]:
+    """收集页面 caption 文本。"""
     return [caption.value for caption in at.caption]
 
 
-def _start_quiz(at) -> None:
+def _start_quiz(at: AppTest) -> None:
+    """进入小测阶段。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     at.text_input[0].set_value("搞懂函数的概念")
     at.button[0].click().run()
     at.button[0].click().run()
 
 
-def _wrong_once(at, answer: str) -> None:
+def _wrong_once(at: AppTest, answer: str) -> None:
+    """提交一次指定错误答案。"""
     at.radio[0].set_value(answer)
     at.button[0].click().run()
 
 
-def _card_objects():
+def _card_objects() -> dict[str, KnowledgeCard]:
+    """按 ID 索引全部卡片。"""
     cards, result = load_content(ROOT / "content", strict=False)
     assert result.ok
     return {card.id: card for card in cards}
 
 
 def test_not_started_state_suggests_learning_card_and_prerequisite():
+    """未开始状态建议看学习卡与先修。"""
     status = summarize_learning(
         mastery=None,
         receipt_count=0,
@@ -71,6 +78,7 @@ def test_not_started_state_suggests_learning_card_and_prerequisite():
 
 
 def test_pending_review_has_priority_over_mastery():
+    """待复习优先于掌握度。"""
     status = summarize_learning(
         mastery=0.9,
         receipt_count=3,
@@ -83,6 +91,7 @@ def test_pending_review_has_priority_over_mastery():
 
 
 def test_learning_state_continues_practice():
+    """学习中状态建议继续练习。"""
     status = summarize_learning(
         mastery=0.5,
         receipt_count=1,
@@ -95,6 +104,7 @@ def test_learning_state_continues_practice():
 
 
 def test_low_mastery_guides_to_prerequisite():
+    """低掌握度建议先复习先修。"""
     status = summarize_learning(
         mastery=0.2,
         receipt_count=1,
@@ -108,6 +118,7 @@ def test_low_mastery_guides_to_prerequisite():
 
 
 def test_ready_state_suggests_next_point():
+    """已熟练状态建议下一知识点。"""
     status = summarize_learning(
         mastery=0.8,
         receipt_count=2,
@@ -120,6 +131,7 @@ def test_ready_state_suggests_next_point():
 
 
 def test_knowledge_page_shows_not_started_loop(tmp_path, monkeypatch):
+    """知识点页展示未开始闭环。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "loop-empty.sqlite3")
     )
@@ -140,6 +152,7 @@ def test_knowledge_page_shows_not_started_loop(tmp_path, monkeypatch):
 
 
 def test_knowledge_page_shows_ready_loop(tmp_path, monkeypatch):
+    """知识点页展示已熟练闭环。"""
     path = tmp_path / "loop-ready.sqlite3"
     card = _card_objects()["hs-function-intro-001"]
     exercise = card.exercises[0]
@@ -172,6 +185,7 @@ def test_knowledge_page_shows_ready_loop(tmp_path, monkeypatch):
 
 
 def test_knowledge_page_shows_pending_review_loop(tmp_path, monkeypatch):
+    """知识点页展示待复习闭环。"""
     path = tmp_path / "loop-review.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_mistake(
@@ -209,6 +223,7 @@ def test_knowledge_page_shows_pending_review_loop(tmp_path, monkeypatch):
 
 
 def test_wrapup_shows_learning_loop(tmp_path, monkeypatch):
+    """结算页展示学习闭环。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "loop-wrapup.sqlite3")
     )

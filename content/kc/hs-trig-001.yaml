@@ -1,0 +1,59 @@
+version: 1
+unit:
+  id: unit-hs-trig-001
+  name: 弧度制
+  card_id: hs-trig-001
+  kc_ids:
+    - kc-hs-trig-001-f1
+    - kc-hs-trig-001-f2
+    - kc-hs-trig-001-p1
+  approved_prerequisite_kc_ids: []
+kcs:
+  - id: kc-hs-trig-001-f1
+    knowledge_point_id: hs-trig-001
+    kind: fact
+    name: 角度与弧度的换算
+    statement: 180° = π 弧度
+    explanation: 半圈对应的弧长是 πr，因此 180° 对应 π 弧度。
+    example: 180° = π，90° = π/2。
+    common_errors:
+      - 忘记 180°=π
+      - 把角度与弧度直接相加
+    required_step_tags:
+      - conversion
+    prerequisites: []
+  - id: kc-hs-trig-001-f2
+    knowledge_point_id: hs-trig-001
+    kind: fact
+    name: 1 弧度的度数
+    statement: 1 弧度 = 180/π 度 ≈ 57.3°
+    explanation: 由 180°=π 弧度两边同除以 π 得到。
+    example: 1 弧度约等于 57.3°。
+    common_errors:
+      - 把 1 弧度当成 1°
+    required_step_tags:
+      - conversion
+    prerequisites: []
+  - id: kc-hs-trig-001-p1
+    knowledge_point_id: hs-trig-001
+    kind: procedure
+    name: 角度化弧度
+    statement: 角度 × π/180 = 弧度
+    explanation: 先把角度除以 180，再乘以 π。
+    example: 30° = 30 × π/180 = π/6。
+    common_errors:
+      - 乘成 180/π
+    required_step_tags:
+      - conversion
+    prerequisites:
+      - kc-hs-trig-001-f1
+exercise_kc:
+  hs-trig-001-e1:
+    - kc-hs-trig-001-f1
+    - kc-hs-trig-001-p1
+  hs-trig-001-e2:
+    - kc-hs-trig-001-f1
+    - kc-hs-trig-001-p1
+  hs-trig-001-e3:
+    - kc-hs-trig-001-f2
+    - kc-hs-trig-001-p1

@@ -6,6 +6,7 @@ from mathcoach.config import resolve_content_root
 
 
 def test_source_layout_uses_app_directory(tmp_path, monkeypatch):
+    """源码运行时资源根取 app.py 所在目录。"""
     monkeypatch.delattr(sys, "_MEIPASS", raising=False)
     app_file = tmp_path / "app.py"
 
@@ -13,6 +14,7 @@ def test_source_layout_uses_app_directory(tmp_path, monkeypatch):
 
 
 def test_pyinstaller_layout_uses_bundle_directory(tmp_path, monkeypatch):
+    """冻结运行时资源根取 PyInstaller 解包目录。"""
     bundle = tmp_path / "bundle"
     monkeypatch.setattr(sys, "_MEIPASS", str(bundle), raising=False)
 

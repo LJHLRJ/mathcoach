@@ -1,0 +1,74 @@
+version: 1
+unit:
+  id: unit-hs-trig-005
+  name: 解三角形
+  card_id: hs-trig-005
+  kc_ids:
+    - kc-hs-trig-005-f1
+    - kc-hs-trig-005-f2
+    - kc-hs-trig-005-p1
+    - kc-hs-trig-005-p2
+  approved_prerequisite_kc_ids: []
+kcs:
+  - id: kc-hs-trig-005-f1
+    knowledge_point_id: hs-trig-005
+    kind: fact
+    name: 余弦定理
+    statement: c²=a²+b²−2ab cos C
+    explanation: 已知两边及其夹角时，用余弦定理求第三边。
+    example: a=3，b=4，C=90°，则 c²=9+16−0=25。
+    common_errors:
+      - 漏掉负号
+      - 把夹角余弦用错
+    required_step_tags:
+      - formula
+    prerequisites: []
+  - id: kc-hs-trig-005-f2
+    knowledge_point_id: hs-trig-005
+    kind: fact
+    name: 正弦定理
+    statement: a/sin A=b/sin B=c/sin C
+    explanation: 三角形的边与其对角的正弦成比例。
+    example: a=5，A=30°，B=45°，则 b=5√2。
+    common_errors:
+      - 正弦定理中边角不对应
+    required_step_tags:
+      - formula
+    prerequisites: []
+  - id: kc-hs-trig-005-p1
+    knowledge_point_id: hs-trig-005
+    kind: procedure
+    name: 用余弦定理求第三边
+    statement: 先代入两边与夹角，再开方求第三边
+    explanation: 先算 c²，再根据边长非负取正根。
+    example: a=3，b=4，C=90°，c=5。
+    common_errors:
+      - 忘记开方
+      - 把 c² 当成 c
+    required_step_tags:
+      - calculation
+    prerequisites:
+      - kc-hs-trig-005-f1
+  - id: kc-hs-trig-005-p2
+    knowledge_point_id: hs-trig-005
+    kind: procedure
+    name: 用正弦定理解三角形
+    statement: 找边角对应关系，再选正弦定理求边或角
+    explanation: 先确认已知边与它的对角，再列比例式。
+    example: 已知 a、A、B，可求 b=a sin B/sin A。
+    common_errors:
+      - 边角不对应
+      - 忘记用内角和求第三个角
+    required_step_tags:
+      - procedure
+    prerequisites:
+      - kc-hs-trig-005-f2
+exercise_kc:
+  hs-trig-005-e1:
+    - kc-hs-trig-005-f1
+  hs-trig-005-e2:
+    - kc-hs-trig-005-f1
+    - kc-hs-trig-005-p1
+  hs-trig-005-e3:
+    - kc-hs-trig-005-f2
+    - kc-hs-trig-005-p2

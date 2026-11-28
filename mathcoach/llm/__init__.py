@@ -38,6 +38,17 @@ class FallbackProvider:
             self.degraded = True
             return self.fallback.parse_freeform(text, exercise)
 
+    def complete(self, system_prompt: str, user_prompt: str) -> str:
+        """优先走主 Provider；失败时标记降级并抛出。
+
+        追问引擎捕获异常后回退到原 L3–L4 陈述式提示，不阻断做题。
+        """
+        try:
+            return self.primary.complete(system_prompt, user_prompt)
+        except Exception:
+            self.degraded = True
+            raise
+
 
 def build_provider() -> Provider:
     """按环境变量装配 Provider。

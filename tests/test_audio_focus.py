@@ -15,10 +15,12 @@ PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def test_focus_audio_defaults_to_disabled(tmp_path):
+    """专注音频默认关闭。"""
     assert load_focus_enabled(PERSISTENT, tmp_path / "focus.sqlite3") is False
 
 
 def test_focus_audio_toggle_persists(tmp_path):
+    """开关状态可持久化并读回。"""
     path = tmp_path / "focus.sqlite3"
 
     assert save_focus_enabled(PERSISTENT, True, path) is True
@@ -28,6 +30,7 @@ def test_focus_audio_toggle_persists(tmp_path):
 
 
 def test_focus_sources_use_verified_https_urls():
+    """音频来源均为经核验的 HTTPS 地址并带许可证说明。"""
     names = {source.name for source in FOCUS_SOURCES}
 
     assert names == {"Noisekun", "Moodist", "Open Lo-Fi"}
@@ -38,6 +41,7 @@ def test_focus_sources_use_verified_https_urls():
 
 
 def test_settings_page_shows_focus_audio_section(tmp_path, monkeypatch):
+    """设置页展示专注音频区块与开关。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "focus-ui.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -53,6 +57,7 @@ def test_settings_page_shows_focus_audio_section(tmp_path, monkeypatch):
 
 
 def test_enabled_focus_audio_shows_external_sources(tmp_path, monkeypatch):
+    """开启后展示三个外部音频来源。"""
     path = tmp_path / "focus-enabled.sqlite3"
     assert save_focus_enabled(PERSISTENT, True, path) is True
     monkeypatch.setenv("MATHCOACH_DB", str(path))

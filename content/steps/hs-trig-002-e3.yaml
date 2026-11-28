@@ -1,0 +1,23 @@
+version: 1
+exercise_id: hs-trig-002-e3
+card_id: hs-trig-002
+
+steps:
+  - index: 1
+    prompt: "要化简 sin²x + cos²x，先用哪条同角恒等式？"
+    expected: "同角平方关系"
+    variables: []
+    kc_id: kc-hs-trig-002-f1
+    step_tag: identity
+    input_kind: sign
+    acceptable:
+      - "同角平方关系"
+      - "sin²x+cos²x=1"
+      - "平方和等于1"
+  - index: 2
+    prompt: "代入同角平方关系后，sin²x + cos²x 等于多少？"
+    expected: "1"
+    variables: []
+    kc_id: kc-hs-trig-002-f1
+    step_tag: identity
+    input_kind: expr

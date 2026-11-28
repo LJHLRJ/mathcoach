@@ -10,6 +10,11 @@ from typing import Any
 import streamlit as st
 
 from ..config import content_strict, db_path
+from ..analytics.credentials import (
+    analysis_secrets_path,
+    load_analysis_credentials,
+    save_analysis_credentials,
+)
 from ..domain.fsrs import DEFAULT_PARAMS
 from ..domain.models import Consent
 from ..domain.settings import (
@@ -300,6 +305,49 @@ def _render_ai_config(
         st.session_state["settings_saved"] = True
         st.rerun()
     _render_connection_test(existing_key, existing_base)
+
+
+def _render_analysis_ai_config(repository: Repository) -> None:
+    """渲染学情分析专用凭据表单；与教学 AI 密钥完全分开。"""
+    st.divider()
+    st.markdown("### 学情分析 AI 配置")
+    st.caption(
+        f"分析密钥独立保存：`{analysis_secrets_path()}`；"
+        "不会复用教学 AI 密钥，也不会写入 settings 表、导出文件或 git。"
+    )
+    existing_key, existing_base, existing_model = load_analysis_credentials()
+    with st.form("settings_analysis_ai_form"):
+        api_key = st.text_input(
+            "分析 API Key",
+            type="password",
+            value="",
+            placeholder="已保存，留空表示不修改" if existing_key else "",
+        )
+        base_url = st.text_input("分析 Base URL", value=existing_base)
+        model = st.text_input(
+            "分析模型",
+            value=existing_model,
+            placeholder="留空使用 gpt-4o-mini",
+        )
+        saved = st.form_submit_button(
+            "保存分析 AI 配置", **button_kwargs(PRIMARY)
+        )
+    if not saved:
+        return
+    final_key = api_key.strip() or existing_key
+    try:
+        save_analysis_credentials(
+            final_key, base_url=base_url, model=model
+        )
+    except OSError as exc:
+        st.error(
+            f"{ICON_ERROR} 保存分析 AI 配置失败："
+            f"{exc.strerror or exc}。"
+        )
+        return
+    repository.record_audit("settings_analysis_ai", "ok")
+    st.session_state["settings_saved"] = True
+    st.rerun()
 
 
 def _render_notices() -> None:
@@ -776,6 +824,7 @@ def render_settings_page(
         st.success(f"{ICON_CHECK} 当前模式：AI")
 
     _render_ai_config(repository, consent, settings)
+    _render_analysis_ai_config(repository)
 
     st.markdown("### 基础设置")
     current_scheduler = next(
@@ -798,6 +847,14 @@ def render_settings_page(
             "启用 AI 模式",
             value=settings.ai_enabled,
             key="settings_ai_enabled",
+        )
+        analysis_online_enabled = st.toggle(
+            "启用在线学情分析",
+            value=settings.analysis_online_enabled,
+            key="settings_analysis_online_enabled",
+        )
+        st.caption(
+            "仅发送统计摘要，不发送原始作答；需单独配置分析 API Key。"
         )
         daily_limit = st.number_input(
             "每日复习上限（0 = 不限制）",
@@ -854,6 +911,7 @@ def render_settings_page(
     if saved:
         new_settings = AppSettings(
             ai_enabled=ai_enabled,
+            analysis_online_enabled=analysis_online_enabled,
             daily_review_limit=int(daily_limit),
             new_review_ratio=settings.new_review_ratio,
             scheduler=SCHEDULER_LABELS[scheduler_label],

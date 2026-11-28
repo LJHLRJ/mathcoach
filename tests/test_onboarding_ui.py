@@ -27,6 +27,7 @@ PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def _receipt() -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         card_id="hs-function-intro-001",
         stage=Stage.HIGH_SCHOOL,
@@ -40,7 +41,8 @@ def _receipt() -> Receipt:
     )
 
 
-def _complete_first_loop(at) -> None:
+def _complete_first_loop(at: AppTest) -> None:
+    """完成一次最小学习闭环。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     at.text_input[0].set_value("搞懂函数")
     at.button[0].click().run()
@@ -61,6 +63,7 @@ def _complete_first_loop(at) -> None:
 def test_should_render_onboarding(
     completed, had_history, dismissed, expected
 ):
+    """引导仅在首次完成且未关闭时出现。"""
     assert (
         should_render_onboarding(
             completed=completed,
@@ -72,6 +75,7 @@ def test_should_render_onboarding(
 
 
 def test_repository_has_history_detects_existing_receipts():
+    """已有收据视为有历史。"""
     repository = InMemoryRepository()
 
     assert repository_has_history(repository) is False
@@ -80,6 +84,7 @@ def test_repository_has_history_detects_existing_receipts():
 
 
 def test_dismissal_persists_to_settings_store(tmp_path):
+    """关闭状态写入设置存储。"""
     path = tmp_path / "onboarding.sqlite3"
 
     assert onboarding_dismissed(PERSISTENT, path) is False
@@ -96,6 +101,7 @@ def test_dismissal_persists_to_settings_store(tmp_path):
 def test_onboarding_appears_after_first_use_without_blocking(
     tmp_path, monkeypatch
 ):
+    """首次完成后出现非阻塞引导并可关闭。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "onboarding-ui.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

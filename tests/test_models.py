@@ -14,6 +14,7 @@ from mathcoach.domain.models import (
 
 
 def test_enum_values_match_content_literals():
+    """枚举字面量与内容 YAML 保持一致。"""
     assert Stage.HIGH_SCHOOL.value == "highschool"
     assert Difficulty.BASIC.value == "基础"
     assert ExerciseKind.CHOICE.value == "choice"
@@ -21,6 +22,7 @@ def test_enum_values_match_content_literals():
 
 
 def test_card_and_exercise_are_frozen():
+    """卡片与练习模型均为不可变类型。"""
     exercise = Exercise(
         id="hs-001-e1",
         card_id="hs-001",

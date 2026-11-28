@@ -1,0 +1,22 @@
+version: 1
+exercise_id: hs-trig-001-e2
+card_id: hs-trig-001
+
+steps:
+  - index: 1
+    prompt: "把 30° 化为弧度：先算 30/180 化简等于多少？"
+    expected: "1/6"
+    variables: []
+    kc_id: kc-hs-trig-001-p1
+    step_tag: conversion
+    input_kind: expr
+  - index: 2
+    prompt: "所以 30° 等于多少弧度？（填 π/6 或 pi/6）"
+    expected: "π/6"
+    variables: []
+    kc_id: kc-hs-trig-001-f1
+    step_tag: conversion
+    input_kind: sign
+    acceptable:
+      - "π/6"
+      - "pi/6"

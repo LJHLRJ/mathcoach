@@ -8,6 +8,7 @@ NOW = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
 
 
 def test_sqlite_audit_log_persists(tmp_path):
+    """SQLite 审计日志跨连接保留，并按时间倒序返回。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     repository.record_audit("receipt", "ok", NOW)
@@ -26,6 +27,7 @@ def test_sqlite_audit_log_persists(tmp_path):
 
 
 def test_in_memory_audit_log_keeps_short_history():
+    """内存实现按 limit 返回最近的审计记录。"""
     repository = InMemoryRepository()
     for index in range(5):
         repository.record_audit(f"op-{index}", "ok", NOW)

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from mathcoach.content.loader import load_content
+from mathcoach.domain.models import KnowledgeCard
 from mathcoach.domain.grade_index import (
     DIFFICULTY_VALUES,
     GRADE_VALUES,
@@ -23,13 +24,15 @@ CONTENT_ROOT = ROOT / "content"
 TREE_PATH = CONTENT_ROOT / "knowledge_tree.yaml"
 
 
-def _loaded_cards():
+def _loaded_cards() -> list[KnowledgeCard]:
+    """加载严格模式下的全部卡片。"""
     cards, result = load_content(CONTENT_ROOT, strict=True)
     assert result.ok
     return cards
 
 
 def test_grade_and_difficulty_enums_cover_required_values():
+    """年级与难度枚举覆盖规定取值。"""
     assert GRADE_VALUES == (
         "g1",
         "g2",
@@ -63,6 +66,7 @@ def test_grade_and_difficulty_enums_cover_required_values():
 
 
 def test_every_loaded_exercise_has_metadata():
+    """每个练习都有年级与难度元数据。"""
     cards = _loaded_cards()
     index = load_grade_index(CONTENT_ROOT)
     loaded_ids = {
@@ -108,6 +112,7 @@ def test_every_loaded_exercise_has_metadata():
 
 
 def test_index_filters_by_grade_and_difficulty():
+    """索引可按年级与难度过滤。"""
     index = load_grade_index(CONTENT_ROOT)
 
     assert len(index.by_grade("g10")) == 63
@@ -124,6 +129,7 @@ def test_index_filters_by_grade_and_difficulty():
 
 
 def test_missing_metadata_falls_back_to_unclassified():
+    """缺少元数据时归为未分类。"""
     index = build_grade_index(
         [{"id": "demo-card", "exercises": [{"id": "demo-card-e1"}]}]
     )
@@ -136,6 +142,7 @@ def test_missing_metadata_falls_back_to_unclassified():
 
 
 def test_duplicate_exercise_ids_are_rejected():
+    """重复题目 ID 被拒绝。"""
     with pytest.raises(GradeIndexError, match="题目 ID 重复"):
         build_grade_index(
             [
@@ -151,6 +158,7 @@ def test_duplicate_exercise_ids_are_rejected():
 
 
 def test_grade_spans_cover_every_tree_node():
+    """年级跨度覆盖每个知识树节点。"""
     spans = load_grade_spans(TREE_PATH)
 
     assert len(spans) == 148
@@ -168,6 +176,7 @@ def test_grade_spans_cover_every_tree_node():
 
 
 def test_existing_card_fields_are_preserved():
+    """原有卡片字段保持不变。"""
     cards = _loaded_cards()
 
     assert len(cards) == 122

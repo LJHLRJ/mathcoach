@@ -1,0 +1,12 @@
+version: 1
+exercise_id: hs-trig-005-e3
+card_id: hs-trig-005
+
+steps:
+  - index: 1
+    prompt: "按顺序填写正弦定理解三角形的步骤编号（1 找边角对应，2 选正弦定理，3 求边，4 用内角和求角）"
+    expected: "1,2,3,4"
+    variables: []
+    kc_id: kc-hs-trig-005-p2
+    step_tag: procedure
+    input_kind: order

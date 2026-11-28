@@ -1,6 +1,7 @@
 """设置页 AppTest 冒烟：游客提示与非游客入口。"""
 from pathlib import Path
 
+import pytest
 from streamlit.testing.v1 import AppTest
 
 from mathcoach.domain.models import Consent
@@ -9,7 +10,8 @@ from mathcoach.memory.sqlite_repo import SQLiteRepository
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def _open_settings(path: Path, monkeypatch) -> AppTest:
+def _open_settings(path: Path, monkeypatch: pytest.MonkeyPatch) -> AppTest:
+    """打开应用并切换到设置页。"""
     monkeypatch.setenv("MATHCOACH_DB", str(path))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -21,6 +23,7 @@ def _open_settings(path: Path, monkeypatch) -> AppTest:
 def test_settings_page_guest_shows_warning_and_disables_persistent_actions(
     tmp_path, monkeypatch
 ):
+    """游客模式显示提示并禁用持久化操作。"""
     path = tmp_path / "guest.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_consent(Consent(memory=False, mistake_book=False))
@@ -39,6 +42,7 @@ def test_settings_page_guest_shows_warning_and_disables_persistent_actions(
 def test_settings_page_non_guest_has_export_and_clear_sections(
     tmp_path, monkeypatch
 ):
+    """非游客模式展示导出与清除区块。"""
     path = tmp_path / "regular.sqlite3"
 
     at = _open_settings(path, monkeypatch)

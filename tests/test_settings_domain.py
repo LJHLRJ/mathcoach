@@ -24,6 +24,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
 
 
 def _receipt() -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         card_id="hs-001",
         stage=Stage.HIGH_SCHOOL,
@@ -39,6 +40,7 @@ def _receipt() -> Receipt:
 
 
 def _mistake() -> MistakeEntry:
+    """构造错题样例。"""
     return MistakeEntry(
         id="m1",
         exercise_id="ex-1",
@@ -56,6 +58,7 @@ def _mistake() -> MistakeEntry:
 
 
 def test_settings_round_trip_and_invalid_limit():
+    """设置读写往返且非法上限归零。"""
     settings = AppSettings.from_mapping(
         {"ai_enabled": True, "daily_review_limit": 7}
     )
@@ -68,6 +71,7 @@ def test_settings_round_trip_and_invalid_limit():
 
 
 def test_settings_reject_non_boolean_flags():
+    """非布尔标记按严格解析回退。"""
     settings = AppSettings.from_mapping(
         {"ai_enabled": "false", "reminder_enabled": "0"}
     )
@@ -85,6 +89,7 @@ def test_settings_reject_non_boolean_flags():
 
 
 def test_settings_export_allowlist_drops_secret_keys():
+    """导出白名单丢弃未知与敏感键。"""
     exported = settings_for_export(
         {"api_key": "sk-secret", "daily_review_limit": 5, "unknown": "x"}
     )
@@ -93,6 +98,7 @@ def test_settings_export_allowlist_drops_secret_keys():
 
 
 def test_exports_exclude_secret_settings():
+    """各类导出均不包含密钥。"""
     receipt = _receipt()
     mistake = _mistake()
     review = ReviewItem(mistake=mistake, due_at=NOW)

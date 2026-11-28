@@ -1,0 +1,19 @@
+version: 1
+exercise_id: hs-trig-005-e2
+card_id: hs-trig-005
+
+steps:
+  - index: 1
+    prompt: "代入余弦定理：c²=3²+4²−2·3·4·cos 90°。cos 90° 等于多少？"
+    expected: "0"
+    variables: []
+    kc_id: kc-hs-trig-005-f1
+    step_tag: formula
+    input_kind: number
+  - index: 2
+    prompt: "所以 c²=9+16=25，c 等于多少？"
+    expected: "5"
+    variables: []
+    kc_id: kc-hs-trig-005-p1
+    step_tag: calculation
+    input_kind: number

@@ -1,0 +1,30 @@
+version: 1
+exercise_id: hs-trig-003-e3
+card_id: hs-trig-003
+
+steps:
+  - index: 1
+    prompt: "sin(π+x) 展开为 sin π cos x + cos π sin x，其中 sin π 等于多少？"
+    expected: "0"
+    variables: []
+    kc_id: kc-hs-trig-003-f3
+    step_tag: value
+    input_kind: number
+  - index: 2
+    prompt: "cos π 等于多少？"
+    expected: "-1"
+    variables: []
+    kc_id: kc-hs-trig-003-f3
+    step_tag: value
+    input_kind: number
+  - index: 3
+    prompt: "所以 sin(π+x) 应化简为？"
+    expected: "-sin x"
+    variables: []
+    kc_id: kc-hs-trig-003-f2
+    step_tag: formula
+    input_kind: sign
+    acceptable:
+      - "-sin x"
+      - "−sin x"
+      - "-sinx"

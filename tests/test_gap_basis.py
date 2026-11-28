@@ -9,6 +9,7 @@ PREREQUISITES = {
 
 
 def test_trace_gap_adds_basis_to_every_gap():
+    """每个缺口都附带独立的错题比例依据。"""
     stats = {
         "parent-a": MistakeStat(total=3, concept_wrong=2),
         "parent-b": MistakeStat(total=4, concept_wrong=3),
@@ -23,6 +24,7 @@ def test_trace_gap_adds_basis_to_every_gap():
 
 
 def test_gap_basis_multiple_parents_renders_each_basis():
+    """多个父节点缺口的依据逐条渲染。"""
     stats = {
         "parent-a": MistakeStat(total=2, concept_wrong=2),
         "parent-b": MistakeStat(total=4, concept_wrong=3),

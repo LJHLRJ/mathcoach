@@ -34,6 +34,7 @@ CARD_ID = "export-card"
 
 
 def _card() -> KnowledgeCard:
+    """构造导出用卡片。"""
     exercise = Exercise(
         id=f"{CARD_ID}-e1",
         card_id=CARD_ID,
@@ -60,6 +61,7 @@ def _card() -> KnowledgeCard:
 
 
 def _repository() -> InMemoryRepository:
+    """构造含收据与错题的仓储。"""
     repository = InMemoryRepository()
     repository.save_receipt(
         Receipt(
@@ -99,6 +101,7 @@ def _repository() -> InMemoryRepository:
 
 
 def test_artifact_contains_all_files_and_learning_content(tmp_path):
+    """学习包含全部文件并脱敏手机号。"""
     artifact = build_export_artifact(
         _repository(), [_card()], tmp_path / "export", NOW
     )
@@ -125,6 +128,7 @@ def test_artifact_contains_all_files_and_learning_content(tmp_path):
 
 
 def test_anki_tsv_is_importable_and_redacted(tmp_path):
+    """Anki TSV 可导入且已脱敏。"""
     artifact = build_export_artifact(
         _repository(), [_card()], tmp_path / "export", NOW
     )
@@ -143,6 +147,7 @@ def test_anki_tsv_is_importable_and_redacted(tmp_path):
 
 
 def test_write_requires_full_confirmation(tmp_path):
+    """导出需要完整确认串。"""
     repository = _repository()
     destination = tmp_path / "export"
     artifact = build_export_artifact(repository, [_card()], destination, NOW)
@@ -159,6 +164,7 @@ def test_write_requires_full_confirmation(tmp_path):
 
 
 def test_write_creates_files_after_confirmation(tmp_path):
+    """确认后写出四个文件并记录审计。"""
     repository = _repository()
     destination = tmp_path / "export"
     artifact = build_export_artifact(repository, [_card()], destination, NOW)
@@ -177,6 +183,7 @@ def test_write_creates_files_after_confirmation(tmp_path):
 
 
 def test_repo_destination_is_rejected(tmp_path):
+    """仓库目标被拒绝。"""
     repository = _repository()
     destination = PROJECT_ROOT / "tmp-export-should-not-exist"
     artifact = build_export_artifact(repository, [_card()], destination, NOW)
@@ -193,6 +200,7 @@ def test_repo_destination_is_rejected(tmp_path):
 
 
 def test_guest_mode_cannot_export(tmp_path):
+    """游客模式不能导出。"""
     repository = _repository()
     destination = tmp_path / "export"
     artifact = build_export_artifact(repository, [_card()], destination, NOW)

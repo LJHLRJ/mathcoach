@@ -37,8 +37,14 @@ class Repository(Protocol):
         """读取授权状态。"""
         ...
 
-    def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
-        """保存收据，并按题目 ID 关联。"""
+    def save_receipt(
+        self,
+        receipt: Receipt,
+        exercise_id: str,
+        *,
+        mastery_weight: float = 1.0,
+    ) -> None:
+        """保存收据，并按题目 ID 关联；``mastery_weight`` 缩放 BKT 更新幅度。"""
         ...
 
     def update_receipt_restatement(
@@ -104,8 +110,14 @@ class Repository(Protocol):
         correct: bool,
         now: datetime,
         quality: Quality | None = None,
+        *,
+        mastery_weight: float = 1.0,
     ) -> float:
-        """按一次作答更新掌握概率并返回新值；``quality`` 区分独立与提示后答对。"""
+        """按一次作答更新掌握概率并返回新值。
+
+        ``mastery_weight`` 只缩放本次更新幅度，不改变 BKT 公式；
+        ``quality`` 区分独立与提示后答对。
+        """
         ...
 
     def record_audit(
@@ -162,7 +174,13 @@ class InMemoryRepository:
         """读取授权状态。"""
         return self._consent
 
-    def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
+    def save_receipt(
+        self,
+        receipt: Receipt,
+        exercise_id: str,
+        *,
+        mastery_weight: float = 1.0,
+    ) -> None:
         """追加收据并推进 BKT 掌握概率。"""
         self._receipts.append(receipt)
         # 收据代表一次通过观察，按提示层级折减后同步推进掌握概率
@@ -172,6 +190,7 @@ class InMemoryRepository:
             correct=True,
             now=receipt.created_at,
             quality=quality,
+            mastery_weight=mastery_weight,
         )
 
     def update_receipt_restatement(
@@ -267,12 +286,20 @@ class InMemoryRepository:
         correct: bool,
         now: datetime,
         quality: Quality | None = None,
+        *,
+        mastery_weight: float = 1.0,
     ) -> float:
-        """按一次作答更新 BKT 掌握概率并返回新值。"""
+        """按一次作答更新 BKT 掌握概率并返回新值。
+
+        ``mastery_weight`` 只缩放本次更新幅度，公式本身不变。
+        """
         prior = self.get_mastery(card_id)
         if prior is None:
             prior = initial_mastery(bkt_params())
         updated = update_mastery(prior, correct, bkt_params(), quality=quality)
+        weight = max(0.0, min(1.0, float(mastery_weight)))
+        if weight < 1.0:
+            updated = prior + weight * (updated - prior)
         self.set_mastery(card_id, updated, now)
         return updated
 

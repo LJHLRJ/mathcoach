@@ -15,6 +15,7 @@ NOW = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
 
 
 def _entry(identifier: str = "m1", **fields) -> MistakeEntry:
+    """构造带默认字段的错题条目。"""
     return MistakeEntry(
         id=identifier,
         exercise_id=f"e-{identifier}",
@@ -33,6 +34,7 @@ def _entry(identifier: str = "m1", **fields) -> MistakeEntry:
 
 
 def test_first_independent_correct_schedules_tomorrow():
+    """首次独立答对后安排到明天复习。"""
     state, count, streak, due_at = next_review(_entry(), True, NOW)
     assert state is ReviewState.REVIEWING
     assert count == 1
@@ -42,6 +44,7 @@ def test_first_independent_correct_schedules_tomorrow():
 
 
 def test_two_independent_corrects_master_the_entry():
+    """连续两次独立答对转为已掌握。"""
     entry = _entry(review_state=ReviewState.REVIEWING, review_count=1, consecutive_correct=1)
     state, count, streak, due_at = next_review(entry, True, NOW)
     assert state is ReviewState.MASTERED
@@ -51,6 +54,7 @@ def test_two_independent_corrects_master_the_entry():
 
 
 def test_semi_independent_review_resets_streak_and_delays_three_days():
+    """半独立复习重置连对并延后三天。"""
     entry = _entry(consecutive_correct=1)
     state, count, streak, due_at = next_review(entry, False, NOW)
     assert state is ReviewState.REVIEWING
@@ -61,6 +65,7 @@ def test_semi_independent_review_resets_streak_and_delays_three_days():
 
 
 def test_plan_caps_each_bucket_at_three():
+    """每个复习桶最多三项且远未来项不入桶。"""
     items = []
     for index in range(5):
         items.append(ReviewItem(_entry(f"today-{index}"), NOW))

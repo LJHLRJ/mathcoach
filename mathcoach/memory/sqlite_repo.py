@@ -356,16 +356,30 @@ class SQLiteRepository:
         correct: bool,
         now: datetime,
         quality: Quality | None = None,
+        *,
+        mastery_weight: float = 1.0,
     ) -> float:
-        """按一次作答更新 BKT 掌握概率并返回新值。"""
+        """按一次作答更新 BKT 掌握概率并返回新值。
+
+        ``mastery_weight`` 只缩放本次更新幅度，公式本身不变。
+        """
         prior = self.get_mastery(card_id)
         if prior is None:
             prior = initial_mastery(bkt_params())
         updated = update_mastery(prior, correct, bkt_params(), quality=quality)
+        weight = max(0.0, min(1.0, float(mastery_weight)))
+        if weight < 1.0:
+            updated = prior + weight * (updated - prior)
         self.set_mastery(card_id, updated, now)
         return updated
 
-    def save_receipt(self, receipt: Receipt, exercise_id: str) -> None:
+    def save_receipt(
+        self,
+        receipt: Receipt,
+        exercise_id: str,
+        *,
+        mastery_weight: float = 1.0,
+    ) -> None:
         """写入或替换收据，并推进掌握概率。"""
         with self._lock, self._connection:
             self._connection.execute(
@@ -398,6 +412,7 @@ class SQLiteRepository:
             correct=True,
             now=receipt.created_at,
             quality=quality,
+            mastery_weight=mastery_weight,
         )
 
     def update_receipt_restatement(

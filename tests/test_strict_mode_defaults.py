@@ -9,10 +9,12 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 
 
 def test_local_tests_default_to_strict_content_mode():
+    """本地测试环境默认开启严格模式。"""
     assert os.environ.get("MATHCOACH_CONTENT_STRICT") == "1"
 
 
 def test_pytest_workflows_inject_strict_content_mode():
+    """两个 workflow 都注入严格模式变量。"""
     for name in ("visual-regression.yml", "release-desktop.yml"):
         text = (WORKFLOWS / name).read_text(encoding="utf-8")
         assert "MATHCOACH_CONTENT_STRICT" in text
@@ -20,6 +22,7 @@ def test_pytest_workflows_inject_strict_content_mode():
 
 
 def test_config_default_remains_off_without_env():
+    """未注入变量时配置默认关闭严格模式。"""
     env = os.environ.copy()
     env.pop("MATHCOACH_CONTENT_STRICT", None)
     result = subprocess.run(

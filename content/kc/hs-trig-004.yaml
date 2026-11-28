@@ -1,0 +1,60 @@
+version: 1
+unit:
+  id: unit-hs-trig-004
+  name: 正弦型函数的图像
+  card_id: hs-trig-004
+  kc_ids:
+    - kc-hs-trig-004-f1
+    - kc-hs-trig-004-p1
+    - kc-hs-trig-004-p2
+  approved_prerequisite_kc_ids: []
+kcs:
+  - id: kc-hs-trig-004-f1
+    knowledge_point_id: hs-trig-004
+    kind: fact
+    name: 振幅与周期公式
+    statement: y=A sin(ωx+φ) 的振幅为 |A|，周期为 2π/|ω|
+    explanation: 系数 A 决定纵向伸缩，ω 决定横向伸缩。
+    example: y=3sin(2x) 的振幅为 3，周期为 π。
+    common_errors:
+      - 把周期写成 2π/ω 却忽略绝对值
+      - 把振幅当成最大值
+    required_step_tags:
+      - formula
+    prerequisites: []
+  - id: kc-hs-trig-004-p1
+    knowledge_point_id: hs-trig-004
+    kind: procedure
+    name: 求正弦型函数周期
+    statement: 先读 ω，再算 T=2π/|ω|
+    explanation: 从函数解析式中单独取出 x 前的系数 ω。
+    example: y=sin(2x) 中 ω=2，所以 T=π。
+    common_errors:
+      - 把 x 前的常数当成周期
+    required_step_tags:
+      - calculation
+    prerequisites:
+      - kc-hs-trig-004-f1
+  - id: kc-hs-trig-004-p2
+    knowledge_point_id: hs-trig-004
+    kind: procedure
+    name: 求正弦型函数振幅
+    statement: 先读 A，再取绝对值 |A|
+    explanation: 振幅是相对平衡位置的最大偏离，永远非负。
+    example: y=3sin x 的振幅为 3。
+    common_errors:
+      - 把振幅写成 A 而不取绝对值
+    required_step_tags:
+      - calculation
+    prerequisites:
+      - kc-hs-trig-004-f1
+exercise_kc:
+  hs-trig-004-e1:
+    - kc-hs-trig-004-f1
+    - kc-hs-trig-004-p1
+  hs-trig-004-e2:
+    - kc-hs-trig-004-f1
+    - kc-hs-trig-004-p2
+  hs-trig-004-e3:
+    - kc-hs-trig-004-f1
+    - kc-hs-trig-004-p1

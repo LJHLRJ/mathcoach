@@ -1,0 +1,22 @@
+version: 1
+exercise_id: hs-trig-001-e1
+card_id: hs-trig-001
+
+steps:
+  - index: 1
+    prompt: "把 180° 化为弧度：先算 180/180 等于多少？"
+    expected: "1"
+    variables: []
+    kc_id: kc-hs-trig-001-p1
+    step_tag: conversion
+    input_kind: expr
+  - index: 2
+    prompt: "所以 180° 等于多少弧度？（填 π 或 pi）"
+    expected: "π"
+    variables: []
+    kc_id: kc-hs-trig-001-f1
+    step_tag: conversion
+    input_kind: sign
+    acceptable:
+      - "π"
+      - "pi"

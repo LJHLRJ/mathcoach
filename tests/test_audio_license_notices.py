@@ -11,6 +11,7 @@ AUDIO_DOC = ROOT / "docs" / "audio-and-backgrounds.md"
 
 
 def test_notices_cover_used_reference_and_unused_resources():
+    """资源清单覆盖已用、参考与未用资源。"""
     text = NOTICES.read_text(encoding="utf-8")
 
     for name in (
@@ -36,6 +37,7 @@ def test_notices_cover_used_reference_and_unused_resources():
 
 
 def test_disclaimer_is_verbatim_in_notices_and_readme():
+    """免责声明在清单与 README 中逐字一致。"""
     required = (
         "本项目集成的背景图案、音效与环境音来自第三方开源项目",
         "不对第三方资源的版权状态作任何法律保证",
@@ -53,6 +55,7 @@ def test_disclaimer_is_verbatim_in_notices_and_readme():
 
 
 def test_readme_and_audio_doc_link_to_notices():
+    """README 与音频文档链接到第三方清单。"""
     readme = README.read_text(encoding="utf-8")
     audio_doc = AUDIO_DOC.read_text(encoding="utf-8")
 
@@ -62,6 +65,7 @@ def test_readme_and_audio_doc_link_to_notices():
 
 
 def test_settings_about_shows_resources_and_disclaimer(tmp_path, monkeypatch):
+    """设置页关于区块展示资源与免责声明。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "about.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

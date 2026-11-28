@@ -5,6 +5,21 @@ from ..domain.models import Phase, Receipt
 
 
 @dataclass(frozen=True)
+class FollowUpView:
+    """一帧追问视图。
+
+    Attributes:
+        level: 追问所在层级，当前为 L3 或 L4。
+        prompt: 已通过校验的追问问法。
+        supplement: 是否是部分命中后的补充追问。
+    """
+
+    level: int
+    prompt: str
+    supplement: bool = False
+
+
+@dataclass(frozen=True)
 class SessionView:
     """一帧会话视图，app 按字段直接渲染。
 
@@ -16,6 +31,7 @@ class SessionView:
         notice: 辅助提示，可为空。
         receipt: 刚生成的收据。
         receipts: 本次会话已生成的收据。
+        follow_up: L3–L4 追问；None 表示普通陈述式提示。
     """
 
     phase: Phase
@@ -25,3 +41,4 @@ class SessionView:
     notice: str = ""
     receipt: Receipt | None = None
     receipts: tuple[Receipt, ...] = ()
+    follow_up: FollowUpView | None = None

@@ -16,6 +16,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections.abc import Generator, Sequence
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,7 @@ import pytest
 try:
     import numpy as np
     from PIL import Image
-    from playwright.sync_api import Error as PlaywrightError
+    from playwright.sync_api import Browser, Error as PlaywrightError, Locator, Page
     from playwright.sync_api import sync_playwright
 except ImportError as exc:
     if os.getenv("VISUAL_REQUIRE_BROWSER") == "1":
@@ -67,12 +68,14 @@ html, body, [data-testid="stMain"], [data-testid="stSidebar"] {
 
 
 def _free_port() -> int:
+    """获取本地空闲端口。"""
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
 
 
 def _wait_healthy(url: str, process: subprocess.Popen, log_path: Path) -> None:
+    """轮询健康检查直到服务就绪。"""
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
@@ -90,7 +93,8 @@ def _wait_healthy(url: str, process: subprocess.Popen, log_path: Path) -> None:
 
 
 @pytest.fixture(scope="module")
-def app_url(tmp_path_factory):
+def app_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str, None, None]:
+    """启动 Streamlit 子进程并提供地址。"""
     port = _free_port()
     log_path = tmp_path_factory.mktemp("visual") / "streamlit.log"
     db_path = tmp_path_factory.mktemp("visual-db") / "visual.sqlite3"
@@ -136,7 +140,8 @@ def app_url(tmp_path_factory):
 
 
 @pytest.fixture(scope="module")
-def browser():
+def browser() -> Generator[Browser, None, None]:
+    """连接或启动 Playwright 浏览器。"""
     with sync_playwright() as playwright:
         if CDP_URL:
             browser = playwright.chromium.connect_over_cdp(CDP_URL)
@@ -162,7 +167,8 @@ def browser():
 
 
 @pytest.fixture()
-def page(browser, app_url):
+def page(browser: Browser, app_url: str) -> Generator[Page, None, None]:
+    """打开页面并注入隐藏滚动条样式。"""
     context = browser.new_context(
         viewport=VIEWPORT,
         device_scale_factor=1,
@@ -182,7 +188,8 @@ def page(browser, app_url):
         context.close()
 
 
-def _capture(page, name: str, mask=None) -> Path:
+def _capture(page: Page, name: str, mask: Sequence[Locator] | None = None) -> Path:
+    """截图并保存到产物目录。"""
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     page.evaluate(
         "document.querySelector('[data-testid=\"stMain\"]')?.scrollTo(0, 0)"
@@ -202,6 +209,7 @@ def _capture(page, name: str, mask=None) -> Path:
 
 
 def _compare(name: str, actual_path: Path) -> str | None:
+    """比较截图与基线并返回差异说明。"""
     baseline_path = BASELINE_DIR / f"{name}.png"
     if not baseline_path.is_file():
         return (
@@ -233,6 +241,7 @@ def _compare(name: str, actual_path: Path) -> str | None:
 
 
 def test_visual_states_first_screen_quiz_receipt(page):
+    """三状态截图与基线比对。"""
     update = os.getenv("UPDATE_VISUAL_BASELINES") == "1"
     screenshots: list[tuple[str, Path]] = []
 

@@ -23,11 +23,13 @@ NODES = [
 
 
 def test_first_node():
+    """首节点与初始进度一致。"""
     assert first_node(NODES) == NODES[0]
     assert initial_progress(NODES).unlocked == ("n1",)
 
 
 def test_advance_on_receipt():
+    """完成对应卡片收据后解锁下一节点。"""
     progress = initial_progress(NODES)
 
     progress = advance(progress, NODES, "c2")
@@ -36,6 +38,7 @@ def test_advance_on_receipt():
 
 
 def test_no_skip():
+    """未完成前置时不能跳级。"""
     progress = initial_progress(NODES)
 
     unchanged = advance(progress, NODES, "c3")
@@ -44,6 +47,7 @@ def test_no_skip():
 
 
 def test_narrative_closed():
+    """全部节点解锁后叙事关闭。"""
     progress = NarrativeProgress(unlocked=("n1", "n2", "n3"))
 
     assert narrative_closed(progress, NODES)
@@ -51,6 +55,7 @@ def test_narrative_closed():
 
 
 def test_narrative_disabled_does_not_advance():
+    """叙事关闭时不推进进度。"""
     progress = initial_progress(NODES)
 
     unchanged = advance(progress, NODES, "c2", enabled=False)
@@ -59,6 +64,7 @@ def test_narrative_disabled_does_not_advance():
 
 
 def test_pure_no_clock_and_deterministic():
+    """纯函数无时钟依赖且结果确定。"""
     import mathcoach.domain.narrative as narrative
 
     assert not hasattr(narrative, "datetime")
@@ -73,6 +79,7 @@ def test_pure_no_clock_and_deterministic():
 
 
 def test_narrative_file_has_20_to_30_nodes():
+    """叙事 YAML 含 20 至 30 个节点且字段齐全。"""
     data = yaml.safe_load(
         (ROOT / "content/narrative.yaml").read_text(encoding="utf-8")
     )
@@ -85,6 +92,7 @@ def test_narrative_file_has_20_to_30_nodes():
 
 
 def test_load_narrative_returns_nodes():
+    """加载器返回 24 个叙事节点。"""
     from mathcoach.content.loader import load_narrative
 
     nodes = load_narrative(ROOT / "content")

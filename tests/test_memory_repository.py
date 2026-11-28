@@ -26,6 +26,7 @@ NOW = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
 
 
 def _receipt(identifier: str = "r1") -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         card_id="card-1",
         stage=Stage.HIGH_SCHOOL,
@@ -41,6 +42,7 @@ def _receipt(identifier: str = "r1") -> Receipt:
 
 
 def _mistake(identifier: str = "m1", **fields) -> MistakeEntry:
+    """构造错题样例。"""
     data = {
         "exercise_id": "hs-001-e1",
         "card_id": "card-1",
@@ -59,6 +61,7 @@ def _mistake(identifier: str = "m1", **fields) -> MistakeEntry:
 
 
 def test_sqlite_persists_receipts_mistakes_and_review_queue(tmp_path):
+    """SQLite 跨重启保留收据、错题与复习队列。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_receipt(_receipt(), exercise_id="hs-001-e1")
@@ -82,6 +85,7 @@ def test_sqlite_persists_receipts_mistakes_and_review_queue(tmp_path):
 
 
 def test_receipt_restatement_updates_without_extra_mastery(tmp_path):
+    """复述更新不额外提升掌握度。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     receipt = _receipt()
@@ -99,6 +103,7 @@ def test_receipt_restatement_updates_without_extra_mastery(tmp_path):
 
 
 def test_hinted_receipt_gains_less_mastery(tmp_path):
+    """有提示收据的掌握度增益更小。"""
     repository = SQLiteRepository(tmp_path / "mathcoach.sqlite3")
     try:
         repository.save_receipt(_receipt("r-independent"), exercise_id="e1")
@@ -121,6 +126,7 @@ def test_hinted_receipt_gains_less_mastery(tmp_path):
 
 
 def test_consent_roundtrip(tmp_path):
+    """同意状态往返一致。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_consent(Consent(memory=False, mistake_book=True))
@@ -134,6 +140,7 @@ def test_consent_roundtrip(tmp_path):
 
 
 def test_save_mistake_upserts_by_exercise(tmp_path):
+    """错题按练习号覆盖更新。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     try:
@@ -153,6 +160,7 @@ def test_save_mistake_upserts_by_exercise(tmp_path):
 
 
 def test_two_independent_reviews_master_and_leave_queue(tmp_path):
+    """两次独立复习后掌握并离开队列。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     try:
@@ -175,6 +183,7 @@ def test_two_independent_reviews_master_and_leave_queue(tmp_path):
 
 
 def test_guest_repository_never_creates_file(tmp_path):
+    """游客仓储不创建文件。"""
     path = tmp_path / "guest.sqlite3"
     repository = build_repository(Consent(memory=False, mistake_book=False), path)
     assert isinstance(repository, InMemoryRepository)
@@ -186,6 +195,7 @@ def test_guest_repository_never_creates_file(tmp_path):
 
 
 def test_in_memory_repository_keeps_session_data_only():
+    """内存仓储保留会话内数据。"""
     repository = InMemoryRepository()
     repository.save_receipt(_receipt(), exercise_id="hs-001-e1")
     repository.save_mistake(_mistake())
@@ -194,6 +204,7 @@ def test_in_memory_repository_keeps_session_data_only():
 
 
 def test_daily_result_persists_across_restart(tmp_path):
+    """每日结果跨重启保留。"""
     path = tmp_path / "mathcoach.sqlite3"
     result = DailyResult(
         date="2026-11-20",
@@ -215,6 +226,7 @@ def test_daily_result_persists_across_restart(tmp_path):
 
 
 def test_challenge_results_persist_and_sort(tmp_path):
+    """挑战结果持久化并按成绩排序。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_challenge_result(ChallengeResult(5, 10, 200, NOW))
@@ -233,6 +245,7 @@ def test_challenge_results_persist_and_sort(tmp_path):
 
 
 def test_in_memory_review_accepts_quality():
+    """内存仓储接受评分档位。"""
     repository = InMemoryRepository()
     repository.save_mistake(_mistake())
 
@@ -244,6 +257,7 @@ def test_in_memory_review_accepts_quality():
 
 
 def test_review_does_not_double_count_mastery(tmp_path):
+    """内存与 SQLite 掌握度计算一致。"""
     memory = InMemoryRepository()
     memory.save_mistake(_mistake())
     memory.record_review("hs-001-e1", True, NOW)
@@ -258,6 +272,7 @@ def test_review_does_not_double_count_mastery(tmp_path):
 
 
 def test_mastery_history_persists(tmp_path):
+    """掌握度历史持久化并保序。"""
     path = tmp_path / "mastery-history.sqlite3"
     repository = SQLiteRepository(path)
     repository.set_mastery("card-1", 0.4, NOW - timedelta(days=1))
@@ -275,6 +290,7 @@ def test_mastery_history_persists(tmp_path):
 
 
 def test_in_memory_mastery_history_appends_updates():
+    """内存掌握度历史追加更新。"""
     repository = InMemoryRepository()
     repository.set_mastery("card-1", 0.4, NOW)
     repository.record_mastery("card-1", True, NOW + timedelta(days=1))
@@ -287,6 +303,7 @@ def test_in_memory_mastery_history_appends_updates():
 
 
 def test_update_error_type_keeps_review_progress(tmp_path):
+    """修改错因保留复习进度。"""
     repository = SQLiteRepository(tmp_path / "error-type.db")
     try:
         repository.save_mistake(_mistake())

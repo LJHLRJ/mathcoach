@@ -1,0 +1,25 @@
+version: 1
+exercise_id: hs-trig-004-e3
+card_id: hs-trig-004
+
+steps:
+  - index: 1
+    prompt: "y=sin x 的最小正周期是多少？（填 2π 或 2pi）"
+    expected: "2π"
+    variables: []
+    kc_id: kc-hs-trig-004-p1
+    step_tag: calculation
+    input_kind: sign
+    acceptable:
+      - "2π"
+      - "2pi"
+  - index: 2
+    prompt: "y=sin 2x 的最小正周期是多少？（填 π 或 pi）"
+    expected: "π"
+    variables: []
+    kc_id: kc-hs-trig-004-p1
+    step_tag: calculation
+    input_kind: sign
+    acceptable:
+      - "π"
+      - "pi"

@@ -1,0 +1,19 @@
+version: 1
+exercise_id: hs-trig-004-e2
+card_id: hs-trig-004
+
+steps:
+  - index: 1
+    prompt: "y=3sin x 中 A 等于多少？"
+    expected: "3"
+    variables: []
+    kc_id: kc-hs-trig-004-f1
+    step_tag: formula
+    input_kind: number
+  - index: 2
+    prompt: "振幅为 |A|，所以振幅等于多少？"
+    expected: "3"
+    variables: []
+    kc_id: kc-hs-trig-004-p2
+    step_tag: calculation
+    input_kind: number

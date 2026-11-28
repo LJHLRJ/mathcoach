@@ -1,0 +1,19 @@
+version: 1
+exercise_id: hs-trig-002-e2
+card_id: hs-trig-002
+
+steps:
+  - index: 1
+    prompt: "先算 cos²x：由 sin²x + cos²x = 1，cos²x = 1 − (3/5)² 等于多少？"
+    expected: "16/25"
+    variables: []
+    kc_id: kc-hs-trig-002-f1
+    step_tag: identity
+    input_kind: expr
+  - index: 2
+    prompt: "已知 x 在第一象限，且 cos²x = 16/25，cos x 等于多少？"
+    expected: "4/5"
+    variables: []
+    kc_id: kc-hs-trig-002-p1
+    step_tag: sign
+    input_kind: expr

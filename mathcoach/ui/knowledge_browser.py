@@ -22,6 +22,7 @@ from ..memory.settings_repo import SQLiteSettingsStore
 from ..session.engine import SessionEngine
 from .components import PRIMARY, button_kwargs
 from .icons import ICON_PLAY
+from .visuals.registry import kc_visuals_for_exercises, render_kc_visual
 
 LEARNING_CARDS_ENABLED_KEY = "learning_cards_enabled"
 READY_THRESHOLD = 0.6
@@ -263,6 +264,14 @@ def _render_tree(
                         _select_node(node.id)
 
 
+@st.fragment
+def _render_kc_visual(kc_id: str, name: str) -> None:
+    """渲染单个 KC 的动态讲解；失败时只提示，不阻断浏览。"""
+    with st.expander(f"动态讲解：{name}", expanded=False):
+        if render_kc_visual(kc_id) == "failed":
+            st.info("动态讲解暂不可用，已保留文字讲解。")
+
+
 def render_knowledge_browser(
     cards: list[KnowledgeCard],
     provider: Provider,
@@ -322,6 +331,15 @@ def render_knowledge_browser(
                 st.markdown(_strip_leading_title(text))
             else:
                 st.info("该知识点的学习卡片尚未填充。")
+
+        if card is not None:
+            kc_visuals = kc_visuals_for_exercises(
+                exercise.id for exercise in card.exercises
+            )
+            if kc_visuals:
+                st.markdown("**KC 动态讲解**")
+                for kc_id, kc_name in kc_visuals:
+                    _render_kc_visual(kc_id, kc_name)
 
         if card is not None:
             render_learning_status(

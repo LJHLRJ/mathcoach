@@ -25,6 +25,7 @@ NOW = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
 
 
 def _exercise(card_id: str, index: int) -> Exercise:
+    """构造指定卡片的练习。"""
     return Exercise(
         id=f"{card_id}-e{index}",
         card_id=card_id,
@@ -37,6 +38,7 @@ def _exercise(card_id: str, index: int) -> Exercise:
 
 
 def _card(card_id: str, course: str) -> KnowledgeCard:
+    """构造含两道练习的卡片。"""
     return KnowledgeCard(
         id=card_id,
         name=f"卡片{card_id}",
@@ -54,6 +56,7 @@ def _card(card_id: str, course: str) -> KnowledgeCard:
 
 
 def _receipt(exercise_id: str) -> Receipt:
+    """按练习号推导卡片号并构造收据。"""
     card_id = exercise_id.rsplit("-e", 1)[0]
     return Receipt(
         card_id=card_id,
@@ -70,6 +73,7 @@ def _receipt(exercise_id: str) -> Receipt:
 
 
 def _mistake(card_id: str, exercise_id: str) -> MistakeEntry:
+    """构造指定卡片的错题。"""
     return MistakeEntry(
         id=f"m-{exercise_id}",
         exercise_id=exercise_id,
@@ -88,6 +92,7 @@ def _mistake(card_id: str, exercise_id: str) -> MistakeEntry:
 
 
 def test_path_marks_learning_review_and_done():
+    """学习路径标记复习中、已完成与推荐卡。"""
     cards = [_card("c1", "函数与导数"), _card("c2", "函数与导数")]
     receipts = [
         _receipt("c1-e1"),
@@ -108,6 +113,7 @@ def test_path_marks_learning_review_and_done():
 
 
 def test_path_recommends_learning_before_not_started():
+    """推荐优先选学习中的卡片。"""
     cards = [_card("c1", "函数与导数"), _card("c2", "函数与导数")]
     path = build_learning_path(cards, [_receipt("c1-e1")], [])
 
@@ -118,6 +124,7 @@ def test_path_recommends_learning_before_not_started():
 
 
 def test_path_all_done():
+    """全部完成后无推荐并说明原因。"""
     cards = [_card("c1", "函数与导数")]
     path = build_learning_path(
         cards, [_receipt("c1-e1"), _receipt("c1-e2")], []

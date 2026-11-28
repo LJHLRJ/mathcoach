@@ -1,0 +1,65 @@
+version: 1
+unit:
+  id: unit-hs-trig-002
+  name: 同角三角函数关系
+  card_id: hs-trig-002
+  kc_ids:
+    - kc-hs-trig-002-f1
+    - kc-hs-trig-002-r1
+    - kc-hs-trig-002-p1
+  approved_prerequisite_kc_ids:
+    - kc-hs-trig-001-f1
+kcs:
+  - id: kc-hs-trig-002-f1
+    knowledge_point_id: hs-trig-002
+    kind: fact
+    name: 同角平方关系
+    statement: sin²x + cos²x = 1
+    explanation: 同一个角的正弦平方与余弦平方之和恒为 1；它是单位圆上点坐标满足 x²+y²=1 的代数形式。
+    example: 若 sin x = 3/5，则 cos²x = 1 − 9/25 = 16/25。
+    common_errors:
+      - 把 sin²x 写成 sin x²
+      - 忘记平方关系只适用于同一个角
+    required_step_tags:
+      - identity
+    prerequisites: []
+    math_claim:
+      left: "sin(x)**2 + cos(x)**2"
+      right: "1"
+      variables:
+        - x
+  - id: kc-hs-trig-002-r1
+    knowledge_point_id: hs-trig-002
+    kind: rule
+    name: 商数关系与定义域
+    statement: tan x = sin x / cos x（cos x ≠ 0）
+    explanation: 正切等于正弦除以余弦；使用前必须先确认余弦不为零，否则商数关系没有定义。
+    example: 若 sin x = 3/5 且 cos x = 4/5，则 tan x = 3/4。
+    common_errors:
+      - 忽略 cos x ≠ 0 的定义域限制
+      - 把 tan x 写成 cos x / sin x
+    required_step_tags:
+      - condition
+    prerequisites: []
+  - id: kc-hs-trig-002-p1
+    knowledge_point_id: hs-trig-002
+    kind: procedure
+    name: 象限符号判定
+    statement: 由平方关系求另一函数值，再按象限确定符号
+    explanation: 先用 sin²x + cos²x = 1 求出余弦的绝对值，再根据角所在象限决定余弦的正负。
+    example: 若 sin x = 3/5 且 x 在第二象限，则 cos x = −4/5。
+    common_errors:
+      - 只算数值不看象限
+      - 把第二象限的余弦记成正数
+    required_step_tags:
+      - sign
+    prerequisites: []
+exercise_kc:
+  hs-trig-002-e1:
+    - kc-hs-trig-002-f1
+    - kc-hs-trig-002-r1
+  hs-trig-002-e2:
+    - kc-hs-trig-002-f1
+    - kc-hs-trig-002-p1
+  hs-trig-002-e3:
+    - kc-hs-trig-002-f1

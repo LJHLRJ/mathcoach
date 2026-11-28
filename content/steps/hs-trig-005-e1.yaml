@@ -1,0 +1,26 @@
+version: 1
+exercise_id: hs-trig-005-e1
+card_id: hs-trig-005
+
+steps:
+  - index: 1
+    prompt: "余弦定理中，c² 等于 a²+b² 加上还是减去 2ab cos C？"
+    expected: "减去"
+    variables: []
+    kc_id: kc-hs-trig-005-f1
+    step_tag: formula
+    input_kind: sign
+    acceptable:
+      - "减去"
+      - "减"
+      - "-"
+  - index: 2
+    prompt: "所以余弦定理的正确形式是？"
+    expected: "c²=a²+b²−2ab cos C"
+    variables: []
+    kc_id: kc-hs-trig-005-f1
+    step_tag: formula
+    input_kind: sign
+    acceptable:
+      - "c²=a²+b²−2ab cos C"
+      - "c2=a2+b2-2abcosc"

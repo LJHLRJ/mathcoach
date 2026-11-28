@@ -11,6 +11,7 @@ PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def test_dynamic_background_defaults_off(tmp_path):
+    """动态背景默认关闭。"""
     assert (
         motion.load_dynamic_background(
             PERSISTENT, tmp_path / "motion.sqlite3"
@@ -20,6 +21,7 @@ def test_dynamic_background_defaults_off(tmp_path):
 
 
 def test_dynamic_background_persists(tmp_path):
+    """动态背景开关可持久化并读回。"""
     path = tmp_path / "motion.sqlite3"
 
     assert motion.save_dynamic_background(PERSISTENT, True, path) is True
@@ -29,6 +31,7 @@ def test_dynamic_background_persists(tmp_path):
 
 
 def test_shader_html_is_local_constant_and_respects_reduced_motion():
+    """shader HTML 本地内联、常量且响应减少动效。"""
     for variant in ("dashboard", "empty"):
         html = motion.shader_html(variant)
         assert "<canvas" in html
@@ -40,6 +43,7 @@ def test_shader_html_is_local_constant_and_respects_reduced_motion():
 
 
 def test_render_dynamic_background_is_noop_when_disabled(monkeypatch):
+    """关闭时不渲染任何 iframe。"""
     calls = []
     monkeypatch.setattr(
         motion.st.components.v1,
@@ -54,6 +58,7 @@ def test_render_dynamic_background_is_noop_when_disabled(monkeypatch):
 
 
 def test_render_dynamic_background_when_enabled(monkeypatch):
+    """开启时渲染一次高度 180 的 iframe。"""
     calls = []
     monkeypatch.setattr(
         motion.st.components.v1,
@@ -71,6 +76,7 @@ def test_render_dynamic_background_when_enabled(monkeypatch):
 
 
 def test_settings_page_shows_dynamic_background_toggle(tmp_path, monkeypatch):
+    """设置页展示动态背景开关。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "motion-ui.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

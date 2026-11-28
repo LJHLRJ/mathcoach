@@ -12,6 +12,7 @@ ICONS_PATH = ROOT / "mathcoach" / "ui" / "icons.py"
 
 
 def test_app_first_screen_loads_without_exception(tmp_path, monkeypatch):
+    """首屏无异常并显示标题。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -21,6 +22,7 @@ def test_app_first_screen_loads_without_exception(tmp_path, monkeypatch):
 
 
 def test_theme_config_has_required_keys():
+    """主题配置包含基础键与指定色值。"""
     data = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
     theme = data["theme"]
@@ -30,6 +32,7 @@ def test_theme_config_has_required_keys():
 
 
 def test_first_screen_has_card_sidebar_and_tabs(tmp_path, monkeypatch):
+    """首屏包含卡片、侧边栏与当前任务页签。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -47,6 +50,7 @@ def test_first_screen_has_card_sidebar_and_tabs(tmp_path, monkeypatch):
 
 
 def test_receipt_shows_three_metrics_after_full_loop(tmp_path, monkeypatch):
+    """完成闭环后收据展示三个指标。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -67,7 +71,8 @@ def test_receipt_shows_three_metrics_after_full_loop(tmp_path, monkeypatch):
     ]
 
 
-def _start_quiz(at) -> None:
+def _start_quiz(at: AppTest) -> None:
+    """进入小测阶段。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     at.text_input[0].set_value("搞懂函数的概念")
     at.button[0].click().run()
@@ -75,6 +80,7 @@ def _start_quiz(at) -> None:
 
 
 def test_quiz_phase_shows_progress_between_zero_and_one(tmp_path, monkeypatch):
+    """小测进度介于零与一之间。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -89,6 +95,7 @@ def test_quiz_phase_shows_progress_between_zero_and_one(tmp_path, monkeypatch):
 
 
 def test_correct_answer_shows_success_feedback(tmp_path, monkeypatch):
+    """答对显示成功反馈。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -102,6 +109,7 @@ def test_correct_answer_shows_success_feedback(tmp_path, monkeypatch):
 
 
 def test_wrong_answer_shows_error_feedback(tmp_path, monkeypatch):
+    """答错显示错误反馈。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -115,6 +123,7 @@ def test_wrong_answer_shows_error_feedback(tmp_path, monkeypatch):
 
 
 def test_icon_constants_use_material_syntax():
+    """图标常量使用 Material 语法。"""
     tree = ast.parse(ICONS_PATH.read_text(encoding="utf-8"))
     constants = {
         node.targets[0].id: node.value.value
@@ -133,6 +142,7 @@ def test_icon_constants_use_material_syntax():
 
 
 def test_first_screen_buttons_use_material_icons(tmp_path, monkeypatch):
+    """首屏按钮带 Material 图标。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -145,6 +155,7 @@ def test_first_screen_buttons_use_material_icons(tmp_path, monkeypatch):
 
 
 def test_receipt_basis_is_rendered_as_caption(tmp_path, monkeypatch):
+    """收据依据以 caption 呈现。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -161,6 +172,7 @@ def test_receipt_basis_is_rendered_as_caption(tmp_path, monkeypatch):
 
 
 def test_quiz_does_not_render_archive_tab_content(tmp_path, monkeypatch):
+    """小测阶段不渲染归档页内容。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

@@ -6,6 +6,7 @@ from mathcoach.ui.visuals.tangent import build_tangent_figure
 
 
 def test_figure_contains_curve_and_tangent():
+    """图包含曲线与切线，切线斜率与所选点符合解析结果。"""
     figure = build_tangent_figure(lambda x: x**2, x0=1.0)
 
     assert len(figure.data) == 2
@@ -23,6 +24,7 @@ def test_figure_contains_curve_and_tangent():
 
 
 def test_module_does_not_import_streamlit_at_top_level():
+    """可视化模块在顶层保持与 Streamlit 解耦。"""
     import mathcoach.ui.visuals.tangent as tangent
 
     assert "streamlit" not in tangent.__dict__

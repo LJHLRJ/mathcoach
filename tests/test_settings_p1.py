@@ -21,6 +21,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
 
 
 def _receipt() -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         card_id="hs-001",
         stage=Stage.HIGH_SCHOOL,
@@ -36,6 +37,7 @@ def _receipt() -> Receipt:
 
 
 def test_advanced_settings_validation_and_mapping():
+    """高级设置校验并保留合法值。"""
     settings = AppSettings.from_mapping(
         {
             "scheduler": "sm2",
@@ -61,6 +63,7 @@ def test_advanced_settings_validation_and_mapping():
 
 
 def test_ai_credentials_round_trip_and_clear(tmp_path):
+    """凭据文件往返、权限与清空。"""
     path = tmp_path / "secrets.local"
     save_ai_credentials("sk-secret", "https://example.test/v1", path=path)
 
@@ -74,6 +77,7 @@ def test_ai_credentials_round_trip_and_clear(tmp_path):
 
 
 def test_connection_error_does_not_echo_key():
+    """连接错误不回显密钥。"""
     message = sanitized_connection_error(
         RuntimeError("invalid api_key=sk-secret"), "sk-secret"
     )
@@ -83,6 +87,7 @@ def test_connection_error_does_not_echo_key():
 
 
 def test_scheduler_change_does_not_rewrite_receipts(tmp_path):
+    """切换调度不重写已有收据。"""
     path = tmp_path / "history.sqlite3"
     repository = SQLiteRepository(path)
     receipt = _receipt()
@@ -98,6 +103,7 @@ def test_scheduler_change_does_not_rewrite_receipts(tmp_path):
 
 
 def test_font_size_change_does_not_rewrite_receipts(tmp_path):
+    """切换字号不重写已有收据。"""
     path = tmp_path / "font.sqlite3"
     repository = SQLiteRepository(path)
     receipt = _receipt()
@@ -113,6 +119,7 @@ def test_font_size_change_does_not_rewrite_receipts(tmp_path):
 
 
 def test_ai_key_is_not_stored_in_settings_or_export(tmp_path):
+    """密钥不进入设置存储或导出。"""
     path = tmp_path / "settings.sqlite3"
     store = SQLiteSettingsStore(path)
     try:
@@ -135,6 +142,7 @@ def test_ai_key_is_not_stored_in_settings_or_export(tmp_path):
 
 
 def test_advanced_settings_are_loaded_from_store(tmp_path):
+    """高级设置可从存储读回。"""
     path = tmp_path / "roundtrip.sqlite3"
     store = SQLiteSettingsStore(path)
     try:

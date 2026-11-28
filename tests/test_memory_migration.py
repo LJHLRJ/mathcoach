@@ -5,6 +5,7 @@ from mathcoach.memory.sqlite_repo import SCHEMA_VERSION, SQLiteRepository
 
 
 def test_fresh_db_has_schema_v2(tmp_path):
+    """新库建到当前 schema 并包含三列。"""
     repo = SQLiteRepository(tmp_path / "fresh.db")
     with sqlite3.connect(repo.db_path) as conn:
         version = conn.execute("SELECT version FROM schema_version").fetchone()[0]
@@ -14,6 +15,7 @@ def test_fresh_db_has_schema_v2(tmp_path):
 
 
 def test_v1_db_migrates_and_keeps_rows(tmp_path):
+    """v1 库自动迁移且保留原有记录。"""
     db_path = tmp_path / "v1.db"
     with sqlite3.connect(db_path) as conn:
         conn.executescript(

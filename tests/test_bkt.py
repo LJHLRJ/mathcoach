@@ -11,10 +11,12 @@ from mathcoach.domain.spaced_repetition import Quality
 
 
 def test_initial_mastery():
+    """初始掌握度等于先验参数。"""
     assert initial_mastery() == DEFAULT_BKT_PARAMS.p_init
 
 
 def test_correct_updates_mastery_up():
+    """答对提升掌握概率。"""
     prior = 0.3
 
     posterior = update_mastery(prior, correct=True, params=DEFAULT_BKT_PARAMS)
@@ -23,6 +25,7 @@ def test_correct_updates_mastery_up():
 
 
 def test_wrong_updates_mastery_down():
+    """答错降低掌握概率。"""
     prior = 0.7
 
     posterior = update_mastery(prior, correct=False, params=DEFAULT_BKT_PARAMS)
@@ -31,6 +34,7 @@ def test_wrong_updates_mastery_down():
 
 
 def test_transit_after_update():
+    """更新后应用转移概率。"""
     params_without_transit = BKTParams(
         p_init=DEFAULT_BKT_PARAMS.p_init,
         p_transit=0.0,
@@ -45,6 +49,7 @@ def test_transit_after_update():
 
 
 def test_pure_no_clock_and_deterministic():
+    """纯函数无时钟依赖且结果确定。"""
     import mathcoach.domain.bkt as bkt
 
     assert not hasattr(bkt, "datetime")
@@ -57,6 +62,7 @@ def test_pure_no_clock_and_deterministic():
 
 
 def test_hinted_correct_gains_less_than_independent():
+    """有提示答对带来的增益小于独立答对。"""
     independent = update_mastery(0.3, correct=True, params=DEFAULT_BKT_PARAMS)
     hinted = update_mastery(
         0.3,

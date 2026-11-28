@@ -5,6 +5,7 @@ from mathcoach.memory.sqlite_repo import _MIGRATIONS, SCHEMA_VERSION, SQLiteRepo
 
 
 def test_fresh_db_has_schema_v3_and_fsrs_columns(tmp_path):
+    """新库建到 v3 并包含 FSRS 四列。"""
     repo = SQLiteRepository(tmp_path / "fresh.db")
 
     with sqlite3.connect(repo.db_path) as conn:
@@ -17,6 +18,7 @@ def test_fresh_db_has_schema_v3_and_fsrs_columns(tmp_path):
 
 
 def test_v2_db_migrates_keeps_rows_and_sets_defaults(tmp_path):
+    """v2 库迁移后保留记录并补默认值。"""
     db_path = tmp_path / "v2.db"
     with sqlite3.connect(db_path) as conn:
         conn.executescript(
@@ -77,6 +79,7 @@ def test_v2_db_migrates_keeps_rows_and_sets_defaults(tmp_path):
 
 
 def test_v3_migration_only_adds_columns():
+    """v3 迁移只新增列，不做删除或更新。"""
     statements = _MIGRATIONS[3]
 
     assert len(statements) == 4

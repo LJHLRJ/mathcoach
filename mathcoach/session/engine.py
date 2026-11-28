@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -26,16 +26,43 @@ from ..domain.models import (
     SessionState,
 )
 from ..domain.receipt import RESTATEMENT_SPARSE, assess_restatement, build_receipt
-from ..domain.spaced_repetition import Quality, quality_from_outcome
+from ..domain.spaced_repetition import Quality
 from ..llm.base import Provider, RenderTask
 from ..memory.repository import InMemoryRepository, Repository
+from ..mastery import (
+    observation_weight,
+    quality_for_correct,
+    reference_seconds_from_history,
+)
 from ..safety.guards import REFUSAL_TEXT, detect_injection
 from ..safety.redlines import (
     ConfirmationRequired,
     WriteBlocked,
     assert_write_allowed,
+    sanitize_text,
 )
-from .state import SessionView
+from ..tutor.dialog import (
+    DialogEvent,
+    DialogEventKind,
+    DialogOutcome,
+    FollowUpClient,
+    FollowUpSpec,
+    VerifyFn,
+    build_follow_up,
+    judge_follow_up,
+)
+from .state import FollowUpView, SessionView
+
+
+@dataclass
+class _ActiveFollowUp:
+    """当前正在等待学生回答的追问。"""
+
+    spec: FollowUpSpec
+    prompt: str
+    level: int
+    supplement: bool
+    shown_at: datetime
 
 
 class SessionEngine:
@@ -61,6 +88,10 @@ class SessionEngine:
         goal: str = "",
         repository: Repository | None = None,
         consent: Consent | None = None,
+        *,
+        dialog_client: FollowUpClient | None = None,
+        dialog_recorder: Callable[[DialogEvent], None] | None = None,
+        dialog_verify_fn: VerifyFn | None = None,
     ) -> None:
         """创建会话并停在目标确认阶段。
 
@@ -70,6 +101,9 @@ class SessionEngine:
             goal: 初始目标，通常为空。
             repository: 仓储，缺省用内存实现。
             consent: 授权状态，缺省全关。
+            dialog_client: 追问问法客户端；None 时 L3–L4 保持陈述式提示。
+            dialog_recorder: 追问事件落库回调；None 时只存内存。
+            dialog_verify_fn: 追问内容验证函数；None 使用默认 verify。
         """
         self.card = card
         self.provider = provider
@@ -78,6 +112,12 @@ class SessionEngine:
         self.state = SessionState(card_id=card.id, hint_level=initial_level(), goal=goal)
         self._exercise_pos = 0
         self.receipts: list[Receipt] = []
+        self.dialog_client = dialog_client
+        self.dialog_recorder = dialog_recorder
+        self.dialog_verify_fn = dialog_verify_fn
+        self._active_follow_up: _ActiveFollowUp | None = None
+        self._dialog_misses = 0
+        self.dialog_events: list[DialogEvent] = []
         self.view = SessionView(
             phase=Phase.GOAL_CONFIRM,
             title=f"目标确认 · {card.name}",
@@ -155,6 +195,8 @@ class SessionEngine:
         self.state.hint_requests = []
         self.state.diagnosis = None
         self.state.exercise_started_at = datetime.now(timezone.utc)
+        self._active_follow_up = None
+        self._dialog_misses = 0
         return self._render_quiz()
 
     def _render_quiz(self, notice: str | None = None) -> SessionView:
@@ -262,6 +304,12 @@ class SessionEngine:
 
         self.state.phase = Phase.HINT
         self.state.hint_level = automatic_next_level(self.state.hint_level)
+        self._start_follow_up(self.state.hint_level)
+        if self._active_follow_up is not None:
+            return self._render_follow_up(
+                self._active_follow_up,
+                "先回答追问，再回到原题。",
+            )
         return self._set(
             SessionView(
                 phase=Phase.HINT,
@@ -298,6 +346,16 @@ class SessionEngine:
         if not self.consent.mistake_book:
             return
         now = datetime.now(timezone.utc)
+        duration_s = 0
+        if self.state.exercise_started_at is not None:
+            duration_s = max(
+                0,
+                int(
+                    (
+                        now - self.state.exercise_started_at
+                    ).total_seconds()
+                ),
+            )
         error_type = self.state.diagnosis
         if error_type is None:
             error_type = diagnose(
@@ -325,6 +383,7 @@ class SessionEngine:
                 "options": list(exercise.options),
                 "solution_outline": exercise.solution_outline,
                 "variants": list(exercise.variants),
+                "duration_s": duration_s,
             },
         )
         self._safe_write("mistake", lambda: self.repository.save_mistake(entry))
@@ -359,6 +418,12 @@ class SessionEngine:
                 ),
             )
         label = self.state.diagnosis.value if self.state.diagnosis else "未确定"
+        self._start_follow_up(self.state.hint_level)
+        if self._active_follow_up is not None:
+            return self._render_follow_up(
+                self._active_follow_up,
+                f"错因：{label}。先回答追问，再回到原题。",
+            )
         return self._set(
             SessionView(
                 phase=Phase.HINT,
@@ -383,6 +448,223 @@ class SessionEngine:
             return f"完整推导：{exercise.solution_outline}"
         return "请用自己的话复述本题思路，再说出答案。"
 
+    def _follow_up_view(self, active: _ActiveFollowUp) -> FollowUpView:
+        """把内部追问状态转成视图。"""
+        return FollowUpView(
+            level=active.level,
+            prompt=active.prompt,
+            supplement=active.supplement,
+        )
+
+    def _render_follow_up(
+        self, active: _ActiveFollowUp, notice: str
+    ) -> SessionView:
+        """渲染当前追问，等待学生回答。"""
+        title = (
+            f"提示 L{active.level} · 补充追问"
+            if active.supplement
+            else f"提示 L{active.level} · 追问"
+        )
+        return self._set(
+            SessionView(
+                phase=Phase.HINT,
+                title=title,
+                body=active.prompt,
+                notice=notice,
+                follow_up=self._follow_up_view(active),
+            )
+        )
+
+    def _start_follow_up(
+        self, level: int, *, supplement: bool = False
+    ) -> FollowUpView | None:
+        """尝试在 L3/L4 生成追问；失败时记录降级并返回 None。"""
+        if level not in (3, 4):
+            return None
+        if self._dialog_misses >= 2:
+            self._record_dialog_fallback(
+                level=level,
+                supplement=supplement,
+                reason="two_misses",
+            )
+            return None
+        result = build_follow_up(
+            self.current_exercise.id,
+            level,
+            client=self.dialog_client,
+            supplement=supplement,
+            verify_fn=self.dialog_verify_fn,
+        )
+        if result.follow_up is None:
+            if result.spec is not None:
+                reason = result.fallback_reason
+                if result.verify_verdict:
+                    reason = f"{reason}:{result.verify_verdict}"
+                self._record_dialog_fallback(
+                    level=level,
+                    supplement=supplement,
+                    reason=reason,
+                    spec=result.spec,
+                )
+            return None
+        now = datetime.now(timezone.utc)
+        self._active_follow_up = _ActiveFollowUp(
+            spec=result.follow_up.spec,
+            prompt=result.follow_up.prompt,
+            level=level,
+            supplement=supplement,
+            shown_at=now,
+        )
+        return self._follow_up_view(self._active_follow_up)
+
+    def _record_dialog_event(
+        self,
+        active: _ActiveFollowUp,
+        kind: DialogEventKind,
+        *,
+        answer: str = "",
+        reason: str = "",
+        downgraded: bool = False,
+    ) -> None:
+        """记录一次追问结果，供效果信号使用。"""
+        now = datetime.now(timezone.utc)
+        event = DialogEvent(
+            exercise_id=self.current_exercise.id,
+            card_id=self.card.id,
+            kc_ids=active.spec.kc_ids,
+            level=active.level,
+            supplement=active.supplement,
+            kind=kind,
+            downgraded=downgraded,
+            answer=sanitize_text(answer),
+            reason=reason,
+            shown_at=active.shown_at,
+            resolved_at=now,
+        )
+        self.dialog_events.append(event)
+        if self.dialog_recorder is not None:
+            self.dialog_recorder(event)
+
+    def _record_dialog_fallback(
+        self,
+        *,
+        level: int,
+        supplement: bool,
+        reason: str,
+        spec: FollowUpSpec | None = None,
+    ) -> None:
+        """记录未生成追问的降级事件。"""
+        now = datetime.now(timezone.utc)
+        event = DialogEvent(
+            exercise_id=self.current_exercise.id,
+            card_id=self.card.id,
+            kc_ids=spec.kc_ids if spec is not None else (),
+            level=level,
+            supplement=supplement,
+            kind=DialogEventKind.FALLBACK,
+            downgraded=False,
+            reason=reason,
+            shown_at=now,
+            resolved_at=now,
+        )
+        self.dialog_events.append(event)
+        if self.dialog_recorder is not None:
+            self.dialog_recorder(event)
+
+    def _downgrade_to_l5(self, notice: str) -> SessionView:
+        """结束追问并降到 L5 完整讲解。"""
+        self._active_follow_up = None
+        self.state.phase = Phase.HINT
+        self.state.hint_level = 5
+        self.state.max_hint_level = max(self.state.max_hint_level, 5)
+        return self._set(
+            SessionView(
+                phase=Phase.HINT,
+                title="提示 L5 · 完整讲解",
+                body=self._hint_text(5),
+                notice=notice,
+            )
+        )
+
+    def submit_follow_up(self, answer: str) -> SessionView:
+        """提交追问回答并按命中/部分命中/未命中三档推进。"""
+        active = self._active_follow_up
+        if active is None or self.state.phase is not Phase.HINT:
+            raise RuntimeError("当前没有追问")
+        text = answer.strip()
+        if not text:
+            return self._render_follow_up(active, "先写下你的回答。")
+        blocked = detect_injection(text)
+        if blocked is not None:
+            self.state.observed = True
+            self.repository.record_audit(
+                "dialog", f"blocked:{blocked.reason}"
+            )
+            self._record_dialog_event(
+                active,
+                DialogEventKind.BLOCKED,
+                answer=text,
+                reason=blocked.reason,
+            )
+            return self._render_follow_up(
+                active, f"{REFUSAL_TEXT} 请重新回答追问。"
+            )
+        outcome = judge_follow_up(active.spec, text)
+        if outcome is DialogOutcome.HIT:
+            self._record_dialog_event(
+                active, DialogEventKind.HIT, answer=text
+            )
+            self._dialog_misses = 0
+            self._active_follow_up = None
+            if active.level == 3:
+                self._start_follow_up(4)
+                if self._active_follow_up is not None:
+                    self.state.hint_level = 4
+                    self.state.max_hint_level = max(
+                        self.state.max_hint_level, 4
+                    )
+                    return self._render_follow_up(
+                        self._active_follow_up,
+                        "L3 追问命中，进入 L4 追问。",
+                    )
+            return self._render_quiz(
+                notice="追问命中，回到原题再试一次。"
+            )
+        if outcome is DialogOutcome.PARTIAL:
+            if not active.supplement:
+                self._start_follow_up(
+                    active.level, supplement=True
+                )
+                if self._active_follow_up is not None:
+                    self._record_dialog_event(
+                        active,
+                        DialogEventKind.PARTIAL,
+                        answer=text,
+                    )
+                    return self._render_follow_up(
+                        self._active_follow_up,
+                        "部分命中，再补充一个更具体的问题。",
+                    )
+            self._record_dialog_event(
+                active,
+                DialogEventKind.PARTIAL,
+                answer=text,
+                downgraded=True,
+            )
+            return self._downgrade_to_l5(
+                "补充追问后仍未完全命中，降到 L5 完整讲解。"
+            )
+        self._dialog_misses += 1
+        self._record_dialog_event(
+            active,
+            DialogEventKind.MISS,
+            answer=text,
+            downgraded=True,
+        )
+        return self._downgrade_to_l5(
+            "追问未命中，降到 L5 完整讲解。"
+        )
+
     def request_hint(self, kind: str) -> SessionView:
         """按门槛发放请求的提示。
 
@@ -404,6 +686,8 @@ class SessionEngine:
         """
         if self.state.phase not in (Phase.QUIZ, Phase.HINT):
             raise RuntimeError("当前不能请求提示")
+        if self._active_follow_up is not None:
+            raise RuntimeError("请先回答当前追问")
         # 门槛按卡片会话累计：单题最多 3 次连错，集不齐 L1–L4
         attempted = {attempt["hint_level"] for attempt in self.state.attempts}
         # M1 只做门槛判定，实际可达性依赖 M2 连错诊断；测试覆盖门槛逻辑即可。
@@ -418,6 +702,12 @@ class SessionEngine:
             if kind in ("step", "answer")
             else level
         )
+        self._start_follow_up(display_level)
+        if self._active_follow_up is not None:
+            return self._render_follow_up(
+                self._active_follow_up,
+                "先回答追问，再回到原题。",
+            )
         return self._set(
             SessionView(
                 phase=Phase.HINT,
@@ -428,23 +718,41 @@ class SessionEngine:
         )
 
     def retry(self) -> SessionView:
-        """从提示回到小测。"""
+        """从提示回到小测；若有未完成追问，按跳过记录。"""
         if self.state.phase is not Phase.HINT:
             raise RuntimeError("当前不在提示阶段")
+        if self._active_follow_up is not None:
+            self._record_dialog_event(
+                self._active_follow_up,
+                DialogEventKind.SKIPPED,
+                reason="retry",
+            )
+            self._active_follow_up = None
         self.state.phase = Phase.QUIZ
         return self._render_quiz()
 
     def _persist_receipt(self, receipt: Receipt) -> None:
-        """按授权写入收据并登记复习。"""
+        """按授权写入收据并登记复习；弱正确降低 BKT 权重与 FSRS 间隔。"""
         exercise = self.current_exercise
+        reference = reference_seconds_from_history(
+            self.repository.list_receipts(limit=None),
+            self.card.id,
+        )
+        weight = observation_weight(receipt.duration_s, reference)
+        quality = quality_for_correct(
+            receipt.duration_s, reference, receipt.max_hint_level
+        )
         if self.consent.memory:
             self._safe_write(
                 "receipt",
-                lambda: self.repository.save_receipt(receipt, exercise.id),
+                lambda: self.repository.save_receipt(
+                    receipt,
+                    exercise.id,
+                    mastery_weight=weight,
+                ),
             )
         if self.consent.mistake_book:
-            # 半独立答对降为 HINTED，避免被 FSRS 当作遗忘
-            quality = quality_from_outcome(True, receipt.max_hint_level)
+            # 弱正确按 HINTED 处理，复用现有 FSRS 的 HARD 间隔
             self._safe_write(
                 "review",
                 lambda: self.repository.record_review(
@@ -580,6 +888,8 @@ class SessionEngine:
             self.state.max_hint_level = 0  # 跨题不继承上一题的提示层级
             self.state.exercise_id = self.current_exercise.id
             self.state.exercise_started_at = datetime.now(timezone.utc)
+            self._active_follow_up = None
+            self._dialog_misses = 0
             return self._render_quiz()
 
         self.state.phase = Phase.WRAPUP

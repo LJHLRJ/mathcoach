@@ -19,7 +19,8 @@ from mathcoach.session.engine import SessionEngine
 CONTENT_ROOT = Path(__file__).resolve().parents[1] / "content"
 
 
-def _engine(repository, consent: Consent | None = None) -> SessionEngine:
+def _engine(repository: InMemoryRepository, consent: Consent | None = None) -> SessionEngine:
+    """构造带离线 Provider 的引擎。"""
     cards, _ = load_content(CONTENT_ROOT, strict=False)
     card = next(card for card in cards if card.id == "hs-function-intro-001")
     return SessionEngine(
@@ -31,6 +32,7 @@ def _engine(repository, consent: Consent | None = None) -> SessionEngine:
 
 
 def _wrong_then_correct(engine: SessionEngine, with_hint: bool = False) -> None:
+    """先答错再重试并答对。"""
     engine.confirm_goal("搞懂函数")
     engine.begin_quiz()
     engine.submit_answer("y² = x")
@@ -42,6 +44,7 @@ def _wrong_then_correct(engine: SessionEngine, with_hint: bool = False) -> None:
 
 
 def test_wrong_answer_records_mistake_and_review_item():
+    """答错写入错题与复习队列。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     engine.confirm_goal("搞懂函数")
@@ -56,6 +59,7 @@ def test_wrong_answer_records_mistake_and_review_item():
 
 
 def test_correct_answer_saves_receipt_and_reviews_mistake():
+    """答对写收据并把错题转为复习中。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     _wrong_then_correct(engine)
@@ -68,6 +72,7 @@ def test_correct_answer_saves_receipt_and_reviews_mistake():
 
 
 def test_semi_independent_review_schedules_three_days_later():
+    """有提示答对按半独立排期。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     _wrong_then_correct(engine, with_hint=True)
@@ -78,6 +83,7 @@ def test_semi_independent_review_schedules_three_days_later():
 
 
 def test_two_independent_corrects_master_across_sessions():
+    """跨会话两次独立答对转为已掌握。"""
     repository = InMemoryRepository()
     _wrong_then_correct(_engine(repository))
     assert repository.list_mistakes()[0].review_state is not ReviewState.MASTERED
@@ -93,6 +99,7 @@ def test_two_independent_corrects_master_across_sessions():
 
 
 def test_diagnosis_override_updates_mistake_book():
+    """错因确认覆盖错题类型。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     engine.confirm_goal("搞懂函数")
@@ -106,6 +113,7 @@ def test_diagnosis_override_updates_mistake_book():
 
 
 def test_diagnosis_confirmation_keeps_mastery():
+    """确认错因不改变掌握度。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     engine.confirm_goal("搞懂函数")
@@ -121,6 +129,7 @@ def test_diagnosis_confirmation_keeps_mastery():
 
 
 def test_restatement_records_quality_without_extra_mastery():
+    """复述记录质量且不额外提升掌握度。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     _wrong_then_correct(engine)
@@ -137,7 +146,9 @@ def test_restatement_records_quality_without_extra_mastery():
 
 
 def test_hinted_correct_gains_less_mastery_than_independent():
+    """有提示答对的掌握度增益更小。"""
     def mastery_after(hinted: bool) -> float:
+        """计算指定提示条件下的掌握度。"""
         repository = InMemoryRepository()
         engine = _engine(repository)
         engine.confirm_goal("搞懂函数")
@@ -157,6 +168,7 @@ def test_hinted_correct_gains_less_mastery_than_independent():
 
 
 def test_sparse_restatement_feeds_back_to_review():
+    """稀疏复述回退复习连对。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     _wrong_then_correct(engine)
@@ -175,6 +187,7 @@ def test_sparse_restatement_feeds_back_to_review():
 
 
 def test_complete_restatement_keeps_review_streak():
+    """完整复述保留复习连对。"""
     repository = InMemoryRepository()
     engine = _engine(repository)
     _wrong_then_correct(engine)
@@ -192,6 +205,7 @@ def test_complete_restatement_keeps_review_streak():
 def test_hinted_correct_is_not_recorded_as_fsrs_lapse(
     tmp_path, monkeypatch
 ):
+    """有提示答对不计 FSRS 遗忘。"""
     monkeypatch.delenv("MATHCOACH_SCHEDULER", raising=False)
     repository = SQLiteRepository(tmp_path / "hinted.sqlite3")
     try:
@@ -219,6 +233,7 @@ def test_hinted_correct_is_not_recorded_as_fsrs_lapse(
 
 
 def test_hinted_correct_uses_sm2_hinted_interval(tmp_path, monkeypatch):
+    """SM-2 下有提示答对使用短间隔。"""
     monkeypatch.setenv("MATHCOACH_SCHEDULER", "sm2")
     repository = SQLiteRepository(tmp_path / "hinted-sm2.sqlite3")
     try:
@@ -242,6 +257,7 @@ def test_hinted_correct_uses_sm2_hinted_interval(tmp_path, monkeypatch):
 
 
 def test_consent_off_does_not_write_anything():
+    """同意关闭时不写任何学习数据。"""
     repository = InMemoryRepository(Consent(memory=False, mistake_book=False))
     engine = _engine(repository, Consent(memory=False, mistake_book=False))
     _wrong_then_correct(engine)
@@ -251,6 +267,7 @@ def test_consent_off_does_not_write_anything():
 
 
 def test_sqlite_memory_survives_restart(tmp_path):
+    """SQLite 记忆跨重启保留。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     engine = _engine(repository)
@@ -268,6 +285,7 @@ def test_sqlite_memory_survives_restart(tmp_path):
 
 
 def test_guest_engine_never_creates_database(tmp_path):
+    """游客引擎不创建数据库文件。"""
     path = tmp_path / "guest.sqlite3"
     consent = Consent(memory=False, mistake_book=False)
     repository = build_repository(consent, path)

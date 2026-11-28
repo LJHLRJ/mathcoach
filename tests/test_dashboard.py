@@ -16,6 +16,7 @@ NOW = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
 
 
 def _receipt(identifier: str, independence: Independence, hint: int) -> Receipt:
+    """构造收据样例。"""
     return Receipt(
         id=identifier,
         card_id="card-1",
@@ -33,6 +34,7 @@ def _receipt(identifier: str, independence: Independence, hint: int) -> Receipt:
 def _mistake(
     identifier: str, exercise_id: str, course: str, error: ErrorType
 ) -> MistakeEntry:
+    """构造错题样例。"""
     return MistakeEntry(
         id=identifier,
         exercise_id=exercise_id,
@@ -50,6 +52,7 @@ def _mistake(
 
 
 def test_dashboard_aggregates_learning_data():
+    """仪表盘聚合收据、错题与复习状态。"""
     repository = InMemoryRepository()
     repository.save_receipt(
         _receipt("r1", Independence.INDEPENDENT, 1), "e1"
@@ -84,6 +87,7 @@ def test_dashboard_aggregates_learning_data():
 
 
 def test_empty_dashboard_is_zeroed():
+    """空数据时各项统计为零。"""
     summary = build_dashboard(InMemoryRepository(), NOW)
     assert summary.receipts == 0
     assert summary.mistakes == 0

@@ -14,6 +14,7 @@ REQUIRED = {
 
 
 def test_workflows_use_node24_action_majors():
+    """workflow 使用 Node 24 对应的大版本。"""
     assert WORKFLOWS
     for path in WORKFLOWS:
         text = path.read_text(encoding="utf-8")
@@ -26,6 +27,7 @@ def test_workflows_use_node24_action_majors():
 
 
 def test_workflows_are_valid_yaml_and_pin_action_majors():
+    """workflow 是合法 YAML 且 uses 固定大版本。"""
     for path in WORKFLOWS:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert isinstance(data, dict), path.name

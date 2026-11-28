@@ -10,6 +10,7 @@ APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
 def test_dashboard_shows_three_recommendations(tmp_path, monkeypatch):
+    """仪表盘展示三条推荐，每条都带依据。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -24,6 +25,7 @@ def test_dashboard_shows_three_recommendations(tmp_path, monkeypatch):
 
 
 def test_dashboard_recommendation_prefers_low_mastery(tmp_path, monkeypatch):
+    """掌握度更低的卡片排在推荐首位。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     now = datetime.now(timezone.utc)
@@ -43,6 +45,7 @@ def test_dashboard_recommendation_prefers_low_mastery(tmp_path, monkeypatch):
 
 
 def test_dashboard_recommend_button_starts_session(tmp_path, monkeypatch):
+    """点击推荐开始按钮进入陪练并预选对应卡片。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

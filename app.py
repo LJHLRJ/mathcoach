@@ -1,12 +1,29 @@
 """Streamlit 单页装配：只渲染 session 层给的视图，不写判定逻辑。"""
+import sqlite3
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
+from streamlit.errors import StreamlitInvalidLayoutContextError
 
 import mathcoach
+from mathcoach.analytics import (
+    TemplateNarrator,
+    build_attribution,
+    build_narrator,
+)
+from mathcoach.mastery import (
+    WEAK_KC_THRESHOLD,
+    RepairPlan,
+    build_kc_progress,
+    build_repair_plan,
+    observation_weight,
+    quality_for_correct,
+    reference_seconds_from_history,
+    weak_kc_recommendations,
+)
 from mathcoach.config import content_strict, resolve_content_root
 from mathcoach.content.loader import (
     ContentError,
@@ -17,6 +34,7 @@ from mathcoach.content.loader import (
 from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
+from mathcoach.domain.diagnosis import Diagnosis, diagnose
 from mathcoach.domain.explanation import (
     ErrorLocalization,
     PrerequisiteRef,
@@ -69,6 +87,25 @@ from mathcoach.memory.review_package import (
     build_review_package,
 )
 from mathcoach.memory.scheduler import ReviewPlan, build_plan
+from mathcoach.planner import (
+    build_plan as build_worksheet_plan,
+    plan_to_worksheet,
+    render_plan_markdown,
+)
+from mathcoach.recall import (
+    RecallQuery,
+    RecallStore,
+    query_from_mistake,
+    recall_similar,
+)
+from mathcoach.report import (
+    ExplainableReport,
+    build_explainable_report,
+    build_report_client,
+    generate_report_narrative,
+    render_narrative_markdown,
+    render_report_markdown,
+)
 from mathcoach.safety.guards import REFUSAL_TEXT, Blocked
 from mathcoach.safety.redlines import (
     ConfirmationRequired,
@@ -80,6 +117,7 @@ from mathcoach.session.challenge import (
     save_challenge_result,
 )
 from mathcoach.session.daily import (
+    DailyQuestion,
     DailyState,
     DailySubmission,
     build_daily_questions,
@@ -94,10 +132,24 @@ from mathcoach.session.daily import (
     time_is_up,
 )
 from mathcoach.session.engine import SessionEngine
+from mathcoach.steps import (
+    STEP_SPECS,
+    StepRecorder,
+    StepStore,
+    StepVerdict,
+)
 from mathcoach.timeutil import end_of_local_day, local_day, local_day_key
+from mathcoach.tutor.catalog import KC_BY_ID
+from mathcoach.tutor.dialog import (
+    DialogEvent,
+    DialogStore,
+    build_follow_up_client,
+)
+from mathcoach.tutor.mastery_store import KCMasteryStore, shadow_db_path
 from mathcoach.ui.components import (
     PRIMARY,
     SKELETON_CARD,
+    SKELETON_INLINE,
     SKELETON_PANEL,
     button_kwargs,
     loading_skeleton,
@@ -152,10 +204,22 @@ from mathcoach.ui.settings import (
     inject_font_size_css,
     render_settings_page,
 )
+from mathcoach.ui.snapshot import RepositorySnapshot
 from mathcoach.ui.sound import play_pending_feedback, queue_feedback
 from mathcoach.ui.theme import inject_theme
-from mathcoach.ui.visuals.registry import render_visual
+from mathcoach.ui.visuals.registry import (
+    get_kc_visual,
+    kc_visuals_for_exercises,
+    render_kc_visual,
+    render_visual,
+)
 from mathcoach.update_check import UpdateCheckError, check_for_update
+from mathcoach.worksheet import (
+    WorksheetSource,
+    build_worksheet,
+    render_worksheet_html,
+    render_worksheet_markdown,
+)
 
 CONTENT_ROOT = resolve_content_root(Path(__file__))
 MODE_SESSION = "陪练"
@@ -167,6 +231,8 @@ MODE_PATH = "学习路径"
 MODE_WEEKLY = "周报"
 MODE_REVIEW = "智能复习包"
 MODE_VARIANTS = "错题变式"
+MODE_WORKSHEET = "可打印练习单"
+MODE_PLANNER = "智能练习册"
 MODE_EXPORT = "导出学习包"
 MODES = (
     MODE_SESSION,
@@ -178,6 +244,8 @@ MODES = (
     MODE_WEEKLY,
     MODE_REVIEW,
     MODE_VARIANTS,
+    MODE_WORKSHEET,
+    MODE_PLANNER,
     MODE_EXPORT,
 )
 
@@ -284,6 +352,225 @@ def _render_gap_diagnosis(gaps: list[Gap]) -> None:
             st.caption(f"依据：{gap.basis}")
 
 
+def _record_dialog_event(event: DialogEvent) -> None:
+    """把追问事件写入独立信号库；游客模式或磁盘异常时静默跳过。"""
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        return
+    try:
+        with DialogStore() as store:
+            store.record(event)
+    except (OSError, sqlite3.Error):
+        return
+
+
+def _build_session_engine(card: KnowledgeCard) -> SessionEngine:
+    """创建带追问客户端与事件记录的会话引擎。"""
+    provider = st.session_state.provider
+    return SessionEngine(
+        card=card,
+        provider=provider,
+        repository=st.session_state.repository,
+        consent=st.session_state.consent,
+        dialog_client=build_follow_up_client(provider),
+        dialog_recorder=_record_dialog_event,
+    )
+
+
+STEP_VERDICT_LABELS = {
+    StepVerdict.CORRECT: "正确",
+    StepVerdict.INCORRECT: "这一步不对",
+    StepVerdict.UNVERIFIABLE: "无法自动核对",
+    StepVerdict.REJECTED: "输入不符合格式",
+    StepVerdict.OUT_OF_SCOPE: "超出步骤范围",
+}
+
+
+def _step_recorder() -> StepRecorder:
+    """创建步骤记录器；游客模式或磁盘异常时只判定不落库。"""
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        return StepRecorder(enabled=False)
+    try:
+        store = StepStore()
+    except (OSError, sqlite3.Error):
+        return StepRecorder(enabled=False)
+    try:
+        kc_store = KCMasteryStore()
+    except (OSError, sqlite3.Error):
+        return StepRecorder(store=store)
+    return StepRecorder(store=store, kc_store=kc_store)
+
+
+def _step_state_key(engine: SessionEngine) -> str:
+    """按会话与题目定位分步填写状态。"""
+    started = (
+        engine.state.started_at.isoformat()
+        if engine.state.started_at is not None
+        else "none"
+    )
+    return f"step_state_{engine.current_exercise.id}_{started}"
+
+
+def _render_kc_visual_hint(kc_id: str) -> None:
+    """答错步骤时提供该 KC 的动态讲解；未登记或失败不阻断。"""
+    kc = KC_BY_ID.get(kc_id)
+    if kc is None or get_kc_visual(kc_id) is None:
+        return
+    with st.expander(f"动态讲解：{kc.name}", expanded=False):
+        if render_kc_visual(kc_id) == "failed":
+            st.info(f"{ICON_INFO} 动态讲解暂不可用，已保留文字讲解。")
+
+
+@st.fragment
+def _render_exercise_kc_visuals(exercise_id: str) -> None:
+    """诊断页按题目关联的 KC 展示动态讲解。"""
+    pairs = kc_visuals_for_exercises((exercise_id,))
+    if not pairs:
+        return
+    st.markdown("**KC 动态讲解**")
+    for kc_id, name in pairs:
+        with st.expander(f"动态讲解：{name}", expanded=False):
+            if render_kc_visual(kc_id) == "failed":
+                st.info(
+                    f"{ICON_INFO} 动态讲解暂不可用，已保留文字讲解。"
+                )
+
+
+@st.fragment
+def _render_step_guide(engine: SessionEngine) -> None:
+    """为有步骤元数据的题目渲染可选的分步填写区。
+
+    片段化后检查单步只重跑本区域，不整页重建可视化与小测控件。
+    """
+    specs = STEP_SPECS.get(engine.current_exercise.id)
+    if not specs:
+        return
+    key = _step_state_key(engine)
+    if key not in st.session_state:
+        st.session_state[key] = {
+            "run_id": "",
+            "attempts": {},
+            "finalized": False,
+        }
+    state = st.session_state[key]
+    with st.expander("分步填写（可选）", expanded=True):
+        st.caption(
+            "先逐步填写中间结果；最终答案仍以下方“提交答案”为准。"
+        )
+        for spec in specs:
+            attempt = state["attempts"].get(spec.index)
+            st.markdown(f"**第 {spec.index} 步**：{spec.prompt}")
+            if attempt is None:
+                start_key = f"{key}_started_{spec.index}"
+                if start_key not in st.session_state:
+                    st.session_state[start_key] = time.time()
+                answer = st.text_input(
+                    "这一步的结果",
+                    key=f"{key}_input_{spec.index}",
+                )
+                if st.button(
+                    "检查这一步",
+                    key=f"{key}_check_{spec.index}",
+                    disabled=not answer.strip(),
+                ):
+                    elapsed_s = max(
+                        0.0,
+                        time.time()
+                        - float(st.session_state.pop(start_key, time.time())),
+                    )
+                    try:
+                        recorder = _step_recorder()
+                        try:
+                            if not state["run_id"]:
+                                state["run_id"] = recorder.start(
+                                    engine.current_exercise.id,
+                                    engine.card.id,
+                                    specs,
+                                )
+                            state["attempts"][spec.index] = (
+                                recorder.record(
+                                    state["run_id"],
+                                    spec,
+                                    answer,
+                                    elapsed_s=elapsed_s,
+                                )
+                            )
+                        finally:
+                            recorder.close()
+                    except (OSError, sqlite3.Error):
+                        st.warning("步骤记录暂不可用，请稍后再试。")
+                    else:
+                        _invalidate_kc_mastery_cache()
+                        try:
+                            st.rerun(scope="fragment")
+                        except StreamlitInvalidLayoutContextError:
+                            # AppTest 以整页方式执行片段时退回全局 rerun
+                            st.rerun()
+            else:
+                label = STEP_VERDICT_LABELS[attempt.verdict]
+                text = f"第 {spec.index} 步：{label}（你填的是 {attempt.input}）"
+                if attempt.verdict is StepVerdict.CORRECT:
+                    st.success(text)
+                elif attempt.verdict is StepVerdict.INCORRECT:
+                    st.error(text)
+                    _render_kc_visual_hint(spec.kc_id)
+                else:
+                    st.info(text)
+        if state["attempts"]:
+            st.caption(
+                f"已填写 {len(state['attempts'])} / {len(specs)} 步。"
+            )
+        if state["finalized"]:
+            st.caption("最终答案已提交，步骤记录已结算。")
+
+
+def _finalize_step_run(
+    engine: SessionEngine, answer: str, correct: bool | None
+) -> None:
+    """把最终答案与正确性补写到本次步骤运行。"""
+    key = _step_state_key(engine)
+    state = st.session_state.get(key)
+    if not state or not state.get("run_id") or state.get("finalized"):
+        return
+    recorder = _step_recorder()
+    try:
+        recorder.finalize(
+            state["run_id"], final_answer=answer, final_correct=correct
+        )
+    except (OSError, sqlite3.Error):
+        return
+    finally:
+        recorder.close()
+    state["finalized"] = True
+    _invalidate_kc_mastery_cache()
+
+
+def _abandon_active_step_runs() -> None:
+    """把未结算的步骤运行标记为放弃，并应用已有 KC 观测。"""
+    changed = False
+    for key in list(st.session_state.keys()):
+        if not key.startswith("step_state_"):
+            continue
+        state = st.session_state.get(key)
+        if not isinstance(state, dict):
+            continue
+        if state.get("finalized") or not state.get("run_id"):
+            continue
+        try:
+            recorder = _step_recorder()
+            try:
+                recorder.abandon(state["run_id"])
+            finally:
+                recorder.close()
+        except (OSError, sqlite3.Error):
+            pass
+        state["finalized"] = True
+        changed = True
+    if changed:
+        _invalidate_kc_mastery_cache()
+
+
 try:
     if "consent" not in st.session_state:
         st.session_state.consent = initialize_consent()
@@ -299,12 +586,7 @@ try:
             st.session_state.consent
         )
     if "engine" not in st.session_state:
-        st.session_state.engine = SessionEngine(
-            card=cards[0],
-            provider=st.session_state.provider,
-            repository=st.session_state.repository,
-            consent=st.session_state.consent,
-        )
+        st.session_state.engine = _build_session_engine(cards[0])
 except FirstRunError as exc:
     st.error(f"{ICON_ERROR} {exc}")
     st.stop()
@@ -319,8 +601,67 @@ inject_theme(st.session_state.consent)
 inject_font_size_css(st.session_state.settings.font_size)
 
 
-def _render_mistake_book(repository: Repository) -> None:
-    """渲染最近错题与逐题先修诊断。"""
+def _clear_similar_session() -> None:
+    """清理同类/相似练习状态与召回信号映射。"""
+    for key in (
+        "similar_state",
+        "similar_impressions",
+        "similar_source_id",
+        "similar_fallback_used",
+        "similar_transfer_count",
+    ):
+        st.session_state.pop(key, None)
+
+
+def _start_similar_recall(
+    entry: MistakeEntry,
+    repository: Repository,
+    consent: Consent,
+) -> bool:
+    """按 KC、错因与题干结构发起相似题召回；为空时只提示不阻断。"""
+    base = query_from_mistake(entry, cards)
+    query = RecallQuery(
+        exercise=base.exercise,
+        card_id=base.card_id,
+        error_type=base.error_type,
+        completed_exercise_ids=frozenset(
+            receipt.exercise_id
+            for receipt in repository.list_receipts(limit=None)
+        ),
+    )
+    result = recall_similar(query, cards, tree=_load_knowledge_tree())
+    if not result.candidates:
+        st.info(f"{ICON_INFO} 暂无可用相似题，可先复习本知识点。")
+        return False
+    questions = tuple(
+        DailyQuestion(candidate.card, candidate.exercise)
+        for candidate in result.candidates
+    )
+    impressions: dict[str, str] = {}
+    if consent.mistake_book:
+        with RecallStore() as store:
+            impressions = store.record_impression(
+                entry.exercise_id, list(result.candidates)
+            )
+    _clear_similar_session()
+    st.session_state.similar_state = DailyState(
+        date_key=f"recall-{time.time_ns()}",
+        questions=questions,
+        started_at=datetime.now(timezone.utc),
+    )
+    st.session_state.similar_impressions = impressions
+    st.session_state.similar_source_id = entry.exercise_id
+    st.session_state.similar_fallback_used = result.fallback_used
+    st.session_state.similar_transfer_count = sum(
+        1 for candidate in result.candidates if candidate.is_transfer
+    )
+    return True
+
+
+def _render_mistake_book(
+    repository: Repository, consent: Consent
+) -> None:
+    """渲染最近错题、逐题先修诊断与相似题入口。"""
     entries = repository.list_mistakes(limit=10)
     if not entries:
         st.caption("还没有错题。")
@@ -335,6 +676,13 @@ def _render_mistake_book(repository: Repository) -> None:
             f"你的答案：{entry.user_answer} · 正确答案：{entry.correct_answer} · "
             f"{entry.error_type.value} · {entry.review_state.value}"
         )
+        if st.button(
+            "练相似题",
+            key=f"recall_{entry.id}",
+            icon=ICON_PLAY,
+        ):
+            if _start_similar_recall(entry, repository, consent):
+                st.rerun()
         gaps = _gaps_from_stats(stats, active_mistakes, entry.card_id)
         if gaps:
             _render_gap_diagnosis(gaps)
@@ -401,14 +749,10 @@ def _render_card_selector() -> None:
     )
     if selected != current_id:
         selected_card = next(card for card in cards if card.id == selected)
-        st.session_state.pop("similar_state", None)
+        _abandon_active_step_runs()
+        _clear_similar_session()
         with st.spinner("正在加载卡片…"):
-            st.session_state.engine = SessionEngine(
-                card=selected_card,
-                provider=st.session_state.provider,
-                repository=st.session_state.repository,
-                consent=st.session_state.consent,
-            )
+            st.session_state.engine = _build_session_engine(selected_card)
         st.rerun()
 
 
@@ -516,30 +860,36 @@ def _render_sidebar() -> None:
             st.session_state.repository = new_repository
             engine.repository = new_repository
             engine.consent = new_consent
+            _invalidate_kc_mastery_cache()
             st.rerun()
 
         if not (consent.memory or consent.mistake_book):
             st.info(f"{ICON_INFO} 游客模式：本次学习数据只存在内存中。")
         st.divider()
         if st.button("重置会话", key="reset_session", icon=ICON_RESTART):
-            st.session_state.pop("similar_state", None)
-            st.session_state.engine = SessionEngine(
-                card=st.session_state.engine.card,
-                provider=st.session_state.provider,
-                repository=st.session_state.repository,
-                consent=st.session_state.consent,
+            _abandon_active_step_runs()
+            _clear_similar_session()
+            st.session_state.engine = _build_session_engine(
+                st.session_state.engine.card
             )
             st.rerun()
 
 
 def _render_mistake_tab() -> None:
-    """渲染错题本的统计、错题与复习清单。"""
+    """渲染相似题练习或错题本的统计、错题与复习清单。"""
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
-    st.subheader("错题本")
     if not consent.mistake_book:
+        st.subheader("错题本")
         st.info(f"{ICON_INFO} 错题本已关闭。")
         return
+    if (
+        st.session_state.get("similar_state") is not None
+        and st.session_state.get("similar_source_id") is not None
+    ):
+        _render_similar_practice()
+        return
+    st.subheader("错题本")
     entries = repository.list_mistakes(limit=None)
     pending = sum(
         1 for entry in entries if entry.review_state is not ReviewState.MASTERED
@@ -557,7 +907,7 @@ def _render_mistake_tab() -> None:
             ("今天到期", str(due_today)),
         ]
     )
-    _render_mistake_book(repository)
+    _render_mistake_book(repository, consent)
     _render_review_plan(repository)
 
 
@@ -660,6 +1010,93 @@ def _render_error_localization(
     return localization
 
 
+def _current_wrong_answers() -> list[str]:
+    """收集当前题被判错的作答文本。"""
+    exercise_id = engine.current_exercise.id
+    return [
+        attempt["answer"]
+        for attempt in engine.state.attempts
+        if attempt["exercise_id"] == exercise_id
+        and attempt.get("correct") is False
+    ]
+
+
+def _render_attribution_feedback(*, show_evidence: bool = False) -> None:
+    """渲染单次作答的只读归因；不改变判分、掌握度或复习安排。"""
+    wrong_answers = _current_wrong_answers()
+    if not wrong_answers:
+        return
+    exercise = engine.current_exercise
+    online = current_settings(
+        st.session_state.consent
+    ).analysis_online_enabled
+    signature = (
+        exercise.id,
+        len(engine.state.attempts),
+        engine.state.max_hint_level,
+        tuple(engine.state.hint_requests),
+        online,
+    )
+    cache_key = "attribution_" + "_".join(
+        str(item) for item in signature
+    )
+    report = st.session_state.get(cache_key)
+    if report is None:
+        diagnosis = diagnose(
+            exercise, wrong_answers, tuple(engine.state.hint_requests)
+        )
+        if (
+            engine.state.diagnosis is not None
+            and engine.state.diagnosis != diagnosis.error_type
+        ):
+            diagnosis = Diagnosis(
+                engine.state.diagnosis, "已按诊断阶段确认的错因"
+            )
+        started = engine.state.exercise_started_at
+        duration_s = (
+            int((datetime.now(timezone.utc) - started).total_seconds())
+            if started is not None
+            else None
+        )
+        attempt_count = sum(
+            1
+            for attempt in engine.state.attempts
+            if attempt["exercise_id"] == exercise.id
+        )
+        attribution = build_attribution(
+            exercise,
+            wrong_answers,
+            tuple(engine.state.hint_requests),
+            max_hint_level=engine.state.max_hint_level,
+            attempt_count=attempt_count,
+            duration_s=duration_s,
+            diagnosis=diagnosis,
+        )
+        narrator = build_narrator(enabled=online)
+        with loading_skeleton(SKELETON_INLINE):
+            report = narrator.narrate(attribution)
+        st.session_state[cache_key] = report
+    st.markdown("**错因归因（只读）**")
+    st.markdown(
+        f"- 类型：{report.error_type.value} · "
+        f"置信度 {report.confidence:.0%}\n"
+        f"- 可能原因：{report.underlying_cause}\n"
+        f"- 下一步：{report.suggested_next_action.text}"
+    )
+    if show_evidence and report.evidence:
+        with st.expander("归因依据"):
+            for item in report.evidence:
+                st.caption(item.text)
+    if report.caveats:
+        st.caption("；".join(report.caveats))
+    if report.needs_verification:
+        st.warning("涉及数学等价性的内容未自动确认，请自行核对。")
+    source = "在线分析" if report.source == "llm" else "本地规则模板"
+    st.caption(
+        f"来源：{source}；归因只读，不影响判分、掌握度或复习安排。"
+    )
+
+
 def _render_diagnosis_actions(
     card: KnowledgeCard, localization: ErrorLocalization
 ) -> None:
@@ -688,6 +1125,7 @@ def _render_diagnosis_actions(
         key="diagnosis_similar",
         icon=ICON_PLAY,
     ):
+        _clear_similar_session()
         st.session_state.similar_state = DailyState(
             date_key=f"similar-{time.time_ns()}",
             questions=similar_questions,
@@ -697,43 +1135,87 @@ def _render_diagnosis_actions(
 
 
 def _render_similar_practice() -> None:
-    """诊断后的小复习包：只练同卡其他题，答完可回到诊断。"""
+    """诊断或错题本发起的小练习；答完可回到来源。"""
     state: DailyState | None = st.session_state.get("similar_state")
     if state is None:
         st.info(f"{ICON_INFO} 暂无同类练习，请先回到卡片诊断错因。")
         return
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
-    st.subheader("同类练习")
-    st.caption(
-        f"{engine.card.name} · 共 {len(state.questions)} 题，"
-        "答完自动结算，不影响当前诊断。"
-    )
+    source_id = st.session_state.get("similar_source_id")
+    source = repository.find_mistake(source_id) if source_id else None
+    is_recall = source is not None
+    if is_recall:
+        source_card = next(
+            (card for card in cards if card.id == source.card_id), None
+        )
+        card_name = (
+            source_card.name if source_card is not None else source.card_id
+        )
+        transfer_count = st.session_state.get("similar_transfer_count", 0)
+        st.subheader("相似题练习")
+        st.caption(
+            f"{card_name} · 共 {len(state.questions)} 题 · "
+            f"结构迁移 {transfer_count} 道"
+        )
+        stem = source.stem
+        st.caption(
+            "召回自错题："
+            + (stem if len(stem) <= 60 else f"{stem[:60]}…")
+        )
+        if st.session_state.get("similar_fallback_used"):
+            st.info(f"{ICON_INFO} 相似题不足，已改用同知识点的未做题。")
+    else:
+        st.subheader("同类练习")
+        st.caption(
+            f"{engine.card.name} · 共 {len(state.questions)} 题，"
+            "答完自动结算，不影响当前诊断。"
+        )
 
     def _on_submission(
         submission: DailySubmission, answer: str, moment: datetime
     ) -> None:
-        """答对登记独立复习，答错登记复习并写入错题本。"""
+        """登记做题结果；来自错题本的题目同时写召回效果信号。"""
+        impressions: dict[str, str] = (
+            st.session_state.get("similar_impressions") or {}
+        )
+        impression_id = impressions.get(submission.question.exercise.id)
+        if impression_id is not None:
+            with RecallStore() as store:
+                store.record_outcome(impression_id, submission.correct)
         if submission.correct is True:
-            _record_review_write(submission.question.exercise.id, True)
+            _record_review_write(
+                submission.question.exercise.id,
+                True,
+                submission.duration_s,
+            )
         elif submission.correct is False:
-            _record_review_write(submission.question.exercise.id, False)
+            _record_review_write(
+                submission.question.exercise.id,
+                False,
+                submission.duration_s,
+            )
             record_daily_mistake(
-                repository, consent, submission.question, answer, moment
+                repository,
+                consent,
+                submission.question,
+                answer,
+                moment,
+                duration_s=submission.duration_s,
             )
 
     _render_active_quiz(
         state,
         key_prefix="similar",
         on_submission=_on_submission,
-        summary_title="同类练习完成",
+        summary_title="相似题练习完成" if is_recall else "同类练习完成",
     )
     if state.finished and st.button(
-        "回到诊断",
+        "返回错题本" if is_recall else "回到诊断",
         key="similar_back",
         icon=ICON_RESTART,
     ):
-        st.session_state.pop("similar_state", None)
+        _clear_similar_session()
         st.rerun()
 
 
@@ -789,6 +1271,13 @@ def _render_restatement(receipt: Receipt) -> None:
             st.rerun()
 
 
+@st.fragment
+def _render_visual_block(card_id: str) -> None:
+    """可视化片段：滑块交互只重跑图表，不重建整页。"""
+    if render_visual(card_id) == "failed":
+        st.info(f"{ICON_INFO} 可视化暂不可用")
+
+
 def _render_session() -> None:
     """按当前阶段渲染陪练主流程。"""
     view = engine.view
@@ -831,8 +1320,7 @@ def _render_session() -> None:
             if view.notice:
                 st.info(f"{ICON_INFO} {view.notice}")
             # 可视化是可选增强：失败时只提示，不阻断讲解/小测
-            if render_visual(engine.card.id) == "failed":
-                st.info(f"{ICON_INFO} 可视化暂不可用")
+            _render_visual_block(engine.card.id)
             kpi_row(
                 [
                     ("当前卡片", engine.card.name),
@@ -868,17 +1356,30 @@ def _render_session() -> None:
             )
             if view.notice:
                 st.caption(view.notice)
-            if render_visual(engine.card.id) == "failed":
-                st.info(f"{ICON_INFO} 可视化暂不可用")
+            _render_visual_block(engine.card.id)
             st.write(math_markdown(view.body))
-            answer = _render_answer_input(engine.current_exercise)
-            if st.button(
-                "提交答案",
-                key="submit_answer",
-                icon=ICON_SUBMIT,
-                **button_kwargs(PRIMARY),
+            _render_step_guide(engine)
+            with st.form(
+                "quiz_answer_form",
+                clear_on_submit=False,
+                border=False,
             ):
+                answer = _render_answer_input(engine.current_exercise)
+                submitted = st.form_submit_button(
+                    "提交答案",
+                    key="submit_answer",
+                    icon=ICON_SUBMIT,
+                    **button_kwargs(PRIMARY),
+                )
+            if submitted:
+                attempts_before = len(engine.state.attempts)
                 next_view = engine.submit_answer(answer)
+                if len(engine.state.attempts) > attempts_before:
+                    _finalize_step_run(
+                        engine,
+                        answer,
+                        engine.state.attempts[-1].get("correct"),
+                    )
                 if next_view.phase is Phase.RECEIPT:
                     queue_feedback("correct", st.session_state.consent)
                 elif next_view.phase in (
@@ -909,6 +1410,8 @@ def _render_session() -> None:
                 _render_knowledge_context(
                     engine.card, engine.current_exercise
                 )
+            _render_exercise_kc_visuals(engine.current_exercise.id)
+            _render_attribution_feedback(show_evidence=True)
             selected = st.radio(
                 "选择更贴近的错因",
                 view.options,
@@ -925,6 +1428,35 @@ def _render_session() -> None:
         return
 
     if view.phase is Phase.HINT:
+        if view.follow_up is not None:
+            st.caption(f"当前题目：{engine.current_exercise.stem}")
+            hint_block(
+                view.follow_up.level,
+                math_markdown(view.follow_up.prompt),
+            )
+            if view.follow_up.supplement:
+                st.caption("再补充一个更具体的问题。")
+            if view.notice:
+                st.caption(view.notice)
+            answer = st.text_input(
+                "你的回答",
+                key=(
+                    f"follow_up_{engine.state.exercise_id}_"
+                    f"{len(engine.state.attempts)}_"
+                    f"L{view.follow_up.level}_"
+                    f"{int(view.follow_up.supplement)}"
+                ),
+            )
+            if st.button(
+                "提交追问回答",
+                key="submit_follow_up",
+                icon=ICON_SUBMIT,
+                disabled=not answer.strip(),
+                **button_kwargs(PRIMARY),
+            ):
+                engine.submit_follow_up(answer)
+                st.rerun()
+            return
         current_id = engine.state.exercise_id
         if any(
             attempt["exercise_id"] == current_id
@@ -945,6 +1477,7 @@ def _render_session() -> None:
             _render_knowledge_context(
                 engine.card, engine.current_exercise
             )
+        _render_attribution_feedback()
         if st.button("再试一次", key="retry", icon=ICON_RESTART):
             engine.retry()
             st.rerun()
@@ -1006,14 +1539,37 @@ def _render_session() -> None:
                     )
                 )
             if st.button("重新开始", key="restart", icon=ICON_RESTART):
-                st.session_state.engine = SessionEngine(
-                    card=engine.card,
-                    provider=provider,
-                    repository=st.session_state.repository,
-                    consent=st.session_state.consent,
-                )
+                _abandon_active_step_runs()
+                st.session_state.engine = _build_session_engine(engine.card)
                 st.rerun()
         return
+
+
+KC_MASTERY_CACHE_KEY = "kc_mastery_snapshot"
+
+
+def _invalidate_kc_mastery_cache() -> None:
+    """步骤写入 KC 影子库后丢弃会话缓存。"""
+    st.session_state.pop(KC_MASTERY_CACHE_KEY, None)
+
+
+def _load_kc_mastery() -> tuple[dict[str, float], dict[str, int]]:
+    """读取 KC 影子掌握度与样本量；会话内缓存，步骤写入后失效。"""
+    cached = st.session_state.get(KC_MASTERY_CACHE_KEY)
+    if cached is not None:
+        return cached
+    if not shadow_db_path().exists():
+        result: tuple[dict[str, float], dict[str, int]] = ({}, {})
+        st.session_state[KC_MASTERY_CACHE_KEY] = result
+        return result
+    try:
+        with KCMasteryStore() as store:
+            mastery, samples = store.load_with_samples()
+    except (OSError, sqlite3.Error):
+        return {}, {}
+    result = (mastery, samples)
+    st.session_state[KC_MASTERY_CACHE_KEY] = result
+    return result
 
 
 def _mastery_rows(repository: Repository) -> list[tuple[str, str]]:
@@ -1056,8 +1612,12 @@ def _next_recommendations(
     repository: Repository,
     cards: list[KnowledgeCard],
     prerequisites: dict[str, list[str]],
+    *,
+    kc_mastery: dict[str, float] | None = None,
+    kc_samples: dict[str, int] | None = None,
+    repair_plan: RepairPlan | None = None,
 ) -> list[Recommendation]:
-    """按先修复拓扑顺序与 BKT 掌握度推荐 3 张未掌握卡片，错题卡优先。"""
+    """按前置修复、先修复拓扑顺序、KC 影子与 BKT 推荐 3 张卡片。"""
     receipts = repository.list_receipts(limit=None)
     mistakes = repository.list_mistakes(limit=None)
     completed = {receipt.exercise_id for receipt in receipts}
@@ -1076,7 +1636,29 @@ def _next_recommendations(
         for card in cards
         if (probability := repository.get_mastery(card.id)) is not None
     }
-    return recommend(
+    kc_recommendations = weak_kc_recommendations(
+        cards,
+        kc_mastery,
+        sample_sizes=kc_samples,
+        card_mastery=mastery,
+    )
+    repair_recommendations: list[Recommendation] = []
+    seen_repair_cards: set[str] = set()
+    for item in (
+        repair_plan.items if repair_plan is not None else ()
+    ):
+        card_id = item.prerequisite_card_id
+        if not card_id or card_id in seen_repair_cards:
+            continue
+        seen_repair_cards.add(card_id)
+        repair_recommendations.append(
+            Recommendation(
+                card_id=card_id,
+                reason=f"先修补齐：{item.prerequisite_name}",
+                basis=item.reason,
+            )
+        )
+    base = recommend(
         [card.id for card in cards],
         prerequisites,
         mastered,
@@ -1084,18 +1666,28 @@ def _next_recommendations(
         limit=3,
         mastery=mastery,
     )
+    merged: list[Recommendation] = []
+    seen: set[str] = set()
+    for recommendation in (
+        *repair_recommendations,
+        *kc_recommendations,
+        *base,
+    ):
+        if recommendation.card_id in seen:
+            continue
+        seen.add(recommendation.card_id)
+        merged.append(recommendation)
+        if len(merged) >= 3:
+            break
+    return merged
 
 
 def _start_card_session(card_id: str) -> None:
     """切换到指定卡片并回到陪练页。"""
     selected_card = next(card for card in cards if card.id == card_id)
-    st.session_state.pop("similar_state", None)
-    st.session_state.engine = SessionEngine(
-        card=selected_card,
-        provider=st.session_state.provider,
-        repository=st.session_state.repository,
-        consent=st.session_state.consent,
-    )
+    _abandon_active_step_runs()
+    _clear_similar_session()
+    st.session_state.engine = _build_session_engine(selected_card)
     st.session_state["card_selector"] = selected_card.id
     st.session_state["app_mode"] = MODE_SESSION
     st.session_state["main_tabs"] = "当前任务"
@@ -1104,9 +1696,8 @@ def _start_card_session(card_id: str) -> None:
 def _render_dashboard() -> None:
     """渲染学习仪表盘与下一步推荐。"""
     render_dynamic_background(st.session_state.consent)
-    summary = build_dashboard(
-        st.session_state.repository, datetime.now(timezone.utc)
-    )
+    repository = RepositorySnapshot(st.session_state.repository)
+    summary = build_dashboard(repository, datetime.now(timezone.utc))
     st.subheader("学习仪表盘")
     columns = st.columns(4)
     columns[0].metric("收据总数", summary.receipts)
@@ -1121,14 +1712,55 @@ def _render_dashboard() -> None:
         f"复习状态：未复习 {summary.unreviewed} · "
         f"复习中 {summary.reviewing} · 已掌握 {summary.mastered}"
     )
-    mastery_rows = _mastery_rows(st.session_state.repository)
+    mastery_rows = _mastery_rows(repository)
     if mastery_rows:
         st.markdown("**掌握概率**")
         for card_id, text in mastery_rows:
             st.markdown(f"- {card_id}")
             st.caption(f"依据：{text}")
+    kc_mastery, kc_samples = _load_kc_mastery()
+    kc_progress = build_kc_progress(
+        cards, kc_mastery, sample_sizes=kc_samples
+    )
+    if kc_progress:
+        st.markdown("**KC 掌握度（步骤级影子）**")
+        for item in kc_progress:
+            st.markdown(
+                f"- {item.name}：{item.probability:.0%}"
+                f"（样本 {item.sample_size}）"
+            )
+    repair_plan = build_repair_plan(
+        cards,
+        kc_mastery,
+        sample_sizes=kc_samples,
+        mistakes=repository.list_mistakes(limit=None),
+    )
+    if repair_plan.items:
+        st.markdown("**前置修复建议**")
+        card_names = {card.id: card.name for card in cards}
+        for item in repair_plan.items:
+            st.markdown(f"- {item.reason}")
+            if item.prerequisite_card_id:
+                st.button(
+                    "先修补先修："
+                    f"{card_names.get(item.prerequisite_card_id, item.prerequisite_card_id)}",
+                    key=(
+                        f"repair_{item.prerequisite_kc_id}_"
+                        f"{item.dependent_kc_id}"
+                    ),
+                    icon=ICON_PLAY,
+                    on_click=_start_card_session,
+                    args=(item.prerequisite_card_id,),
+                )
+        for note in repair_plan.notes:
+            st.caption(note)
     recommendations = _next_recommendations(
-        st.session_state.repository, cards, prerequisites
+        repository,
+        cards,
+        prerequisites,
+        kc_mastery=kc_mastery,
+        kc_samples=kc_samples,
+        repair_plan=repair_plan,
     )
     if recommendations:
         st.markdown("**下一步推荐**")
@@ -1149,7 +1781,7 @@ def _render_dashboard() -> None:
             **button_kwargs(PRIMARY),
         )
     if st.session_state.get("narrative_enabled", True) and narrative_nodes:
-        progress = _narrative_progress(st.session_state.repository)
+        progress = _narrative_progress(repository)
         st.markdown("**叙事进度**")
         unlocked = set(progress.unlocked)
         for node in narrative_nodes:
@@ -1190,6 +1822,76 @@ def _render_quiz_summary(state: DailyState, now: datetime, title: str) -> None:
         st.info(f"{ICON_INFO} {state.feedback}")
 
 
+def _quiz_wrong_key(key: str) -> str:
+    """返回某次限时小测的错题登记键。"""
+    return f"quiz_wrong:{key}"
+
+
+def _record_quiz_wrong(
+    key: str, position: int, question: DailyQuestion, answer: str
+) -> None:
+    """登记结算页要展示的错题；只存当前会话。"""
+    session_key = _quiz_wrong_key(key)
+    bucket = st.session_state.get(session_key)
+    if bucket is None:
+        bucket = []
+        st.session_state[session_key] = bucket
+    bucket.append((position, question, answer))
+
+
+def _render_quiz_attributions(key: str) -> None:
+    """结算页展示错题的只读归因；没有错题时不显示。"""
+    wrong = st.session_state.get(_quiz_wrong_key(key))
+    if not wrong:
+        return
+    online = current_settings(
+        st.session_state.consent
+    ).analysis_online_enabled
+    report_key = f"quiz_reports:{key}:{online}"
+    reports = st.session_state.get(report_key)
+    if reports is None:
+        narrator = build_narrator(enabled=online)
+        reports = []
+        for position, question, answer in wrong:
+            report = narrator.narrate(
+                build_attribution(question.exercise, [answer])
+            )
+            reports.append((position, question, report))
+            if report.source == "template":
+                # 在线路径失败时不再逐题重试，避免结算页反复等待
+                narrator = TemplateNarrator()
+        st.session_state[report_key] = reports
+    st.markdown("**错因归因（只读）**")
+    for position, question, report in reports:
+        st.markdown(
+            f"- 第 {position} 题 · {question.card.name}："
+            f"{report.error_type.value}（置信度 {report.confidence:.0%}）"
+        )
+        st.caption(
+            f"可能原因：{report.underlying_cause}；"
+            f"下一步：{report.suggested_next_action.text}"
+        )
+    if any(report.needs_verification for _, _, report in reports):
+        st.warning("涉及数学等价性的内容未自动确认，请自行核对。")
+    caveats = sorted(
+        {
+            caveat
+            for _, _, report in reports
+            for caveat in report.caveats
+        }
+    )
+    if caveats:
+        st.caption("；".join(caveats))
+    source = (
+        "在线分析"
+        if any(report.source == "llm" for _, _, report in reports)
+        else "本地规则模板"
+    )
+    st.caption(
+        f"来源：{source}；归因只读，不影响判分、掌握度或复习安排。"
+    )
+
+
 @st.fragment(run_every=5)
 def _render_quiz_countdown(state: DailyState) -> None:
     """只刷新倒计时文本，避免整页周期性重跑。"""
@@ -1210,6 +1912,7 @@ def _render_active_quiz(
     on_submission: Callable[[DailySubmission, str, datetime], None] | None = None,
     on_finish: Callable[[DailyState, datetime], None] | None = None,
     summary_title: str = "挑战结束",
+    attribution_key: str | None = None,
 ) -> None:
     """渲染进行中的限时小测；超时自动结算。"""
     now = datetime.now(timezone.utc)
@@ -1220,6 +1923,8 @@ def _render_active_quiz(
             on_finish(state, now)
             state.persisted = True
         _render_quiz_summary(state, now, summary_title)
+        if attribution_key is not None:
+            _render_quiz_attributions(attribution_key)
         completed_key = f"feedback_complete:{key_prefix}:{state.date_key}"
         if not st.session_state.get(completed_key):
             st.session_state[completed_key] = True
@@ -1243,10 +1948,18 @@ def _render_active_quiz(
         icon=ICON_SUBMIT,
         **button_kwargs(PRIMARY),
     ):
+        position = state.index + 1
         submission = submit_daily_answer(state, answer, now)
         if submission is not None:
             if on_submission is not None:
                 on_submission(submission, answer, now)
+            if (
+                attribution_key is not None
+                and submission.correct is False
+            ):
+                _record_quiz_wrong(
+                    attribution_key, position, submission.question, answer
+                )
             if submission.correct is True:
                 queue_feedback("correct", st.session_state.consent)
             elif submission.correct is False:
@@ -1301,7 +2014,12 @@ def _render_daily_challenge() -> None:
         """答错时写入错题本。"""
         if submission.correct is False:
             record_daily_mistake(
-                repository, consent, submission.question, answer, moment
+                repository,
+                consent,
+                submission.question,
+                answer,
+                moment,
+                duration_s=submission.duration_s,
             )
 
     def _on_finish(finished_state: DailyState, moment: datetime) -> None:
@@ -1313,6 +2031,7 @@ def _render_daily_challenge() -> None:
         key_prefix=f"daily_{day_key}",
         on_submission=_on_submission,
         on_finish=_on_finish,
+        attribution_key=state.date_key,
     )
 
 
@@ -1352,7 +2071,12 @@ def _render_challenge() -> None:
         """答错时写入错题本。"""
         if submission.correct is False:
             record_daily_mistake(
-                repository, consent, submission.question, answer, moment
+                repository,
+                consent,
+                submission.question,
+                answer,
+                moment,
+                duration_s=submission.duration_s,
             )
 
     def _on_finish(finished_state: DailyState, moment: datetime) -> None:
@@ -1365,6 +2089,7 @@ def _render_challenge() -> None:
         on_submission=_on_submission,
         on_finish=_on_finish,
         summary_title="挑战赛结束",
+        attribution_key=state.date_key,
     )
     if state.finished and st.button(
         "再来一局", key="restart_challenge", icon=ICON_RESTART
@@ -1391,6 +2116,46 @@ def _render_learning_path() -> None:
     else:
         st.success(f"{ICON_CHECK} {path.recommended_reason}")
 
+    kc_mastery, kc_samples = _load_kc_mastery()
+    kc_progress = build_kc_progress(
+        cards, kc_mastery, sample_sizes=kc_samples, limit=5
+    )
+    if kc_progress:
+        card_names = {card.id: card.name for card in cards}
+        st.markdown("**KC 掌握度（步骤级影子）**")
+        for item in kc_progress:
+            marker = (
+                " · 待补强"
+                if item.probability < WEAK_KC_THRESHOLD
+                else ""
+            )
+            st.markdown(
+                f"- {item.name}：{item.probability:.0%}"
+                f"（样本 {item.sample_size}）{marker}"
+            )
+            if item.card_ids:
+                related = "、".join(
+                    card_names.get(card_id, card_id)
+                    for card_id in item.card_ids
+                )
+                st.caption(f"对应卡片：{related}")
+        kc_recommendations = weak_kc_recommendations(
+            cards,
+            kc_mastery,
+            sample_sizes=kc_samples,
+            limit=1,
+        )
+        if kc_recommendations:
+            recommendation = kc_recommendations[0]
+            if (
+                path.recommended_card is None
+                or recommendation.card_id != path.recommended_card.id
+            ):
+                st.caption(
+                    f"KC 视角：{recommendation.reason}；"
+                    f"依据：{recommendation.basis}"
+                )
+
     for course in path.courses:
         label = (
             f"{STAGE_LABELS[course.stage.value]} · {course.course}"
@@ -1410,11 +2175,29 @@ def _render_learning_path() -> None:
                 )
 
 
-def _render_weekly_report() -> None:
-    """渲染最近 7 天的周报与错因趋势。"""
-    report = build_weekly_report(
-        st.session_state.repository, datetime.now(timezone.utc)
+WEEKLY_NARRATIVE_KEY = "weekly_report_narrative"
+
+
+def _report_signature(report: ExplainableReport) -> tuple[object, ...]:
+    """用结论与指标生成叙事缓存键；忽略生成时间。"""
+    return tuple(
+        (
+            conclusion.id,
+            conclusion.statement,
+            tuple(
+                (metric.id, metric.value)
+                for metric in conclusion.metrics
+            ),
+        )
+        for conclusion in report.conclusions
     )
+
+
+def _render_weekly_report() -> None:
+    """渲染最近 7 天的周报与错因趋势；AI 叙事按需生成。"""
+    now = datetime.now(timezone.utc)
+    repository = RepositorySnapshot(st.session_state.repository)
+    report = build_weekly_report(repository, now)
     st.subheader("学习周报 · 最近 7 天")
     st.caption(f"{report.start} ~ {report.end}")
 
@@ -1452,10 +2235,52 @@ def _render_weekly_report() -> None:
                 f"{name} {count}" for name, count in report.trend.last_week
             )
         )
+    kc_mastery, _ = _load_kc_mastery()
+    explainable = build_explainable_report(
+        repository,
+        now=now,
+        kc_mastery=kc_mastery,
+    )
+    signature = _report_signature(explainable)
+    client = build_report_client(st.session_state.provider)
+    narrative = None
+    if client is not None:
+        if st.button(
+            "生成 / 刷新 AI 叙事",
+            key="weekly_narrative",
+            icon=ICON_UPDATE,
+        ):
+            with loading_skeleton(SKELETON_PANEL):
+                generated, reason = generate_report_narrative(
+                    explainable, client=client
+                )
+            st.session_state[WEEKLY_NARRATIVE_KEY] = (
+                signature,
+                generated,
+                reason,
+            )
+        cached = st.session_state.get(WEEKLY_NARRATIVE_KEY)
+        if cached is not None and cached[0] == signature:
+            narrative = cached[1]
+            if narrative is None:
+                st.caption(
+                    f"AI 叙事暂不可用（{cached[2]}），已保留确定性报告。"
+                )
+    if narrative is not None:
+        st.markdown(render_narrative_markdown(explainable, narrative))
+        st.caption("叙事由模型改写；结论与证据来自统计层。")
+    else:
+        st.markdown(render_report_markdown(explainable))
+        if client is None:
+            st.caption("配置 AI 后可生成叙事；当前展示确定性报告。")
 
 
-def _record_review_write(exercise_id: str, independent: bool) -> None:
-    """校验写入门后记录一次复习结果。"""
+def _record_review_write(
+    exercise_id: str,
+    independent: bool,
+    duration_s: int | None = None,
+) -> None:
+    """校验写入门后记录一次复习结果；弱正确按 HINTED 处理。"""
     repository = st.session_state.repository
     consent: Consent = st.session_state.consent
     now = datetime.now(timezone.utc)
@@ -1466,8 +2291,18 @@ def _record_review_write(exercise_id: str, independent: bool) -> None:
         st.warning("写操作被安全规则拦截。")
         return
     quality = quality_from_independence(independent)
+    review_quality = quality
+    speed_weight = 1.0
+    if independent and duration_s is not None:
+        entry = repository.find_mistake(exercise_id)
+        if entry is not None:
+            reference = reference_seconds_from_history(
+                repository.list_receipts(limit=None), entry.card_id
+            )
+            speed_weight = observation_weight(duration_s, reference)
+            review_quality = quality_for_correct(duration_s, reference)
     updated = repository.record_review(
-        exercise_id, independent=quality, now=now
+        exercise_id, independent=review_quality, now=now
     )
     if updated is not None:
         repository.record_mastery(
@@ -1475,6 +2310,7 @@ def _record_review_write(exercise_id: str, independent: bool) -> None:
             correct=independent,
             now=now,
             quality=quality,
+            mastery_weight=speed_weight,
         )
     repository.record_audit("review", "ok")
 
@@ -1494,6 +2330,18 @@ def _render_review_package() -> None:
         with loading_skeleton(SKELETON_CARD):
             gaps = _collect_gaps(repository)
             priority = {gap.chain[-1] for gap in gaps}
+            kc_mastery, kc_samples = _load_kc_mastery()
+            repair_plan = build_repair_plan(
+                cards,
+                kc_mastery,
+                sample_sizes=kc_samples,
+                mistakes=repository.list_mistakes(limit=None),
+            )
+            priority |= {
+                item.prerequisite_card_id
+                for item in repair_plan.items
+                if item.prerequisite_card_id
+            }
             new_ratio = current_settings(
                 st.session_state.consent
             ).new_review_ratio
@@ -1530,11 +2378,24 @@ def _render_review_package() -> None:
     ) -> None:
         """答对记为独立复习，答错记复习并写入错题本。"""
         if submission.correct is True:
-            _record_review_write(submission.question.exercise.id, True)
+            _record_review_write(
+                submission.question.exercise.id,
+                True,
+                submission.duration_s,
+            )
         elif submission.correct is False:
-            _record_review_write(submission.question.exercise.id, False)
+            _record_review_write(
+                submission.question.exercise.id,
+                False,
+                submission.duration_s,
+            )
             record_daily_mistake(
-                repository, consent, submission.question, answer, moment
+                repository,
+                consent,
+                submission.question,
+                answer,
+                moment,
+                duration_s=submission.duration_s,
             )
 
     _render_active_quiz(
@@ -1542,6 +2403,7 @@ def _render_review_package() -> None:
         key_prefix="review",
         on_submission=_on_submission,
         summary_title="复习包完成",
+        attribution_key=state.date_key,
     )
     if state.finished:
         mark_first_use_done()
@@ -1609,6 +2471,161 @@ def _render_variant_practice() -> None:
     if right.button("仍需复习", key="variant_retry", icon=ICON_REVIEW):
         _record_review_write(entry.exercise_id, False)
         st.rerun()
+
+
+def _render_worksheet() -> None:
+    """渲染可打印练习单：只读生成 HTML/Markdown 下载。"""
+    st.subheader("可打印练习单")
+    repository = st.session_state.repository
+    consent: Consent = st.session_state.consent
+    sources: dict[str, WorksheetSource] = {
+        "当前卡片": WorksheetSource.CURRENT_CARD,
+        "同章节/同课程多卡": WorksheetSource.SAME_TOPIC,
+    }
+    if consent.mistake_book:
+        sources["待复习错题"] = WorksheetSource.DUE_REVIEW
+        sources["错题本"] = WorksheetSource.MISTAKES
+    options = list(sources)
+    if st.session_state.get("worksheet_source") not in options:
+        st.session_state["worksheet_source"] = options[0]
+    source_label = st.radio(
+        "题目来源",
+        options,
+        horizontal=True,
+        key="worksheet_source",
+    )
+    count = st.selectbox(
+        "题目上限",
+        [5, 10, 15],
+        index=1,
+        key="worksheet_count",
+    )
+    include_answers = st.checkbox(
+        "附答案页", value=True, key="worksheet_answers"
+    )
+    include_solutions = st.checkbox(
+        "答案页附解题思路",
+        value=False,
+        key="worksheet_solutions",
+        disabled=not include_answers,
+    )
+    now = datetime.now(timezone.utc)
+    worksheet = build_worksheet(
+        cards,
+        source=sources[source_label],
+        repository=repository,
+        current_card_id=engine.card.id,
+        count=count,
+        include_answers=include_answers,
+        include_solutions=include_solutions and include_answers,
+        now=now,
+    )
+    st.markdown(
+        f"**生成摘要**：{worksheet.source_label} · 共 {worksheet.count} 题"
+    )
+    for note in worksheet.notes:
+        st.info(f"{ICON_INFO} {note}")
+    if not worksheet.items:
+        return
+    preview = render_worksheet_markdown(worksheet)
+    with st.expander("预览题目", expanded=True):
+        st.markdown(preview)
+    day = now.astimezone().strftime("%Y%m%d")
+    left, right = st.columns(2)
+    left.download_button(
+        "下载可打印 HTML",
+        data=render_worksheet_html(worksheet).encode("utf-8"),
+        file_name=f"mathcoach-worksheet-{day}.html",
+        mime="text/html",
+        icon=ICON_EXPORT,
+        key="worksheet_download_html",
+    )
+    right.download_button(
+        "下载 Markdown",
+        data=preview.encode("utf-8"),
+        file_name=f"mathcoach-worksheet-{day}.md",
+        mime="text/markdown",
+        icon=ICON_EXPORT,
+        key="worksheet_download_markdown",
+    )
+    st.caption(
+        "只读生成，不修改掌握度、错题或复习进度；"
+        "HTML 可直接用浏览器打印为 PDF。"
+    )
+
+
+def _render_planner() -> None:
+    """渲染智能练习册：薄弱 KC、到期复习与迁移题配额。"""
+    st.subheader("智能练习册")
+    repository = st.session_state.repository
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        st.info(
+            f"{ICON_INFO} 开启本机记忆或错题本后可生成个性化练习册。"
+        )
+        return
+    count = st.selectbox(
+        "题目上限",
+        [5, 10, 15],
+        index=1,
+        key="planner_count",
+    )
+    now = datetime.now(timezone.utc)
+    kc_mastery, _ = _load_kc_mastery()
+    with loading_skeleton(SKELETON_CARD):
+        plan = build_worksheet_plan(
+            cards,
+            repository=repository,
+            limit=count,
+            current_card_id=engine.card.id,
+            kc_mastery=kc_mastery,
+            now=now,
+        )
+    if not plan.items:
+        st.info(f"{ICON_INFO} 暂无可生成的题目。")
+        return
+    columns = st.columns(4)
+    columns[0].metric("题目", plan.count)
+    columns[1].metric("迁移题", plan.transfer_count)
+    columns[2].metric("到期题", plan.due_count)
+    columns[3].metric("薄弱 KC", len(plan.weak_kcs))
+    for note in plan.notes:
+        st.caption(note)
+
+    with st.expander("选题理由", expanded=True):
+        for index, item in enumerate(plan.items, start=1):
+            st.markdown(
+                f"{index}. **{item.card.name}** · "
+                f"{item.exercise.stem[:40]}  \n"
+                f"   {item.reason_text}"
+            )
+
+    worksheet = plan_to_worksheet(plan)
+    preview = render_plan_markdown(plan)
+    with st.expander("预览练习册", expanded=False):
+        st.markdown(preview)
+    day = now.astimezone().strftime("%Y%m%d")
+    left, right = st.columns(2)
+    left.download_button(
+        "下载可打印 HTML",
+        data=render_worksheet_html(worksheet).encode("utf-8"),
+        file_name=f"mathcoach-plan-{day}.html",
+        mime="text/html",
+        icon=ICON_EXPORT,
+        key="planner_download_html",
+    )
+    right.download_button(
+        "下载 Markdown",
+        data=preview.encode("utf-8"),
+        file_name=f"mathcoach-plan-{day}.md",
+        mime="text/markdown",
+        icon=ICON_EXPORT,
+        key="planner_download_markdown",
+    )
+    st.caption(
+        "只读生成，不修改掌握度、错题或复习进度；"
+        "选题理由随 Markdown 一起导出。"
+    )
 
 
 def _render_export() -> None:
@@ -1706,6 +2723,7 @@ def _render_current_mode() -> None:
     if (
         mode == MODE_SESSION
         and st.session_state.get("similar_state") is not None
+        and st.session_state.get("similar_source_id") is None
     ):
         st.session_state["_last_rendered_mode"] = mode
         _render_similar_practice()
@@ -1733,6 +2751,10 @@ def _render_current_mode() -> None:
         _render_review_package()
     elif mode == MODE_VARIANTS:
         _render_variant_practice()
+    elif mode == MODE_WORKSHEET:
+        _render_worksheet()
+    elif mode == MODE_PLANNER:
+        _render_planner()
     elif mode == MODE_EXPORT:
         _render_export()
     else:

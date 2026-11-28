@@ -1,6 +1,6 @@
 [project]
 name = "mathcoach"
-version = "0.8.0"
+version = "0.9.0"
 description = "本地优先的数学陪练软件（Streamlit）"
 readme = "README.md"
 license = "Apache-2.0"
@@ -46,7 +46,7 @@ py-modules = ["app"]
 include = ["mathcoach*", "content*", "static*"]
 
 [tool.setuptools.package-data]
-content = ["*.yaml", "learning_cards/*.md"]
+content = ["*.yaml", "kc/*.yaml", "dialog/*.yaml", "steps/*.yaml", "learning_cards/*.md"]
 "content.highschool" = ["*.yaml"]
 "content.undergraduate" = ["*.yaml"]
 "content.graduate" = ["*.yaml"]

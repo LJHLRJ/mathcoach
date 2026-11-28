@@ -9,6 +9,7 @@ from mathcoach.domain.learning_path import (
 
 
 def test_topological_order_respects_prerequisites():
+    """拓扑排序满足先修顺序。"""
     order = topological_order(
         ["c", "b", "a"],
         {"c": ["b"], "b": ["a"]},
@@ -18,6 +19,7 @@ def test_topological_order_respects_prerequisites():
 
 
 def test_recommend_only_unmastered():
+    """只推荐未掌握卡片。"""
     recommendations = recommend(
         ["a", "b", "c"],
         {},
@@ -30,6 +32,7 @@ def test_recommend_only_unmastered():
 
 
 def test_recommend_prioritizes_weak_points():
+    """错题卡优先并给出理由。"""
     recommendations = recommend(
         ["a", "b", "c"],
         {},
@@ -43,6 +46,7 @@ def test_recommend_prioritizes_weak_points():
 
 
 def test_recommend_returns_three():
+    """默认恰好返回三条且带理由与依据。"""
     recommendations = recommend(
         ["a", "b", "c", "d", "e"],
         {},
@@ -57,11 +61,13 @@ def test_recommend_returns_three():
 
 
 def test_cycle_raises():
+    """先修成环抛出 ValueError。"""
     with pytest.raises(ValueError):
         topological_order(["a", "b"], {"a": ["b"], "b": ["a"]})
 
 
 def test_recommend_marks_unmet_prerequisites_when_padding():
+    """补齐时标注先修是否满足。"""
     recommendations = recommend(
         ["a", "b"],
         {"b": ["a"]},
@@ -77,6 +83,7 @@ def test_recommend_marks_unmet_prerequisites_when_padding():
 
 
 def test_recommend_orders_ready_cards_by_mastery():
+    """就绪卡按掌握度升序排列。"""
     recommendations = recommend(
         ["a", "b", "c"],
         {},
@@ -92,6 +99,7 @@ def test_recommend_orders_ready_cards_by_mastery():
 
 
 def test_recommend_keeps_weak_cards_first_over_low_mastery():
+    """错题卡优先于低掌握度卡。"""
     recommendations = recommend(
         ["a", "b"],
         {},
@@ -106,6 +114,7 @@ def test_recommend_keeps_weak_cards_first_over_low_mastery():
 
 
 def test_recommend_treats_missing_mastery_as_initial():
+    """缺少掌握度记录按初始值处理。"""
     recommendations = recommend(
         ["a", "b"],
         {},

@@ -12,12 +12,14 @@ CONFETTI_LICENSE = (
 
 
 def test_static_serving_is_enabled():
+    """Streamlit 静态资源服务开关处于开启状态。"""
     config = tomllib.loads(CONFIG.read_text(encoding="utf-8"))
 
     assert config["server"]["enableStaticServing"] is True
 
 
 def test_confetti_overlay_is_local_and_reduced_motion_aware():
+    """彩带覆盖层只引用本地脚本，并响应减少动效偏好。"""
     html = CONFETTI_HTML.read_text(encoding="utf-8")
 
     assert 'src="confetti.browser.js"' in html
@@ -29,6 +31,7 @@ def test_confetti_overlay_is_local_and_reduced_motion_aware():
 
 
 def test_confetti_license_is_preserved():
+    """第三方脚本的版权与许可证声明保持原样。"""
     js = CONFETTI_JS.read_text(encoding="utf-8")
     license_text = CONFETTI_LICENSE.read_text(encoding="utf-8")
 
@@ -39,6 +42,7 @@ def test_confetti_license_is_preserved():
 
 
 def test_desktop_build_and_launcher_include_static_serving():
+    """打包脚本携带静态目录，启动器开启静态服务。"""
     build = (ROOT / "scripts" / "build_desktop.py").read_text(
         encoding="utf-8"
     )

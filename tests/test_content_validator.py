@@ -38,17 +38,20 @@ CARD = {
 }
 
 
-def _card():
+def _card() -> dict:
+    """返回可修改的卡片副本。"""
     return copy.deepcopy(CARD)
 
 
 def test_happy_path_ok():
+    """合法课程与卡片通过校验。"""
     result = validate(copy.deepcopy(CURRICULUM), [_card()], strict=True)
     assert result.ok
     assert result.issues == []
 
 
 def test_duplicate_card_id():
+    """重复卡片 ID 报错。"""
     cards = [_card(), _card()]
     result = validate(copy.deepcopy(CURRICULUM), cards, strict=True)
     assert not result.ok
@@ -56,6 +59,7 @@ def test_duplicate_card_id():
 
 
 def test_course_must_exist_in_curriculum():
+    """课程必须出现在 curriculum 中。"""
     card = _card()
     card["course"] = "不存在的课"
     result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
@@ -64,6 +68,7 @@ def test_course_must_exist_in_curriculum():
 
 
 def test_source_must_be_three_choice_enum():
+    """来源必须是三选一枚举。"""
     card = _card()
     card["source"] = "网上下载"
     result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
@@ -72,6 +77,7 @@ def test_source_must_be_three_choice_enum():
 
 
 def test_exercise_requires_solution_outline():
+    """练习必须提供解题思路。"""
     card = _card()
     del card["exercises"][0]["solution_outline"]
     result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
@@ -80,6 +86,7 @@ def test_exercise_requires_solution_outline():
 
 
 def test_exercise_id_must_use_card_prefix():
+    """练习 ID 必须使用卡片前缀。"""
     card = _card()
     card["exercises"][0]["id"] = "wrong-e1"
     result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
@@ -88,6 +95,7 @@ def test_exercise_id_must_use_card_prefix():
 
 
 def test_unfinished_entry_is_error_in_strict_mode():
+    """严格模式下未完成条目视为错误。"""
     curriculum = copy.deepcopy(CURRICULUM)
     curriculum[0]["card_ids"].append("hs-999")
     result = validate(curriculum, [_card()], strict=True)
@@ -96,6 +104,7 @@ def test_unfinished_entry_is_error_in_strict_mode():
 
 
 def test_unfinished_entry_is_warning_in_non_strict_mode():
+    """非严格模式下未完成条目降为警告。"""
     curriculum = copy.deepcopy(CURRICULUM)
     curriculum[0]["card_ids"].append("hs-999")
     result = validate(curriculum, [_card()], strict=False)
@@ -105,6 +114,7 @@ def test_unfinished_entry_is_warning_in_non_strict_mode():
 
 
 def test_card_not_referenced_by_curriculum_is_error():
+    """未被课程引用的卡片视为错误。"""
     curriculum = copy.deepcopy(CURRICULUM)
     curriculum[0]["card_ids"] = []
     result = validate(curriculum, [_card()], strict=False)
@@ -113,6 +123,7 @@ def test_card_not_referenced_by_curriculum_is_error():
 
 
 def test_choice_answer_must_be_in_options():
+    """选择题答案必须在选项中。"""
     card = _card()
     card["exercises"][0]["answer"] = "Z"
     result = validate(copy.deepcopy(CURRICULUM), [card], strict=True)
@@ -121,6 +132,7 @@ def test_choice_answer_must_be_in_options():
 
 
 def test_multi_answer_must_subset_options():
+    """多选题答案必须是选项子集。"""
     card = _card()
     card["exercises"][0] = {
         "id": "hs-001-e1",
@@ -136,6 +148,7 @@ def test_multi_answer_must_subset_options():
 
 
 def _expr_card(answer: str) -> dict:
+    """构造表达式题卡片。"""
     card = _card()
     card["exercises"][0] = {
         "id": "hs-001-e1",
@@ -148,16 +161,19 @@ def _expr_card(answer: str) -> dict:
 
 
 def test_expr_answer_must_pass_ast_whitelist():
+    """表达式答案必须通过 AST 白名单。"""
     result = validate(copy.deepcopy(CURRICULUM), [_expr_card("__import__('os')")], strict=True)
     assert not result.ok
     assert any("expr 答案未通过 AST 白名单" in issue.message for issue in result.issues)
 
 
 def test_safe_expr_answer_is_accepted():
+    """安全表达式答案通过校验。"""
     result = validate(copy.deepcopy(CURRICULUM), [_expr_card("x**2 - 1")], strict=True)
     assert result.ok, result.issues
 
 
 def test_expr_container_guard_is_checked_per_exercise():
+    """容器参数检查按练习逐条执行。"""
     result = validate(copy.deepcopy(CURRICULUM), [_expr_card("x + 1")], strict=True)
     assert not any("容器参数检查失效" in issue.message for issue in result.issues)

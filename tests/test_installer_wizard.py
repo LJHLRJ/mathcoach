@@ -7,6 +7,7 @@ NOTICE_PATH = ROOT / "scripts" / "installer" / "install-before.txt"
 
 
 def _read(path: Path) -> str:
+    """读取安装器文本文件。"""
     return path.read_text(encoding="utf-8")
 
 
@@ -26,6 +27,7 @@ def _section(text: str, name: str) -> list[str]:
 
 
 def test_installer_exposes_preinstall_notice():
+    """安装器在欢迎页前展示安装前说明。"""
     setup = _section(_read(ISS_PATH), "Setup")
 
     assert "InfoBeforeFile=scripts\\installer\\install-before.txt" in setup
@@ -34,6 +36,7 @@ def test_installer_exposes_preinstall_notice():
 
 
 def test_notice_documents_trust_and_data_boundary():
+    """说明文件记录未签名、校验与数据边界。"""
     notice = _read(NOTICE_PATH)
 
     for phrase in (
@@ -47,6 +50,7 @@ def test_notice_documents_trust_and_data_boundary():
 
 
 def test_desktop_icon_defaults_to_checked():
+    """桌面快捷方式默认勾选。"""
     tasks = _section(_read(ISS_PATH), "Tasks")
     line = next(
         item for item in tasks if item.startswith('Name: "desktopicon"')
@@ -56,6 +60,7 @@ def test_desktop_icon_defaults_to_checked():
 
 
 def test_autostart_defaults_to_unchecked_and_is_removed_on_uninstall():
+    """开机自启默认不勾选并在卸载时移除。"""
     text = _read(ISS_PATH)
     tasks = _section(text, "Tasks")
     line = next(
@@ -74,6 +79,7 @@ def test_autostart_defaults_to_unchecked_and_is_removed_on_uninstall():
 
 
 def test_launch_after_install_is_checked_by_default():
+    """安装后启动默认勾选且支持静默跳过。"""
     run = _section(_read(ISS_PATH), "Run")
     line = next(item for item in run if "postinstall" in item)
 
@@ -83,6 +89,7 @@ def test_launch_after_install_is_checked_by_default():
 
 
 def test_cancel_message_mentions_rollback():
+    """取消安装提示会回滚。"""
     messages = _section(_read(ISS_PATH), "Messages")
     line = next(
         item for item in messages if item.startswith("ExitSetupMessage=")
@@ -92,6 +99,7 @@ def test_cancel_message_mentions_rollback():
 
 
 def test_notice_documents_install_options_and_limits():
+    """说明文件记录安装选项与限制。"""
     notice = _read(NOTICE_PATH)
 
     for phrase in (
@@ -106,6 +114,7 @@ def test_notice_documents_install_options_and_limits():
 
 
 def test_notice_documents_non_blocking_first_launch():
+    """说明文件记录首次启动非阻塞。"""
     notice = _read(NOTICE_PATH)
 
     assert "不需要登录" in notice

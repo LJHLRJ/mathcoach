@@ -30,6 +30,7 @@ CONTENT_ROOT = Path(__file__).resolve().parents[1] / "content"
 
 
 def _card() -> KnowledgeCard:
+    """构造每日挑战用卡片。"""
     exercise = Exercise(
         id="test-e1",
         card_id="test-card",
@@ -57,6 +58,7 @@ def _card() -> KnowledgeCard:
 
 
 def _state(started_at: datetime = NOW) -> DailyState:
+    """构造单题挑战状态。"""
     card = _card()
     return DailyState(
         date_key=NOW.date().isoformat(),
@@ -66,6 +68,7 @@ def _state(started_at: datetime = NOW) -> DailyState:
 
 
 def test_daily_questions_are_deterministic_and_cover_stages():
+    """每日题目确定且覆盖三个学段。"""
     cards, _ = load_content(CONTENT_ROOT, strict=False)
     day = date(2026, 11, 20)
     first = build_daily_questions(cards, day)
@@ -85,6 +88,7 @@ def test_daily_questions_are_deterministic_and_cover_stages():
 
 
 def test_similar_questions_skip_current_and_keep_content_order():
+    """相似题跳过当前题并保持内容顺序。"""
     exercises = tuple(
         Exercise(
             id=f"similar-e{index}",
@@ -115,6 +119,7 @@ def test_similar_questions_skip_current_and_keep_content_order():
 
 
 def test_correct_answer_advances_and_finishes():
+    """答对推进并结束单题挑战。"""
     state = _state()
     submission = submit_daily_answer(state, "4", NOW + timedelta(seconds=10))
 
@@ -126,6 +131,7 @@ def test_correct_answer_advances_and_finishes():
 
 
 def test_wrong_answer_reports_solution():
+    """答错返回标准思路。"""
     state = _state()
     submission = submit_daily_answer(state, "3", NOW + timedelta(seconds=10))
 
@@ -135,6 +141,7 @@ def test_wrong_answer_reports_solution():
 
 
 def test_injection_answer_is_not_counted_or_advanced():
+    """注入答案不计分也不推进。"""
     state = _state()
     submission = submit_daily_answer(
         state, "x = __import__('os')", NOW + timedelta(seconds=10)
@@ -148,6 +155,7 @@ def test_injection_answer_is_not_counted_or_advanced():
 
 
 def test_timeout_ends_challenge_without_scoring():
+    """超时结束挑战且不计分。"""
     state = _state(NOW - timedelta(seconds=301))
     assert remaining_seconds(state, NOW) == 0
 
@@ -158,6 +166,7 @@ def test_timeout_ends_challenge_without_scoring():
 
 
 def test_wrong_daily_answer_enters_mistake_book_with_variants():
+    """答错写入错题本并保留变式。"""
     repository = InMemoryRepository()
     card = _card()
     question = DailyQuestion(card, card.exercises[0])
@@ -172,6 +181,7 @@ def test_wrong_daily_answer_enters_mistake_book_with_variants():
 
 
 def test_daily_result_is_persisted():
+    """每日结果写入仓储与审计。"""
     repository = InMemoryRepository()
     state = _state()
     submit_daily_answer(state, "4", NOW + timedelta(seconds=30))
@@ -185,6 +195,7 @@ def test_daily_result_is_persisted():
 
 
 def test_daily_result_is_not_written_without_memory_consent():
+    """未同意记忆时不写结果。"""
     repository = InMemoryRepository()
     state = _state()
     submit_daily_answer(state, "4", NOW + timedelta(seconds=30))

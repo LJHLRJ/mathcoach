@@ -15,6 +15,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
 
 
 def _mistake(identifier: str, card_id: str, due_at: datetime) -> MistakeEntry:
+    """构造指定到期时间的错题。"""
     return MistakeEntry(
         id=identifier,
         exercise_id=f"{card_id}-{identifier}",
@@ -33,12 +34,14 @@ def _mistake(identifier: str, card_id: str, due_at: datetime) -> MistakeEntry:
 
 
 def test_default_mode_is_fsrs(monkeypatch):
+    """默认调度模式为 FSRS。"""
     monkeypatch.delenv("MATHCOACH_SCHEDULER", raising=False)
 
     assert scheduler_mode() == "fsrs"
 
 
 def test_fsrs_mode_filters_by_next_review_at(tmp_path, monkeypatch):
+    """FSRS 队列仅包含已到期条目。"""
     monkeypatch.setenv("MATHCOACH_SCHEDULER", "fsrs")
     repo = SQLiteRepository(tmp_path / "fsrs.db")
     repo.save_mistake(_mistake("due", "c1", NOW - timedelta(days=1)))
@@ -51,6 +54,7 @@ def test_fsrs_mode_filters_by_next_review_at(tmp_path, monkeypatch):
 
 
 def test_fsrs_review_persists_stability(tmp_path, monkeypatch):
+    """复习后稳定性变化并持久化。"""
     monkeypatch.setenv("MATHCOACH_SCHEDULER", "fsrs")
     repo = SQLiteRepository(tmp_path / "fsrs.db")
     saved = repo.save_mistake(_mistake("m1", "c1", NOW))
@@ -69,6 +73,7 @@ def test_fsrs_review_persists_stability(tmp_path, monkeypatch):
 
 
 def test_fsrs_mode_also_handles_legacy_bool_review(tmp_path, monkeypatch):
+    """布尔评分在 FSRS 下同样可用。"""
     monkeypatch.setenv("MATHCOACH_SCHEDULER", "fsrs")
     repo = SQLiteRepository(tmp_path / "fsrs.db")
     saved = repo.save_mistake(_mistake("m1", "c1", NOW))
@@ -80,6 +85,7 @@ def test_fsrs_mode_also_handles_legacy_bool_review(tmp_path, monkeypatch):
 
 
 def test_sm2_fallback_keeps_interval_and_ease(tmp_path, monkeypatch):
+    """切到 SM-2 时保留间隔与 ease 语义。"""
     monkeypatch.setenv("MATHCOACH_SCHEDULER", "sm2")
     repo = SQLiteRepository(tmp_path / "sm2.db")
     saved = repo.save_mistake(_mistake("m1", "c1", NOW))

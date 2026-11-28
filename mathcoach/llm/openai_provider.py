@@ -46,6 +46,18 @@ class OpenAICompatibleProvider:
         )
         return response.choices[0].message.content.strip()
 
+    def complete(self, system_prompt: str, user_prompt: str) -> str:
+        """通用 JSON 补全；供追问引擎等结构化任务使用。"""
+        response = self._client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+        return response.choices[0].message.content.strip()
+
     def parse_freeform(self, text: str, exercise: Exercise) -> ParsedAnswer:
         """把自由文本作答归一为 JSON。
 

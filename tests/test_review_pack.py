@@ -3,6 +3,7 @@ from mathcoach.domain.review_pack import compose
 
 
 def test_quota_3_1_1():
+    """默认配额为到期 3、缺口 1、拓展 1。"""
     result = compose(
         due=["d0", "d1", "d2", "d3", "d4"],
         gaps=["g"],
@@ -16,6 +17,7 @@ def test_quota_3_1_1():
 
 
 def test_fill_when_gap_missing():
+    """缺口为空时由到期项补足总配额。"""
     result = compose(
         due=["d0", "d1", "d2", "d3", "d4"],
         gaps=[],
@@ -28,6 +30,7 @@ def test_fill_when_gap_missing():
 
 
 def test_fill_when_variant_missing():
+    """拓展为空时由到期项补足，缺口项仍居首。"""
     result = compose(
         due=["d0", "d1", "d2", "d3", "d4"],
         gaps=["g"],
@@ -40,12 +43,14 @@ def test_fill_when_variant_missing():
 
 
 def test_gap_item_placed_first():
+    """缺口项排在复习包首位。"""
     result = compose(due=["d0", "d1", "d2"], gaps=["g"], variants=["v"])
 
     assert result[0] == "g"
 
 
 def test_no_duplicates():
+    """入参重复项在结果中只保留一次。"""
     result = compose(
         due=["d0", "d0", "d1", "d2", "d3"],
         gaps=["g", "g"],

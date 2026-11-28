@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
+from streamlit.testing.v1.element_tree import Selectbox
 
 from mathcoach.domain.models import (
     Consent,
@@ -25,21 +26,25 @@ NOW = datetime(2026, 11, 22, 12, 0, tzinfo=UTC)
 PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
-def _select_mode(at, label: str) -> None:
+def _select_mode(at: AppTest, label: str) -> None:
+    """切换功能模式。"""
     next(
         box for box in at.selectbox if box.label == "功能"
     ).select(label).run()
 
 
-def _open_grade_page(at) -> None:
+def _open_grade_page(at: AppTest) -> None:
+    """进入按年级页面。"""
     _select_mode(at, "按年级")
 
 
-def _selectbox(at, label: str):
+def _selectbox(at: AppTest, label: str) -> Selectbox:
+    """按标签取下拉框。"""
     return next(box for box in at.selectbox if box.label == label)
 
 
 def test_grade_page_renders_and_filters(tmp_path, monkeypatch):
+    """按年级页可渲染并按年级与难度筛选。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "grade-page.sqlite3")
     )
@@ -75,6 +80,7 @@ def test_grade_page_renders_and_filters(tmp_path, monkeypatch):
 
 
 def test_grade_selection_persists_across_modes(tmp_path, monkeypatch):
+    """年级选择跨模式保留。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "grade-memory.sqlite3")
     )
@@ -91,6 +97,7 @@ def test_grade_selection_persists_across_modes(tmp_path, monkeypatch):
 
 
 def test_today_review_counts_all_stages(tmp_path, monkeypatch):
+    """今日待复习统计跨学段。"""
     path = tmp_path / "grade-review.sqlite3"
     repository = SQLiteRepository(path)
     for index, (stage, course, card_id) in enumerate(
@@ -132,6 +139,7 @@ def test_today_review_counts_all_stages(tmp_path, monkeypatch):
 
 
 def test_today_review_ignores_future_due_items(tmp_path, monkeypatch):
+    """未到期项不计入今日待复习。"""
     path = tmp_path / "grade-review-future.sqlite3"
     repository = SQLiteRepository(path)
     for index, (stage, course, card_id) in enumerate(
@@ -176,6 +184,7 @@ def test_today_review_ignores_future_due_items(tmp_path, monkeypatch):
 
 
 def test_difficulty_groups_and_learning_entry(tmp_path, monkeypatch):
+    """难度分组展示并可打开学习卡。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "grade-groups.sqlite3")
     )
@@ -208,6 +217,7 @@ def test_difficulty_groups_and_learning_entry(tmp_path, monkeypatch):
 
 
 def test_empty_grade_learning_entry(tmp_path, monkeypatch):
+    """空年级展示无知识点提示。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "grade-empty-entry.sqlite3")
     )
@@ -224,6 +234,7 @@ def test_empty_grade_learning_entry(tmp_path, monkeypatch):
 
 
 def test_default_grade_persists_in_settings_store(tmp_path):
+    """默认年级可持久化并拒绝非法值。"""
     path = tmp_path / "grade-default.sqlite3"
 
     assert load_default_grade(PERSISTENT, path) == "all"
@@ -234,6 +245,7 @@ def test_default_grade_persists_in_settings_store(tmp_path):
 
 
 def test_default_grade_applied_to_grade_page(tmp_path, monkeypatch):
+    """默认年级在打开页面时生效。"""
     path = tmp_path / "grade-default-ui.sqlite3"
     store = SQLiteSettingsStore(path)
     try:
@@ -253,6 +265,7 @@ def test_default_grade_applied_to_grade_page(tmp_path, monkeypatch):
 def test_settings_page_shows_default_grade_control(
     tmp_path, monkeypatch
 ):
+    """设置页展示默认年级控件。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "grade-settings.sqlite3")
     )

@@ -16,6 +16,7 @@ TREE_PATH = ROOT / "content" / "knowledge_tree.yaml"
 
 
 def test_tree_loads_with_expected_scale():
+    """树规模与关键节点名称符合内容。"""
     tree = load_knowledge_tree(TREE_PATH)
 
     assert len(tree.nodes) == 148
@@ -25,6 +26,7 @@ def test_tree_loads_with_expected_scale():
 
 
 def test_children_follow_stage_course_card_hierarchy():
+    """子节点按学段、课程、卡片层级展开。"""
     tree = load_knowledge_tree(TREE_PATH)
 
     stage_children = tree.children("stage-highschool")
@@ -39,6 +41,7 @@ def test_children_follow_stage_course_card_hierarchy():
 
 
 def test_prerequisite_chain_is_bounded_and_deterministic():
+    """先修链受深度限制且对未知节点返回空。"""
     tree = load_knowledge_tree(TREE_PATH)
 
     assert tree.prerequisite_chain("hs-func-003") == (
@@ -52,7 +55,8 @@ def test_prerequisite_chain_is_bounded_and_deterministic():
     assert tree.prerequisite_chain("unknown-node") == ()
 
 
-def _write_tree(path: Path, nodes: list[dict], bindings=None) -> Path:
+def _write_tree(path: Path, nodes: list[dict], bindings: list[dict] | None = None) -> Path:
+    """把节点与绑定写入临时 YAML。"""
     path.write_text(
         yaml.safe_dump(
             {"nodes": nodes, "bindings": bindings or []},
@@ -65,6 +69,7 @@ def _write_tree(path: Path, nodes: list[dict], bindings=None) -> Path:
 
 
 def _node(node_id: str, prerequisites: list[str] | None = None) -> dict:
+    """构造最小知识点节点。"""
     return {
         "id": node_id,
         "name": node_id,
@@ -75,6 +80,7 @@ def _node(node_id: str, prerequisites: list[str] | None = None) -> dict:
 
 
 def test_missing_prerequisite_is_rejected(tmp_path):
+    """缺失先修节点被拒绝。"""
     path = _write_tree(
         tmp_path / "missing.yaml",
         [_node("a", ["missing"])],
@@ -85,6 +91,7 @@ def test_missing_prerequisite_is_rejected(tmp_path):
 
 
 def test_cycle_is_rejected(tmp_path):
+    """先修成环被拒绝。"""
     path = _write_tree(
         tmp_path / "cycle.yaml",
         [_node("a", ["b"]), _node("b", ["a"])],
@@ -95,6 +102,7 @@ def test_cycle_is_rejected(tmp_path):
 
 
 def test_duplicate_node_id_is_rejected(tmp_path):
+    """重复知识点 ID 被拒绝。"""
     path = _write_tree(
         tmp_path / "duplicate.yaml",
         [_node("a"), _node("a")],

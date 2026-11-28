@@ -1,0 +1,12 @@
+version: 1
+exercise_id: hs-trig-002-e1
+card_id: hs-trig-002
+
+steps:
+  - index: 1
+    prompt: "同角平方关系：sin²x + cos²x 化简等于多少？"
+    expected: "1"
+    variables: []
+    kc_id: kc-hs-trig-002-f1
+    step_tag: identity
+    input_kind: expr

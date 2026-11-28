@@ -122,3 +122,40 @@
 - 设置页导出需要先点击“生成 / 刷新导出数据”；学习数据变化后需手动刷新。
 - 未引入第三方 UI 主题库，未新增前端依赖。
 - Linux 桌面产物仍缺少 GTK/Qt 后端，说明见 [install.md](install.md)。
+
+## 2026-11-28 追加：交互延迟优化
+
+- 周报 AI 叙事改为按需生成：进入周报只渲染确定性报告，点击“生成 / 刷新 AI 叙事”才调用模型；结果按报告结论签名缓存在会话中，重复 rerun 不重复请求。
+- 仪表盘与周报共用 `RepositorySnapshot`：同一轮渲染中收据、错题、复习项各取一次全量，避免同一指标重复查询 4 次。
+- KC 影子掌握度改为 `load_with_samples()` 一次批量读取；会话内缓存，并在步骤提交、步骤放弃、切换记忆授权后失效。
+- 小测答案区改为 `st.form`：选择选项不再立即触发整页 rerun，点击“提交答案”时统一提交。
+- 分步填写改为 `st.fragment`：检查单步只重跑步骤区，不再重建可视化与小测控件；局部 rerun 不可用时回退全局 `st.rerun()`。
+- 卡片级与 KC 级可视化改为 fragment：拖动滑块只重跑图表区域。
+- 已知权衡：快照不跨 rerun 缓存，学习数据更新后不会展示过期统计；周报叙事缓存按结论签名失效，数据变化后需重新点击生成。
+
+## 2026-11-28 追加：KC 动态可视化讲解
+
+- 新增 KC 级可视化注册表：`get_kc_visual` / `render_kc_visual` / `kc_visuals_for_exercises`；未登记 KC 返回 `None`，渲染异常返回 `failed`，均不阻断学习流程。
+- 首批组件：
+  - `kc-hs-trig-002-p1` 象限符号判定：四象限底色、单位圆投影与 sin/cos 符号。
+  - `kc-hs-trig-003-f1` 补角公式：x 与 π−x 关于 y 轴对称，正弦相同、余弦相反。
+  - `kc-hs-trig-004-f1` 振幅与周期：滑块调节 A/ω，实时显示 `|A|` 与 `2π/|ω|`。
+- 入口：
+  - 知识点浏览页：按卡片题目映射展示“KC 动态讲解”区块。
+  - 分步填写答错：在该步骤下方就地提供对应 KC 的动态讲解。
+  - 错因诊断页：汇总当前题目关联的可视化 KC。
+- 全部组件只读，不修改判分、BKT、FSRS、错题或 KC 影子库；渲染失败只提示“动态讲解暂不可用，已保留文字讲解”。
+
+## 2026-11-28 追加验证
+
+- 交互延迟优化完成后：`786 passed, 5 skipped`。
+- KC 动态可视化讲解完成后：`816 passed, 5 skipped`。
+- 新增测试：
+  - `tests/test_ui_snapshot.py`、`tests/test_ui_latency.py`
+  - `tests/test_visuals_quadrant_sign.py`、`tests/test_visuals_supplement_angle.py`、`tests/test_visuals_amplitude_period.py`
+  - `tests/test_kc_visuals_ui.py`
+
+## 2026-11-28 追加回退
+
+- 交互延迟：删除 `RepositorySnapshot` 接入、恢复周报渲染时直接调用 `generate_report_narrative`、移除 `quiz_answer_form` 与相关 `@st.fragment` 即可回到逐次重算。
+- KC 可视化：移除 `_KC_VISUALS` 中的登记项即可隐藏入口；删除对应 `mathcoach/ui/visuals/*.py` 不影响卡片级可视化。

@@ -49,11 +49,13 @@ class DailySubmission:
         question: 对应题目。
         correct: 判定结果，无法自动核对时为 None。
         feedback: 反馈文案。
+        duration_s: 本题用时秒数；无法计时时为 0。
     """
 
     question: DailyQuestion
     correct: bool | None
     feedback: str
+    duration_s: int = 0
 
 
 @dataclass
@@ -76,6 +78,7 @@ class DailyState:
     date_key: str
     questions: tuple[DailyQuestion, ...]
     started_at: datetime
+    question_started_at: datetime | None = None
     time_limit_s: int = DAILY_TIME_LIMIT_S
     index: int = 0
     correct: int = 0
@@ -250,11 +253,16 @@ def submit_daily_answer(
     else:
         feedback = "这一步无法自动核对，建议人工复核。"
 
+    started = state.question_started_at or state.started_at
+    duration_s = max(0, int((now - started).total_seconds()))
+    state.question_started_at = now
     state.index += 1
     state.feedback = feedback
     if state.index >= len(state.questions):
         finish_daily(state, now)
-    return DailySubmission(question, judgement.correct, feedback)
+    return DailySubmission(
+        question, judgement.correct, feedback, duration_s
+    )
 
 
 def build_daily_result(state: DailyState, now: datetime) -> DailyResult:
@@ -274,6 +282,7 @@ def record_daily_mistake(
     question: DailyQuestion,
     answer: str,
     now: datetime,
+    duration_s: int = 0,
 ) -> None:
     """把每日挑战中的错题写入错题本。
 
@@ -285,6 +294,7 @@ def record_daily_mistake(
         question: 当前题目。
         answer: 作答文本。
         now: 当前时间。
+        duration_s: 本题用时；无法计时时为 0。
     """
     if not consent.mistake_book:
         return
@@ -315,6 +325,7 @@ def record_daily_mistake(
                 "options": list(exercise.options),
                 "solution_outline": exercise.solution_outline,
                 "variants": list(exercise.variants),
+                "duration_s": duration_s,
             },
         )
     )

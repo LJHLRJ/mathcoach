@@ -1,0 +1,22 @@
+version: 1
+exercise_id: hs-trig-004-e1
+card_id: hs-trig-004
+
+steps:
+  - index: 1
+    prompt: "y=sin(2x) 中 ω 等于多少？"
+    expected: "2"
+    variables: []
+    kc_id: kc-hs-trig-004-f1
+    step_tag: formula
+    input_kind: number
+  - index: 2
+    prompt: "周期 T=2π/|ω|，代入 ω=2 后 T 等于多少？（填 π 或 pi）"
+    expected: "π"
+    variables: []
+    kc_id: kc-hs-trig-004-p1
+    step_tag: calculation
+    input_kind: sign
+    acceptable:
+      - "π"
+      - "pi"

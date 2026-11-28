@@ -17,12 +17,14 @@ from mathcoach.memory.sqlite_repo import SQLiteRepository
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def _select_function_card(at) -> None:
+def _select_function_card(at: AppTest) -> None:
+    """选中函数入门卡。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     assert not at.exception
 
 
 def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
+    """首屏渲染并完成一次闭环。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -48,6 +50,7 @@ def test_app_renders_and_completes_one_loop(tmp_path, monkeypatch):
 
 
 def test_app_rejects_injection_goal(tmp_path, monkeypatch):
+    """注入目标被拒绝且输入保留。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -60,6 +63,7 @@ def test_app_rejects_injection_goal(tmp_path, monkeypatch):
 
 
 def test_app_dashboard_mode(tmp_path, monkeypatch):
+    """仪表盘模式展示统计。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -71,6 +75,7 @@ def test_app_dashboard_mode(tmp_path, monkeypatch):
 
 
 def test_app_daily_challenge_can_start(tmp_path, monkeypatch):
+    """每日挑战可启动。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -84,6 +89,7 @@ def test_app_daily_challenge_can_start(tmp_path, monkeypatch):
 
 
 def test_app_variant_practice_shows_variant(tmp_path, monkeypatch):
+    """错题变式展示变式内容。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_mistake(
@@ -120,6 +126,7 @@ def test_app_variant_practice_shows_variant(tmp_path, monkeypatch):
 
 
 def test_app_learning_path_mode(tmp_path, monkeypatch):
+    """学习路径模式展示建议。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -131,6 +138,7 @@ def test_app_learning_path_mode(tmp_path, monkeypatch):
 
 
 def test_app_weekly_report_mode(tmp_path, monkeypatch):
+    """周报模式展示错因趋势。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -142,6 +150,7 @@ def test_app_weekly_report_mode(tmp_path, monkeypatch):
 
 
 def test_app_challenge_can_start(tmp_path, monkeypatch):
+    """挑战赛可启动。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -154,6 +163,7 @@ def test_app_challenge_can_start(tmp_path, monkeypatch):
 
 
 def test_app_review_package_empty_state(tmp_path, monkeypatch):
+    """智能复习包展示空状态。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -165,6 +175,7 @@ def test_app_review_package_empty_state(tmp_path, monkeypatch):
 
 
 def test_app_export_package_requires_confirmation(tmp_path, monkeypatch):
+    """导出需确认后才写文件。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     export_dir = tmp_path / "export"
     at = AppTest.from_file(APP_PATH, default_timeout=15)
@@ -187,6 +198,7 @@ def test_app_export_package_requires_confirmation(tmp_path, monkeypatch):
 
 
 def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
+    """非选择题支持文本输入。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -204,6 +216,7 @@ def test_app_supports_non_choice_answer_input(tmp_path, monkeypatch):
 
 
 def test_app_settings_tab_shows_version_and_update_entry(tmp_path, monkeypatch):
+    """设置页展示版本与更新入口。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "mathcoach.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15).run()
     at.session_state["main_tabs"] = "设置"
@@ -217,6 +230,7 @@ def test_app_settings_tab_shows_version_and_update_entry(tmp_path, monkeypatch):
 
 
 def test_app_mistake_tab_shows_persisted_mistake_after_restart(tmp_path, monkeypatch):
+    """错题跨重启保留。"""
     path = tmp_path / "mathcoach.sqlite3"
     monkeypatch.setenv("MATHCOACH_DB", str(path))
 
@@ -242,6 +256,7 @@ def test_app_mistake_tab_shows_persisted_mistake_after_restart(tmp_path, monkeyp
 
 
 def test_app_guest_mode_keeps_learning_data_out_of_sqlite(tmp_path, monkeypatch):
+    """游客模式学习数据不落 SQLite。"""
     path = tmp_path / "mathcoach.sqlite3"
     repository = SQLiteRepository(path)
     repository.save_consent(Consent(memory=False, mistake_book=False))
@@ -269,14 +284,16 @@ def test_app_guest_mode_keeps_learning_data_out_of_sqlite(tmp_path, monkeypatch)
         check.close()
 
 
-def _start_session(at, card_id: str) -> None:
+def _start_session(at: AppTest, card_id: str) -> None:
+    """选定卡片并进入小测。"""
     at.selectbox[0].select(card_id).run()
     at.text_input[0].set_value("搞懂函数")
     next(button for button in at.button if button.label == "确认目标").click().run()
     next(button for button in at.button if button.label == "开始小测").click().run()
 
 
-def _answer_wrong_twice(at, first: str, second: str) -> None:
+def _answer_wrong_twice(at: AppTest, first: str, second: str) -> None:
+    """连续提交两次错误答案。"""
     at.radio[0].set_value(first)
     next(button for button in at.button if button.label == "提交答案").click().run()
     next(button for button in at.button if button.label == "再试一次").click().run()
@@ -285,6 +302,7 @@ def _answer_wrong_twice(at, first: str, second: str) -> None:
 
 
 def test_diagnosis_learning_card_action_routes(tmp_path, monkeypatch):
+    """诊断页学习卡动作路由到知识点浏览。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "diagnosis-card.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -304,6 +322,7 @@ def test_diagnosis_learning_card_action_routes(tmp_path, monkeypatch):
 
 
 def test_diagnosis_prerequisite_action_routes(tmp_path, monkeypatch):
+    """诊断页先修复习动作路由到先修卡。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "diagnosis-prereq.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -329,6 +348,7 @@ def test_diagnosis_prerequisite_action_routes(tmp_path, monkeypatch):
 
 
 def test_diagnosis_similar_practice_pack(tmp_path, monkeypatch):
+    """同类练习包完成并回到诊断。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "diagnosis-similar.sqlite3")
     )
@@ -374,6 +394,7 @@ def test_diagnosis_similar_practice_pack(tmp_path, monkeypatch):
 
 
 def test_app_weekly_report_shows_mastery_change(tmp_path, monkeypatch):
+    """周报展示掌握度变化。"""
     path = tmp_path / "weekly-mastery.sqlite3"
     repository = SQLiteRepository(path)
     now = datetime.now(timezone.utc)
@@ -398,6 +419,7 @@ def test_app_weekly_report_shows_mastery_change(tmp_path, monkeypatch):
 def test_receipt_sparse_restatement_marks_half_independent(
     tmp_path, monkeypatch
 ):
+    """稀疏复述标记半独立。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "restatement-sparse.sqlite3")
     )
@@ -429,6 +451,7 @@ def test_receipt_sparse_restatement_marks_half_independent(
 
 
 def test_receipt_restatement_records_quality(tmp_path, monkeypatch):
+    """收据记录完整复述质量。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "restatement.sqlite3")
     )

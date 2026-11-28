@@ -10,6 +10,7 @@ LAYOUT_PATH = ROOT / "mathcoach" / "ui" / "layout.py"
 
 
 def _channel(value: int) -> float:
+    """将八位色值通道转换为线性亮度分量。"""
     channel = value / 255
     if channel <= 0.03928:
         return channel / 12.92
@@ -17,6 +18,7 @@ def _channel(value: int) -> float:
 
 
 def _relative_luminance(hex_color: str) -> float:
+    """计算颜色的相对亮度。"""
     value = hex_color.lstrip("#")
     red, green, blue = (int(value[index : index + 2], 16) for index in (0, 2, 4))
     return (
@@ -27,6 +29,7 @@ def _relative_luminance(hex_color: str) -> float:
 
 
 def _contrast_ratio(foreground: str, background: str) -> float:
+    """计算前景与背景的对比度。"""
     lighter, darker = sorted(
         (_relative_luminance(foreground), _relative_luminance(background)),
         reverse=True,
@@ -35,28 +38,33 @@ def _contrast_ratio(foreground: str, background: str) -> float:
 
 
 def _theme() -> dict[str, str]:
+    """读取主题配置。"""
     return tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))["theme"]
 
 
 def test_body_text_contrast_meets_wcag_aa():
+    """正文与背景对比度达到 WCAG AA。"""
     theme = _theme()
 
     assert _contrast_ratio(theme["textColor"], theme["backgroundColor"]) >= 4.5
 
 
 def test_primary_color_contrast_meets_three_to_one():
+    """主色与背景对比度达到三比一。"""
     theme = _theme()
 
     assert _contrast_ratio(theme["primaryColor"], theme["backgroundColor"]) >= 3.0
 
 
 def _call_name(node: ast.AST) -> str | None:
+    """取调用表达式的属性名。"""
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
         return node.func.attr
     return None
 
 
 def test_feedback_calls_have_icons_and_readable_text():
+    """反馈调用带图标与可读文案。"""
     tree = ast.parse(APP_PATH.read_text(encoding="utf-8"))
     feedback = [
         node
@@ -75,6 +83,7 @@ def test_feedback_calls_have_icons_and_readable_text():
 
 
 def test_card_title_uses_semantic_subheader():
+    """卡片标题使用语义化 subheader。"""
     tree = ast.parse(LAYOUT_PATH.read_text(encoding="utf-8"))
     card_function = next(
         node

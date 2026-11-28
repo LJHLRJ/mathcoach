@@ -8,6 +8,7 @@ WORKFLOW = ROOT / ".github/workflows/build-desktop.yml"
 
 
 def test_build_workflow_is_manual_or_tag_triggered():
+    """构建 workflow 仅手动或标签触发，只上传 artifact。"""
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "workflow_dispatch" in text
@@ -18,6 +19,7 @@ def test_build_workflow_is_manual_or_tag_triggered():
 
 
 def test_build_workflow_is_valid_yaml():
+    """workflow 是合法 YAML 且覆盖 Windows 与 macOS。"""
     data = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
 
     assert isinstance(data, dict)
@@ -27,6 +29,7 @@ def test_build_workflow_is_valid_yaml():
 
 
 def test_packaging_docs_cover_artifact_workflow():
+    """打包文档记录 artifact 工作流与仓库内验证要求。"""
     text = (ROOT / "docs/packaging/desktop-packaging-plan.md").read_text(
         encoding="utf-8"
     )

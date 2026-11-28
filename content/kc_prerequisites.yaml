@@ -1,0 +1,42 @@
+version: 1
+edges:
+  - from: kc-hs-trig-001-f1
+    to: kc-hs-trig-001-p1
+    strength: required
+    source: manual
+    confidence: 1.0
+  - from: kc-hs-trig-001-f1
+    to: kc-hs-trig-002-f1
+    strength: recommended
+    source: manual
+    confidence: 0.8
+  - from: kc-hs-trig-002-f1
+    to: kc-hs-trig-003-f1
+    strength: required
+    source: manual
+    confidence: 0.9
+  - from: kc-hs-trig-003-f1
+    to: kc-hs-trig-003-p1
+    strength: required
+    source: manual
+    confidence: 1.0
+  - from: kc-hs-trig-004-f1
+    to: kc-hs-trig-004-p1
+    strength: required
+    source: manual
+    confidence: 1.0
+  - from: kc-hs-trig-004-f1
+    to: kc-hs-trig-004-p2
+    strength: required
+    source: manual
+    confidence: 1.0
+  - from: kc-hs-trig-005-f1
+    to: kc-hs-trig-005-p1
+    strength: required
+    source: manual
+    confidence: 1.0
+  - from: kc-hs-trig-005-f2
+    to: kc-hs-trig-005-p2
+    strength: required
+    source: manual
+    confidence: 1.0

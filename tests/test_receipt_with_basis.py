@@ -10,7 +10,8 @@ from mathcoach.domain.models import (
 from mathcoach.domain.receipt import assess_restatement, build_receipt
 
 
-def _card_and_exercise():
+def _card_and_exercise() -> tuple[KnowledgeCard, Exercise]:
+    """构造收据测试所需的卡片与练习。"""
     exercise = Exercise(
         id="hs-001-e1",
         card_id="hs-001",
@@ -38,6 +39,7 @@ def _card_and_exercise():
 
 
 def test_receipt_has_independent_basis():
+    """收据依据与独立完成计算一致。"""
     card, exercise = _card_and_exercise()
 
     receipt = build_receipt(card, exercise, "目标", max_hint_level=1, duration_s=10)
@@ -46,6 +48,7 @@ def test_receipt_has_independent_basis():
 
 
 def test_receipt_has_semi_independent_basis():
+    """最高提示 L4 时收据标记半独立完成。"""
     card, exercise = _card_and_exercise()
 
     receipt = build_receipt(card, exercise, "目标", max_hint_level=4, duration_s=10)
@@ -54,6 +57,7 @@ def test_receipt_has_semi_independent_basis():
 
 
 def test_receipt_records_unverified_basis():
+    """符号验证未过时收据记录相应依据。"""
     card, exercise = _card_and_exercise()
 
     receipt = build_receipt(
@@ -64,6 +68,7 @@ def test_receipt_records_unverified_basis():
 
 
 def test_restatement_quality_uses_key_fragment_coverage():
+    """复述质量按关键片段覆盖度分级。"""
     reference = "根号内非负，即 x−2≥0。"
 
     assert (

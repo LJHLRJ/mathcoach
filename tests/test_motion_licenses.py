@@ -10,6 +10,7 @@ README = ROOT / "README.md"
 
 
 def test_motion_resources_are_documented():
+    """动效资源在清单中逐项记录。"""
     text = NOTICES.read_text(encoding="utf-8")
 
     for name in (
@@ -32,6 +33,7 @@ def test_motion_resources_are_documented():
 
 
 def test_motion_disclaimer_is_verbatim():
+    """动效免责声明在清单与 README 中逐字一致。"""
     required = (
         "本项目的动态背景、庆祝动效与微交互参考了第三方开源资源",
         "不对第三方资源的版权状态作任何法律保证",
@@ -48,6 +50,7 @@ def test_motion_disclaimer_is_verbatim():
 
 
 def test_readme_links_motion_notices():
+    """README 链接到动效资源清单。"""
     readme = README.read_text(encoding="utf-8")
 
     assert "## 动效与第三方资源" in readme
@@ -55,6 +58,7 @@ def test_readme_links_motion_notices():
 
 
 def test_canvas_confetti_license_file_exists():
+    """canvas-confetti 许可证文件保留原声明。"""
     license_text = (
         ROOT
         / "static"
@@ -69,6 +73,7 @@ def test_canvas_confetti_license_file_exists():
 def test_settings_about_shows_motion_resources_and_disclaimer(
     tmp_path, monkeypatch
 ):
+    """设置页展示动效资源与免责声明。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "motion-about.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

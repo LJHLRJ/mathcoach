@@ -11,8 +11,8 @@ from mathcoach.domain.explanation import (
     build_explanation,
     locate_error,
 )
-from mathcoach.domain.knowledge_tree import load_knowledge_tree
-from mathcoach.domain.models import ErrorType
+from mathcoach.domain.knowledge_tree import KnowledgeTree, load_knowledge_tree
+from mathcoach.domain.models import ErrorType, Exercise, KnowledgeCard
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTENT_ROOT = ROOT / "content"
@@ -21,38 +21,44 @@ APP_PATH = ROOT / "app.py"
 
 
 @pytest.fixture(scope="module")
-def cards_by_id():
+def cards_by_id() -> dict[str, KnowledgeCard]:
+    """按 ID 索引全部卡片。"""
     cards, result = load_content(CONTENT_ROOT, strict=False)
     assert result.ok
     return {card.id: card for card in cards}
 
 
 @pytest.fixture(scope="module")
-def tree():
+def tree() -> KnowledgeTree:
+    """加载知识树。"""
     return load_knowledge_tree(TREE_PATH)
 
 
-def _exercise(card, suffix: str):
+def _exercise(card: KnowledgeCard, suffix: str) -> Exercise:
+    """按后缀取练习。"""
     return next(
         exercise for exercise in card.exercises if exercise.id.endswith(suffix)
     )
 
 
-def _text(at) -> str:
+def _text(at: AppTest) -> str:
+    """拼接页面中的 markdown 与 caption。"""
     return " ".join(
         [element.value for element in at.markdown]
         + [element.value for element in at.caption]
     )
 
 
-def _start_quiz(at) -> None:
+def _start_quiz(at: AppTest) -> None:
+    """进入小测阶段。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     at.text_input[0].set_value("搞懂函数的概念")
     at.button[0].click().run()
     at.button[0].click().run()
 
 
-def _wrong_once(at, answer: str) -> None:
+def _wrong_once(at: AppTest, answer: str) -> None:
+    """提交一次指定错误答案。"""
     at.radio[0].set_value(answer)
     at.button[0].click().run()
 
@@ -60,6 +66,7 @@ def _wrong_once(at, answer: str) -> None:
 def test_explanation_combines_exercise_and_knowledge_point(
     cards_by_id, tree
 ):
+    """解析合并练习与知识点信息。"""
     card = cards_by_id["hs-func-003"]
     exercise = _exercise(card, "e1")
 
@@ -78,6 +85,7 @@ def test_explanation_combines_exercise_and_knowledge_point(
 
 
 def test_explanation_falls_back_to_card_without_tree(cards_by_id):
+    """无知识树时回退到卡片字段。"""
     card = cards_by_id["hs-func-003"]
     exercise = _exercise(card, "e1")
 
@@ -89,6 +97,7 @@ def test_explanation_falls_back_to_card_without_tree(cards_by_id):
 
 
 def test_concept_error_points_to_nearest_prerequisite(cards_by_id, tree):
+    """概念错误定位到最近先修。"""
     card = cards_by_id["hs-func-003"]
 
     localization = locate_error(card, ErrorType.CONCEPT, tree)
@@ -104,6 +113,7 @@ def test_concept_error_points_to_nearest_prerequisite(cards_by_id, tree):
 
 
 def test_error_without_prerequisites_reviews_current_point(cards_by_id, tree):
+    """无先修时复习当前知识点。"""
     card = cards_by_id["hs-function-intro-001"]
 
     localization = locate_error(card, ErrorType.CONCEPT, tree)
@@ -114,6 +124,7 @@ def test_error_without_prerequisites_reviews_current_point(cards_by_id, tree):
 
 
 def test_calculation_error_keeps_current_knowledge_point(cards_by_id, tree):
+    """计算错误保持当前知识点。"""
     card = cards_by_id["hs-func-003"]
 
     localization = locate_error(card, ErrorType.CALCULATION, tree)
@@ -123,6 +134,7 @@ def test_calculation_error_keeps_current_knowledge_point(cards_by_id, tree):
 
 
 def test_explicit_reason_overrides_default(cards_by_id, tree):
+    """显式原因覆盖默认理由。"""
     card = cards_by_id["hs-function-intro-001"]
 
     localization = locate_error(
@@ -136,6 +148,7 @@ def test_explicit_reason_overrides_default(cards_by_id, tree):
 
 
 def test_receipt_shows_full_explanation(tmp_path, monkeypatch):
+    """收据展示完整解析。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "explanation-receipt.sqlite3")
     )
@@ -155,6 +168,7 @@ def test_receipt_shows_full_explanation(tmp_path, monkeypatch):
 def test_hint_page_shows_knowledge_context_without_answer(
     tmp_path, monkeypatch
 ):
+    """提示页展示知识点但不泄露答案。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "explanation-hint.sqlite3")
     )
@@ -172,6 +186,7 @@ def test_hint_page_shows_knowledge_context_without_answer(
 
 
 def test_diagnose_page_shows_localized_error(tmp_path, monkeypatch):
+    """诊断页展示错因定位与确认按钮。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "explanation-diagnose.sqlite3")
     )
@@ -190,6 +205,7 @@ def test_diagnose_page_shows_localized_error(tmp_path, monkeypatch):
 
 
 def test_wrapup_shows_full_explanation(tmp_path, monkeypatch):
+    """结算页展示完整解析。"""
     monkeypatch.setenv(
         "MATHCOACH_DB", str(tmp_path / "explanation-wrapup.sqlite3")
     )

@@ -17,6 +17,7 @@ COLOR_KEYS = (
 
 
 def test_theme_section_has_required_keys():
+    """主题段包含必需键且颜色为七位十六进制。"""
     data = tomllib.loads(CONFIG.read_text(encoding="utf-8"))
     theme = data["theme"]
 
@@ -30,6 +31,7 @@ def test_theme_section_has_required_keys():
 
 
 def test_theme_comments_keep_original_values():
+    """配置注释保留旧值与重启生效说明。"""
     text = CONFIG.read_text(encoding="utf-8")
 
     assert "# 原值（v0.7.0）" in text

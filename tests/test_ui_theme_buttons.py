@@ -10,11 +10,13 @@ from mathcoach.ui import components
 
 
 def test_streamlit_supports_skeleton_and_parallel_fragment():
+    """Streamlit 提供骨架屏与并行 fragment。"""
     assert hasattr(st, "skeleton")
     assert "parallel" in inspect.signature(st.fragment).parameters
 
 
 def test_button_roles_map_to_streamlit_types():
+    """按钮角色映射到 Streamlit 类型，未知角色回退次要样式。"""
     assert components.BUTTON_TYPES == {
         components.PRIMARY: "primary",
         components.SECONDARY: "secondary",
@@ -28,6 +30,7 @@ def test_button_roles_map_to_streamlit_types():
 
 
 def test_danger_css_is_constant_and_targets_clear_button():
+    """危险按钮 CSS 内联且无外部引用。"""
     css = components.DANGER_CSS
 
     assert components.DANGER_KEY in css
@@ -38,11 +41,13 @@ def test_danger_css_is_constant_and_targets_clear_button():
 
 
 def test_skeleton_heights_are_positive():
+    """骨架屏高度均为正数。"""
     assert len(components.SKELETON_HEIGHTS) == 3
     assert all(value > 0 for value in components.SKELETON_HEIGHTS.values())
 
 
 def test_loading_skeleton_context_manager_runs():
+    """加载骨架屏上下文可正常执行。"""
     at = AppTest.from_string(
         "import streamlit as st\n"
         "from mathcoach.ui.components import loading_skeleton\n"

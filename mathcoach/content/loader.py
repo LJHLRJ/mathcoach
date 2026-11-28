@@ -11,6 +11,7 @@ from .validator import ValidationResult, validate
 CURRICULUM_FILE = "curriculum.yaml"
 PREREQUISITES_FILE = "prerequisites.yaml"
 NARRATIVE_FILE = "narrative.yaml"
+STAGE_DIRS = frozenset({"highschool", "undergraduate", "graduate"})
 
 
 class ContentError(RuntimeError):
@@ -30,11 +31,14 @@ def load_curriculum(root: Path) -> list[dict]:
 
 
 def load_raw_cards(root: Path) -> list[dict]:
+    """读取学段子目录下的知识卡片；其他子目录不参与卡片收集。"""
     root = Path(root)
     cards: list[dict] = []
     for path in sorted(root.rglob("*.yaml")):
-        # 顶层 YAML 是课程索引或参数配置；知识卡片必须放在学段子目录
-        if path.parent == root:
+        # 课程索引、参数配置与 KC 目录都不是知识卡片
+        if path.parent.parent != root:
+            continue
+        if path.parent.name not in STAGE_DIRS:
             continue
         data = _read_yaml(path)
         if isinstance(data, list):

@@ -10,6 +10,7 @@ PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def test_layout_density_persists_in_settings_store(tmp_path):
+    """密度在设置存储中读写并拒绝非法值。"""
     path = tmp_path / "layout-density.sqlite3"
 
     assert theme.load_layout_density(PERSISTENT, path) == (
@@ -28,6 +29,7 @@ def test_layout_density_persists_in_settings_store(tmp_path):
 
 
 def test_guest_layout_density_uses_session_state():
+    """未授权持久化时密度存入会话状态。"""
     at = AppTest.from_string(
         "from mathcoach.ui import theme\n"
         "theme.layout_density()\n"

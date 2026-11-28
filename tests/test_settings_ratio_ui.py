@@ -7,6 +7,7 @@ APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
 def test_review_ratio_has_independent_form_and_help(tmp_path, monkeypatch):
+    """配比表单独立呈现，并带范围说明与保存按钮。"""
     path = tmp_path / "ratio-ui.sqlite3"
     monkeypatch.setenv("MATHCOACH_DB", str(path))
 

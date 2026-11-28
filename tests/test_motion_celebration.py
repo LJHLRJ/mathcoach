@@ -13,6 +13,7 @@ PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def test_celebration_defaults_on():
+    """庆祝动效默认开启且不减少动效。"""
     assert motion.CelebrationSettings() == CelebrationSettings(
         enabled=True,
         reduce_motion=False,
@@ -20,6 +21,7 @@ def test_celebration_defaults_on():
 
 
 def test_celebration_settings_persist(tmp_path):
+    """庆祝设置可持久化并读回。"""
     path = tmp_path / "celebration.sqlite3"
 
     assert motion.load_celebration_settings(PERSISTENT, path) == (
@@ -37,6 +39,7 @@ def test_celebration_settings_persist(tmp_path):
 
 
 def test_celebration_iframe_is_local_constant():
+    """庆祝 iframe 本地常量且固定定位。"""
     html = motion.CELEBRATION_IFRAME
 
     assert 'src="/app/static/overlay/confetti.html"' in html
@@ -47,6 +50,7 @@ def test_celebration_iframe_is_local_constant():
 
 
 def test_micro_interactions_respect_reduced_motion():
+    """微交互 CSS 响应减少动效。"""
     css = motion.MICRO_INTERACTIONS_CSS
 
     assert "prefers-reduced-motion" in css
@@ -55,6 +59,7 @@ def test_micro_interactions_respect_reduced_motion():
 
 
 def test_queue_celebration_respects_settings(monkeypatch):
+    """排队庆祝时遵循开关与减少动效设置。"""
     fake_state = {}
     monkeypatch.setattr(
         motion,
@@ -80,6 +85,7 @@ def test_queue_celebration_respects_settings(monkeypatch):
 
 
 def test_play_pending_celebration_renders_iframe(monkeypatch):
+    """播放时渲染 iframe 并清空待播放标记。"""
     fake_state = {"pending_celebration": "review-complete"}
     calls = []
     monkeypatch.setattr(
@@ -104,6 +110,7 @@ def test_play_pending_celebration_renders_iframe(monkeypatch):
 
 
 def test_settings_page_shows_motion_controls(tmp_path, monkeypatch):
+    """设置页展示庆祝与减少动效开关。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "motion-controls.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -118,6 +125,7 @@ def test_settings_page_shows_motion_controls(tmp_path, monkeypatch):
 
 
 def test_app_renders_confetti_iframe_when_pending(tmp_path, monkeypatch):
+    """有待播放标记时应用渲染彩带 iframe。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "celebration.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()

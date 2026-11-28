@@ -17,6 +17,7 @@ GUEST = Consent(memory=False, mistake_book=False)
 
 
 def test_default_background_is_none():
+    """默认背景为无，未知选项回退为空 CSS。"""
     assert set(BACKGROUND_OPTIONS) == {
         "none",
         "paper",
@@ -28,6 +29,7 @@ def test_default_background_is_none():
 
 
 def test_background_css_is_constant_and_has_no_external_assets():
+    """背景 CSS 内联、无外部资源且区分明暗主题。"""
     for choice in ("paper", "dots", "diagonal"):
         for theme in ("light", "dark"):
             css = background_css(choice, theme)
@@ -40,6 +42,7 @@ def test_background_css_is_constant_and_has_no_external_assets():
 
 
 def test_background_choice_persists_in_settings_store(tmp_path):
+    """背景选择可持久化并拒绝非法值。"""
     path = tmp_path / "background.sqlite3"
 
     assert load_background(PERSISTENT, path) == "none"
@@ -51,6 +54,7 @@ def test_background_choice_persists_in_settings_store(tmp_path):
 
 
 def test_settings_page_shows_background_selector(tmp_path, monkeypatch):
+    """设置页展示背景选择器与保存按钮。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "background-ui.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -65,6 +69,7 @@ def test_settings_page_shows_background_selector(tmp_path, monkeypatch):
 
 
 def test_background_is_injected_after_persisted_selection(tmp_path, monkeypatch):
+    """已保存的背景在启动后注入页面。"""
     path = tmp_path / "background-injected.sqlite3"
     assert save_background(PERSISTENT, "paper", path) is True
     monkeypatch.setenv("MATHCOACH_DB", str(path))

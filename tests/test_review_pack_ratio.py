@@ -20,6 +20,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
 
 
 def _card(card_id: str) -> KnowledgeCard:
+    """构造含三道选择题的卡片。"""
     return KnowledgeCard(
         id=card_id,
         name=card_id,
@@ -48,6 +49,7 @@ def _card(card_id: str) -> KnowledgeCard:
 
 
 def _receipt(card_id: str) -> Receipt:
+    """构造指定卡片的收据。"""
     return Receipt(
         card_id=card_id,
         stage=Stage.HIGH_SCHOOL,
@@ -63,10 +65,12 @@ def _receipt(card_id: str) -> Receipt:
 
 
 def test_default_new_ratio_is_zero():
+    """新卡占比默认为零。"""
     assert AppSettings().new_review_ratio == 0
 
 
 def test_ratio_zero_preserves_fixed_one_three_one():
+    """占比为零时保持三加一加一结构。"""
     result = compose(
         due=["d0", "d1", "d2", "d3"],
         gaps=["g"],
@@ -82,6 +86,7 @@ def test_ratio_zero_preserves_fixed_one_three_one():
 
 
 def test_ratio_fifty_splits_remaining_slots():
+    """占比五十时在剩余槽位平分。"""
     result = compose(
         due=["d0", "d1", "d2"],
         gaps=["g"],
@@ -97,6 +102,7 @@ def test_ratio_fifty_splits_remaining_slots():
 
 
 def test_ratio_hundred_uses_new_cards():
+    """占比一百时全部使用新卡。"""
     result = compose(
         due=["d0", "d1", "d2"],
         gaps=["g"],
@@ -112,6 +118,7 @@ def test_ratio_hundred_uses_new_cards():
 
 
 def test_missing_new_cards_fall_back_to_due():
+    """新卡不足时回退到期项。"""
     result = compose(
         due=["d0", "d1", "d2"],
         gaps=["g"],
@@ -125,6 +132,7 @@ def test_missing_new_cards_fall_back_to_due():
 
 
 def test_review_pack_uses_only_unseen_cards_as_new():
+    """只有未学过的卡片算新卡。"""
     cards = [_card(f"c{index}") for index in range(1, 7)]
     repository = InMemoryRepository()
     repository.save_receipt(_receipt("c1"), "c1-e1")
@@ -138,6 +146,7 @@ def test_review_pack_uses_only_unseen_cards_as_new():
 
 
 def test_review_package_can_generate_new_card_only_pack():
+    """复习包可生成纯新卡包并注明占比。"""
     cards = [_card(f"c{index}") for index in range(1, 7)]
     repository = InMemoryRepository()
     repository.save_receipt(_receipt("c1"), "c1-e1")

@@ -8,6 +8,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
 
 
 def test_fresh_db_has_schema_v4_and_mastery_table(tmp_path):
+    """新库建到 schema v4 并包含 mastery 表。"""
     repo = SQLiteRepository(tmp_path / "fresh.db")
 
     with sqlite3.connect(repo.db_path) as conn:
@@ -20,6 +21,7 @@ def test_fresh_db_has_schema_v4_and_mastery_table(tmp_path):
 
 
 def test_v3_db_migrates_keeps_mistakes_and_adds_mastery(tmp_path):
+    """v3 库迁移后保留错题并新增 mastery 表。"""
     db_path = tmp_path / "v3.db"
     with sqlite3.connect(db_path) as conn:
         conn.executescript(
@@ -49,6 +51,7 @@ def test_v3_db_migrates_keeps_mistakes_and_adds_mastery(tmp_path):
 
 
 def test_get_and_set_mastery_roundtrip(tmp_path):
+    """掌握度读写往返一致。"""
     repo = SQLiteRepository(tmp_path / "mastery.db")
 
     assert repo.get_mastery("hs-001") is None
@@ -61,6 +64,7 @@ def test_get_and_set_mastery_roundtrip(tmp_path):
 
 
 def test_existing_mastery_is_backfilled_into_history(tmp_path):
+    """既有掌握度回填到历史表。"""
     db_path = tmp_path / "backfill.db"
     repository = SQLiteRepository(db_path)
     repository.set_mastery("hs-001", 0.62, NOW)

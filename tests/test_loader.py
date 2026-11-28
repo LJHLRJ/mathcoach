@@ -43,7 +43,8 @@ CARD = {
 }
 
 
-def _write_tree(root: Path, curriculum=CURRICULUM, cards=None):
+def _write_tree(root: Path, curriculum: list[dict] = CURRICULUM, cards: list[dict] | None = None) -> None:
+    """写入最小课程与卡片 YAML 树。"""
     cards = cards if cards is not None else [CARD]
     (root / "curriculum.yaml").write_text(
         yaml.safe_dump(curriculum, allow_unicode=True), encoding="utf-8"
@@ -57,6 +58,7 @@ def _write_tree(root: Path, curriculum=CURRICULUM, cards=None):
 
 
 def test_load_content_returns_dataclasses(tmp_path):
+    """加载器把 YAML 转为 dataclass。"""
     _write_tree(tmp_path)
     cards, result = load_content(tmp_path, strict=True)
 
@@ -71,6 +73,7 @@ def test_load_content_returns_dataclasses(tmp_path):
 
 
 def test_load_content_raises_on_strict_issue(tmp_path):
+    """严格模式下未完成条目抛出错误。"""
     curriculum = [dict(CURRICULUM[0], card_ids=["hs-001", "hs-999"])]
     _write_tree(tmp_path, curriculum=curriculum)
 
@@ -80,6 +83,7 @@ def test_load_content_raises_on_strict_issue(tmp_path):
 
 
 def test_load_content_allows_warning_in_non_strict_mode(tmp_path):
+    """非严格模式保留卡片并记录警告。"""
     curriculum = [dict(CURRICULUM[0], card_ids=["hs-001", "hs-999"])]
     _write_tree(tmp_path, curriculum=curriculum)
 
@@ -90,6 +94,7 @@ def test_load_content_allows_warning_in_non_strict_mode(tmp_path):
 
 
 def test_multi_answer_is_canonicalized(tmp_path):
+    """多选答案规范化为逗号串。"""
     card = copy.deepcopy(CARD)
     card["exercises"][0] = {
         "id": "hs-001-e1",
@@ -106,10 +111,27 @@ def test_multi_answer_is_canonicalized(tmp_path):
 
 
 def test_top_level_config_yaml_is_not_treated_as_card(tmp_path):
+    """顶层参数文件不会被当作卡片。"""
     _write_tree(tmp_path)
     # 顶层参数文件不是知识卡片，不能被 load_raw_cards 收集
     (tmp_path / "fsrs_params.yaml").write_text(
         "desired_retention: 0.9\n", encoding="utf-8"
+    )
+
+    cards, result = load_content(tmp_path, strict=True)
+
+    assert result.ok
+    assert len(cards) == 1
+
+
+def test_kc_directory_yaml_is_not_treated_as_card(tmp_path):
+    """content/kc 下的 KC 定义不会被当作知识卡片。"""
+    _write_tree(tmp_path)
+    kc_dir = tmp_path / "kc"
+    kc_dir.mkdir()
+    (kc_dir / "hs-trig-002.yaml").write_text(
+        "version: 1\nunit: {}\nkcs: []\nexercise_kc: {}\n",
+        encoding="utf-8",
     )
 
     cards, result = load_content(tmp_path, strict=True)

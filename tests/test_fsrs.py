@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_initial_state():
+    """四档评分的初始稳定性依次递增。"""
     again = initial_state(Rating.AGAIN)
     hard = initial_state(Rating.HARD)
     good = initial_state(Rating.GOOD)
@@ -30,6 +31,7 @@ def test_initial_state():
 
 
 def test_again_resets_stability():
+    """Again 降低稳定性并累加遗忘次数。"""
     state = MemoryState(stability=30.0, difficulty=5.0, reps=5, lapses=1)
 
     new_state, interval = review(state, Rating.AGAIN, elapsed_days=10, params=DEFAULT_PARAMS)
@@ -41,6 +43,7 @@ def test_again_resets_stability():
 
 
 def test_easy_increases_stability():
+    """Easy 比 Good 带来更高稳定性与不短于其的间隔。"""
     state = MemoryState(stability=10.0, difficulty=5.0, reps=3, lapses=0)
 
     good_state, good_interval = review(state, Rating.GOOD, 5, DEFAULT_PARAMS)
@@ -52,6 +55,7 @@ def test_easy_increases_stability():
 
 def test_interval_from_retrievability():
     # desired_retention=0.9 时，间隔应接近 stability 本身
+    """目标保持率决定间隔长度且至少一天。"""
     assert 9 <= interval_from_retrievability(10.0, 0.9) <= 11
     # 目标保持率越高，允许的间隔越短
     assert interval_from_retrievability(10.0, 0.95) < interval_from_retrievability(10.0, 0.9)
@@ -60,6 +64,7 @@ def test_interval_from_retrievability():
 
 
 def test_pure_function_no_clock():
+    """纯函数无时钟依赖且不修改入参。"""
     import mathcoach.domain.fsrs as fsrs
 
     # 模块不导入时钟，review 的输出只由显式输入决定
@@ -76,6 +81,7 @@ def test_pure_function_no_clock():
 
 
 def test_params_file_matches_defaults():
+    """YAML 参数与默认参数一致。"""
     data = yaml.safe_load((ROOT / "content/fsrs_params.yaml").read_text(encoding="utf-8"))
 
     params = params_from_mapping(data)

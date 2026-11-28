@@ -1,0 +1,19 @@
+version: 1
+exercise_id: hs-trig-003-e2
+card_id: hs-trig-003
+
+steps:
+  - index: 1
+    prompt: "π 弧度对应的单位圆点是 (−1,0)，它的横坐标是多少？"
+    expected: "-1"
+    variables: []
+    kc_id: kc-hs-trig-003-f3
+    step_tag: value
+    input_kind: number
+  - index: 2
+    prompt: "所以 cos π 等于多少？"
+    expected: "-1"
+    variables: []
+    kc_id: kc-hs-trig-003-f3
+    step_tag: value
+    input_kind: number

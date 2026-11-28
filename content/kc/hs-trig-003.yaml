@@ -1,0 +1,74 @@
+version: 1
+unit:
+  id: unit-hs-trig-003
+  name: 诱导公式
+  card_id: hs-trig-003
+  kc_ids:
+    - kc-hs-trig-003-f1
+    - kc-hs-trig-003-f2
+    - kc-hs-trig-003-f3
+    - kc-hs-trig-003-p1
+  approved_prerequisite_kc_ids:
+    - kc-hs-trig-002-f1
+kcs:
+  - id: kc-hs-trig-003-f1
+    knowledge_point_id: hs-trig-003
+    kind: fact
+    name: 补角公式
+    statement: sin(π−x)=sin x，cos(π−x)=−cos x
+    explanation: π−x 与 x 的终边关于 y 轴对称，正弦不变、余弦变号。
+    example: sin(π−π/6)=sin(π/6)=1/2。
+    common_errors:
+      - 把 cos(π−x) 写成 cos x
+    required_step_tags:
+      - formula
+      - sign
+    prerequisites: []
+  - id: kc-hs-trig-003-f2
+    knowledge_point_id: hs-trig-003
+    kind: fact
+    name: 和角 π+x 的诱导公式
+    statement: sin(π+x)=−sin x，cos(π+x)=−cos x
+    explanation: π+x 的终边与 x 的终边关于原点对称，正弦与余弦都变号。
+    example: sin(π+π/6)=−1/2。
+    common_errors:
+      - 只变正弦符号，漏掉余弦
+    required_step_tags:
+      - formula
+      - sign
+    prerequisites: []
+  - id: kc-hs-trig-003-f3
+    knowledge_point_id: hs-trig-003
+    kind: fact
+    name: π 的特殊角函数值
+    statement: sin π=0，cos π=−1
+    explanation: 单位圆上 π 弧度对应点 (−1,0)。
+    example: cos π=−1。
+    common_errors:
+      - 把 cos π 写成 1
+    required_step_tags:
+      - value
+    prerequisites: []
+  - id: kc-hs-trig-003-p1
+    knowledge_point_id: hs-trig-003
+    kind: procedure
+    name: 诱导公式符号判定
+    statement: 函数名不变，符号看原角所在象限
+    explanation: 先把角写成 π±x 的形式，再判断原函数在对应象限的符号。
+    example: π−x 在第二象限，sin 为正，所以 sin(π−x)=sin x。
+    common_errors:
+      - 只记符号不记函数名
+      - 把第二象限的正弦记成负数
+    required_step_tags:
+      - sign
+    prerequisites:
+      - kc-hs-trig-003-f1
+exercise_kc:
+  hs-trig-003-e1:
+    - kc-hs-trig-003-f1
+    - kc-hs-trig-003-p1
+  hs-trig-003-e2:
+    - kc-hs-trig-003-f3
+  hs-trig-003-e3:
+    - kc-hs-trig-003-f2
+    - kc-hs-trig-003-f3

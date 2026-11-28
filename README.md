@@ -8,6 +8,12 @@
 
 - 覆盖高中 11 个模块、本科 6 门课、研究生 6 门课，共 122 张知识卡片、366 道练习。
 - 8 种题型判定：选择、多选、判断、填空、表达式（sympy 等价）、步骤排序、找错、配对。
+- 教学链路：KC 目录、教案与出题 Gate、L3/L4 追问式提示，以及步骤级 KC 影子掌握度。
+- 分步错误定位与草稿行为信号：步骤判定、耗时/缺失/放弃回流 KC 影子库；错题可召回相似题或生成变式。
+- 智能练习册与可解释学情报告：按薄弱 KC、到期复习与迁移题选题；报告以结论—证据结构展示，可选受限 AI 叙事。
+- KC 前置依赖图与修复建议：只读回溯薄弱先修，不改 FSRS 队列或正式 BKT。
+- KC 动态可视化讲解：象限符号、补角公式、振幅与周期。
+- 交互优化：周报 AI 叙事按需生成，仪表盘/周报单次快照，小测表单与片段化渲染减少整页 rerun。
 - 提示阶梯 L1–L6、连错 2 次错因诊断、连错 3 次收尾、独立/半独立收据；诊断后可去复习先修卡、看学习卡片或练同类题，收据页支持 L6 复述质量记录。
 - SQLite 本地记忆：收据、错题本、复习队列；游客模式只存内存。
 - 学习仪表盘、每日挑战、挑战赛、学习路径、周报、错因趋势、智能复习包、错题变式。
@@ -60,16 +66,16 @@ flowchart LR
 
 ## 下载与安装
 
-当前版本：**v0.8.0**（2026-11-27）。下载入口以 GitHub Releases 为准：
+当前版本：**v0.9.0**（2026-11-28）。下载入口以 GitHub Releases 为准：
 
 - 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
 - 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
 
 | 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.8.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoachSetup-0.9.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
-| macOS | `MathCoach-0.8.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-0.9.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
 
 - 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
@@ -90,6 +96,15 @@ mathcoach/
   domain/               纯数据模型与判定/诊断/收据
   session/              状态机、每日挑战、挑战赛
   content/              卡片加载与严格校验
+  tutor/                KC 目录、教案/出题 Gate、追问引擎
+  steps/                分步判定、运行存储与 KC 观测
+  mastery/              KC 影子视图、速度权重与前置修复
+  planner/              智能练习册选题与渲染
+  report/               可解释学情报告与受限叙事
+  analytics/            错因归因反馈
+  recall/               相似题召回与错因变式
+  worksheet/            可打印练习单
+  ui/                   主题、布局、可视化与页面组件
   memory/               SQLite/内存仓储、调度、周报、学习路径、导出
   safety/               注入守卫与写操作红线
   verify/               受限 AST 符号验证门
@@ -197,8 +212,9 @@ python -m build
 | M18 | 知识点树 + 学习卡片 + 解析/错因定位 + 学习闭环 | 已完成 | `content/knowledge_tree.yaml`、`content/learning_cards/`、`mathcoach/domain/explanation.py` |
 | M19 | 年级/难度标注与按年级筛选入口 | 已完成 | `mathcoach/domain/grade_index.py`、`mathcoach/ui/grade_page.py`、`docs/grade-navigation.md` |
 | M20 | 做题驱动学习闭环补强 | 已完成（v0.8.0） | `app.py`、`mathcoach/session/engine.py`、`mathcoach/domain/learning_path.py`、`mathcoach/memory/report.py` |
+| M21 | 教学链路、分步定位、练习册、报告与 KC 动态可视化 | 已完成（v0.9.0） | `mathcoach/tutor/`、`mathcoach/steps/`、`mathcoach/mastery/`、`mathcoach/planner/`、`mathcoach/report/`、`mathcoach/ui/visuals/` |
 
-当前发布：**v0.8.0**（2026-11-27），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前发布：**v0.9.0**（2026-11-28），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 第三方资源与许可证
 

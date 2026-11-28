@@ -1,0 +1,26 @@
+version: 1
+exercise_id: hs-trig-003-e1
+card_id: hs-trig-003
+
+steps:
+  - index: 1
+    prompt: "π−x 在第二象限，sin 在第二象限的符号是什么？"
+    expected: "正"
+    variables: []
+    kc_id: kc-hs-trig-003-p1
+    step_tag: sign
+    input_kind: sign
+    acceptable:
+      - "正"
+      - "+"
+      - "正号"
+  - index: 2
+    prompt: "函数名不变、符号为正，所以 sin(π−x) 等于？"
+    expected: "sin x"
+    variables: []
+    kc_id: kc-hs-trig-003-f1
+    step_tag: formula
+    input_kind: sign
+    acceptable:
+      - "sin x"
+      - "sinx"

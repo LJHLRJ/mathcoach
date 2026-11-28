@@ -43,6 +43,7 @@ class AppSettings:
 
     Attributes:
         ai_enabled: 是否启用在线模型；关闭时走离线模板。
+        analysis_online_enabled: 是否允许在线学情分析；与分析专用密钥配合。
         daily_review_limit: 每日复习上限，0 表示不限制。
         new_review_ratio: 新卡占比 0–100。
         scheduler: 调度器，``fsrs`` 或 ``sm2``。
@@ -53,6 +54,7 @@ class AppSettings:
     """
 
     ai_enabled: bool = False
+    analysis_online_enabled: bool = False
     daily_review_limit: int = DEFAULT_DAILY_REVIEW_LIMIT
     new_review_ratio: int = DEFAULT_NEW_REVIEW_RATIO
     scheduler: str = "fsrs"
@@ -102,6 +104,9 @@ class AppSettings:
             reminder_time = "08:00"
         return cls(
             ai_enabled=_parse_bool(data.get("ai_enabled", False)),
+            analysis_online_enabled=_parse_bool(
+                data.get("analysis_online_enabled", False)
+            ),
             daily_review_limit=limit,
             new_review_ratio=ratio,
             scheduler=scheduler,
@@ -127,6 +132,7 @@ class AppSettings:
         if include_advanced:
             data.update(
                 {
+                    "analysis_online_enabled": self.analysis_online_enabled,
                     "new_review_ratio": self.new_review_ratio,
                     "scheduler": self.scheduler,
                     "font_size": self.font_size,

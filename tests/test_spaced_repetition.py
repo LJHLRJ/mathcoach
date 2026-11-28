@@ -16,6 +16,7 @@ NOW = datetime(2026, 11, 21, tzinfo=timezone.utc)
 
 
 def test_wrong_resets_interval_and_keeps_ease():
+    """答错后间隔重置为一天，ease 不变。"""
     sched = update_schedule(ease=2.5, interval_days=10, quality=Quality.WRONG, now=NOW)
     assert sched.interval_days == 1
     assert sched.ease == 2.5
@@ -23,38 +24,45 @@ def test_wrong_resets_interval_and_keeps_ease():
 
 
 def test_independent_grows_interval_and_ease():
+    """独立完成延长间隔并提升 ease。"""
     sched = update_schedule(ease=2.5, interval_days=1, quality=Quality.INDEPENDENT, now=NOW)
     assert sched.interval_days == 3
     assert sched.ease > 2.5
 
 
 def test_hinted_keeps_interval_short():
+    """有提示完成保持短间隔。"""
     sched = update_schedule(ease=2.5, interval_days=1, quality=Quality.HINTED, now=NOW)
     assert sched.interval_days == 1
 
 
 def test_ease_never_below_min():
+    """ease 不低于下限。"""
     sched = update_schedule(ease=1.3, interval_days=5, quality=Quality.HINTED, now=NOW)
     assert sched.ease >= MIN_EASE
 
 
 def test_interval_capped_at_max():
+    """间隔不超过上限。"""
     sched = update_schedule(ease=2.5, interval_days=28, quality=Quality.INDEPENDENT, now=NOW)
     assert sched.interval_days == MAX_INTERVAL_DAYS
 
 
 def test_bucket_mapping():
+    """间隔天数映射到对应复习桶。"""
     assert bucket_for(1) is Bucket.TODAY
     assert bucket_for(3) is Bucket.TOMORROW
     assert bucket_for(10) is Bucket.THREE_DAYS
 
 
 def test_quality_from_outcome():
+    """判定结果与提示等级映射到评分档位。"""
     assert quality_from_outcome(judged=False, max_hint_level=1) is Quality.WRONG
     assert quality_from_outcome(judged=True, max_hint_level=1) is Quality.INDEPENDENT
     assert quality_from_outcome(judged=True, max_hint_level=4) is Quality.HINTED
 
 
 def test_quality_from_independence():
+    """独立性映射到评分档位。"""
     assert quality_from_independence(True) is Quality.INDEPENDENT
     assert quality_from_independence(False) is Quality.WRONG

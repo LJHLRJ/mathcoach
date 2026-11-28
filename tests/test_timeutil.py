@@ -1,6 +1,7 @@
 """本地时区日界：每日挑战与复习调度在本地零点切换。"""
 import os
 import time
+from collections.abc import Iterator
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -24,7 +25,8 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 
 @pytest.fixture
-def shanghai(monkeypatch):
+def shanghai(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """切换到上海时区并在结束后恢复。"""
     if not hasattr(time, "tzset"):
         pytest.skip("当前平台不支持 tzset")
     old = os.environ.get("TZ")
@@ -41,6 +43,7 @@ def shanghai(monkeypatch):
 
 
 def _entry() -> MistakeEntry:
+    """构造错题条目样例。"""
     return MistakeEntry(
         id="m1",
         exercise_id="e1",
@@ -58,6 +61,7 @@ def _entry() -> MistakeEntry:
 
 
 def test_local_day_key_switches_at_local_midnight(shanghai):
+    """日键在本地零点切换。"""
     before = datetime(2026, 11, 20, 15, 59, tzinfo=timezone.utc)
     after = datetime(2026, 11, 20, 16, 0, tzinfo=timezone.utc)
 
@@ -66,6 +70,7 @@ def test_local_day_key_switches_at_local_midnight(shanghai):
 
 
 def test_local_day_boundaries_are_midnight(shanghai):
+    """本地日边界为当日零点与二十三点五十九分。"""
     value = datetime(2026, 11, 20, 17, 0, tzinfo=timezone.utc)
     start = start_of_local_day(value)
     end = end_of_local_day(value)
@@ -81,6 +86,7 @@ def test_local_day_boundaries_are_midnight(shanghai):
 
 
 def test_review_due_at_local_midnight(shanghai):
+    """复习到期时间落在本地零点。"""
     now = datetime(2026, 11, 20, 10, 0, tzinfo=timezone.utc)
     _, _, _, due_at = next_review(_entry(), True, now)
 
@@ -94,6 +100,7 @@ def test_review_due_at_local_midnight(shanghai):
 
 
 def test_review_buckets_roll_over_at_local_midnight(shanghai):
+    """复习桶在本地零点滚动。"""
     now_local = datetime(2026, 11, 20, 18, 0, tzinfo=SHANGHAI)
     now_utc = now_local.astimezone(timezone.utc)
     entry = _entry()

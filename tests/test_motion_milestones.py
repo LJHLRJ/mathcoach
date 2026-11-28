@@ -7,7 +7,8 @@ from mathcoach.ui import milestones
 PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
-def _engine(attempts):
+def _engine(attempts: list[dict]) -> SimpleNamespace:
+    """构造带答题记录的最小引擎对象。"""
     return SimpleNamespace(
         card=SimpleNamespace(id="card-1"),
         state=SimpleNamespace(attempts=attempts),
@@ -15,6 +16,7 @@ def _engine(attempts):
 
 
 def test_five_correct_celebrates_once(monkeypatch):
+    """连对五题只庆祝一次。"""
     calls = []
     monkeypatch.setattr(
         milestones,
@@ -34,6 +36,7 @@ def test_five_correct_celebrates_once(monkeypatch):
 
 
 def test_five_correct_requires_unbroken_streak(monkeypatch):
+    """中断的连对不触发庆祝。"""
     calls = []
     monkeypatch.setattr(
         milestones,
@@ -56,6 +59,7 @@ def test_five_correct_requires_unbroken_streak(monkeypatch):
 
 
 def test_review_complete_celebrates_once(monkeypatch):
+    """复习完成只庆祝一次。"""
     calls = []
     monkeypatch.setattr(
         milestones,
@@ -75,6 +79,7 @@ def test_review_complete_celebrates_once(monkeypatch):
 
 
 def test_mistakes_cleared_celebrates_only_with_removed_rows(monkeypatch):
+    """仅在有删除行时庆祝错题清空。"""
     calls = []
     monkeypatch.setattr(
         milestones,

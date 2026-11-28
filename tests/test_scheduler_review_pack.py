@@ -17,6 +17,7 @@ NOW = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
 
 
 def _card(card_id: str) -> KnowledgeCard:
+    """构造含三道选择题的卡片。"""
     exercises = tuple(
         Exercise(
             id=f"{card_id}-e{index}",
@@ -46,6 +47,7 @@ def _card(card_id: str) -> KnowledgeCard:
 
 
 def _mistake(identifier: str, card_id: str) -> MistakeEntry:
+    """构造指定卡片的错题。"""
     return MistakeEntry(
         id=identifier,
         exercise_id=f"{card_id}-e1",
@@ -63,6 +65,7 @@ def _mistake(identifier: str, card_id: str) -> MistakeEntry:
 
 
 def test_review_pack_places_gap_first_and_totals_five():
+    """缺口卡排在首位且总数为五。"""
     cards = [_card("c1"), _card("c2"), _card("c3")]
     repository = InMemoryRepository()
     repository.save_mistake(_mistake("m1", "c1"))
@@ -77,6 +80,7 @@ def test_review_pack_places_gap_first_and_totals_five():
 
 
 def test_review_pack_has_no_duplicates_when_gap_is_due():
+    """缺口已到期时仍无重复题。"""
     cards = [_card("c1"), _card("c2")]
     repository = InMemoryRepository()
     repository.save_mistake(_mistake("m1", "c1"))

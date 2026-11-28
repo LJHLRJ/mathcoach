@@ -7,6 +7,7 @@ from mathcoach.ui import theme
 
 
 def test_theme_css_is_constant_and_local():
+    """主题 CSS 内联且无脚本与外部链接。"""
     css = theme.THEME_CSS
 
     assert "<style>" in css
@@ -22,6 +23,7 @@ def test_theme_css_is_constant_and_local():
 
 
 def test_density_css_only_injects_for_compact():
+    """仅紧凑密度返回附加 CSS。"""
     assert theme.density_css(theme.DENSITY_COMFORTABLE) == ""
     assert theme.density_css(theme.DENSITY_COMPACT) == (
         theme.COMPACT_DENSITY_CSS
@@ -31,6 +33,7 @@ def test_density_css_only_injects_for_compact():
 
 
 def test_inject_theme_can_be_called_twice():
+    """重复注入主题不抛异常。"""
     at = AppTest.from_string(
         "from mathcoach.ui.theme import inject_theme\n"
         "inject_theme()\n"

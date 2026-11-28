@@ -6,12 +6,13 @@ from streamlit.testing.v1 import AppTest
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def _click(at, label: str) -> None:
+def _click(at: AppTest, label: str) -> None:
     """点击唯一匹配的按钮并运行。"""
     next(button for button in at.button if button.label == label).click().run()
 
 
 def test_full_learning_loop_end_to_end(tmp_path, monkeypatch):
+    """完整闭环从讲解走到收据、复述、结算与重启持久化。"""
     path = tmp_path / "e2e.sqlite3"
     monkeypatch.setenv("MATHCOACH_DB", str(path))
     at = AppTest.from_file(APP_PATH, default_timeout=15)

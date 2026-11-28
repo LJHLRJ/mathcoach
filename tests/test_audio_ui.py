@@ -18,6 +18,7 @@ PERSISTENT = Consent(memory=True, mistake_book=True)
 
 
 def test_sound_defaults_to_disabled(tmp_path):
+    """声音默认关闭，反馈音默认开启。"""
     assert load_sound_settings(
         PERSISTENT, tmp_path / "missing" / "x.sqlite3"
     ) == SoundSettings()
@@ -26,6 +27,7 @@ def test_sound_defaults_to_disabled(tmp_path):
 
 
 def test_sound_settings_persist(tmp_path):
+    """声音设置可持久化并读回。"""
     path = tmp_path / "sound.sqlite3"
 
     assert load_sound_settings(PERSISTENT, path) == SoundSettings()
@@ -42,6 +44,7 @@ def test_sound_settings_persist(tmp_path):
 
 
 def test_embedded_cues_are_valid_and_small():
+    """内嵌提示音均为合法 MP3 且总体积受限。"""
     expected = {
         "correct": 7984,
         "wrong": 6939,
@@ -59,6 +62,7 @@ def test_embedded_cues_are_valid_and_small():
 
 
 def test_cue_html_is_hidden_and_has_no_external_url():
+    """提示音 HTML 隐藏且不含外部链接。"""
     html = cue_html("correct")
 
     assert "<audio" in html
@@ -71,6 +75,7 @@ def test_cue_html_is_hidden_and_has_no_external_url():
 
 
 def test_settings_page_shows_sound_controls(tmp_path, monkeypatch):
+    """设置页展示声音开关与保存按钮。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "sound-ui.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -84,7 +89,8 @@ def test_settings_page_shows_sound_controls(tmp_path, monkeypatch):
     assert any(button.label == "保存声音设置" for button in at.button)
 
 
-def _complete_first_loop(at) -> None:
+def _complete_first_loop(at: AppTest) -> None:
+    """完成一次最小学习闭环。"""
     at.selectbox[0].select("hs-function-intro-001").run()
     at.text_input[0].set_value("搞懂函数")
     at.button[0].click().run()
@@ -94,6 +100,7 @@ def _complete_first_loop(at) -> None:
 
 
 def test_sound_disabled_does_not_render_audio(tmp_path, monkeypatch):
+    """关闭声音时不渲染音频。"""
     monkeypatch.setenv("MATHCOACH_DB", str(tmp_path / "sound-off.sqlite3"))
     at = AppTest.from_file(APP_PATH, default_timeout=15)
     at.run()
@@ -108,6 +115,7 @@ def test_sound_disabled_does_not_render_audio(tmp_path, monkeypatch):
 
 
 def test_sound_enabled_renders_feedback_audio(tmp_path, monkeypatch):
+    """开启声音后渲染反馈音频。"""
     path = tmp_path / "sound-on.sqlite3"
     assert save_sound_settings(
         PERSISTENT,
