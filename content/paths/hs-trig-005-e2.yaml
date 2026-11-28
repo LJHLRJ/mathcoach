@@ -1,0 +1,24 @@
+version: 1
+exercise_id: hs-trig-005-e2
+card_id: hs-trig-005
+
+paths:
+  - id: right-triangle
+    name: 直角三角形法
+    summary: C=90° 时三角形是直角三角形，c 是斜边，直接用勾股定理 c=√(3²+4²)=5。
+    final_answer: "5"
+    kc_ids: [kc-hs-trig-005-f1]
+    verify_expression: "sqrt(3**2+4**2)"
+    verify_expected: "5"
+    variables: []
+    checkpoints:
+      - index: 1
+        prompt: "C=90° 时，边 c 是斜边还是直角边？"
+        expected: "斜边"
+        input_kind: sign
+        acceptable: ["斜边", "斜边c", "hypotenuse"]
+      - index: 2
+        prompt: "两条直角边为 3 和 4，斜边 c 用勾股定理算出来是多少？"
+        expected: "5"
+        input_kind: number
+        acceptable: ["5"]

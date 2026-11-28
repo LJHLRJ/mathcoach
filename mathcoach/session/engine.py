@@ -101,6 +101,7 @@ class SessionEngine:
         dialog_recorder: Callable[[DialogEvent], None] | None = None,
         dialog_verify_fn: VerifyFn | None = None,
         representation_recorder: RepresentationRecorder | None = None,
+        hint_ceiling: int | None = None,
     ) -> None:
         """创建会话并停在目标确认阶段。
 
@@ -114,6 +115,7 @@ class SessionEngine:
             dialog_recorder: 追问事件落库回调；None 时只存内存。
             dialog_verify_fn: 追问内容验证函数；None 使用默认 verify。
             representation_recorder: 表示降级事件记录器；None 时只做决策。
+            hint_ceiling: 主动提示上限，仅用于依赖度防护；None 表示不限制。
         """
         self.card = card
         self.provider = provider
@@ -126,6 +128,12 @@ class SessionEngine:
         self.dialog_recorder = dialog_recorder
         self.dialog_verify_fn = dialog_verify_fn
         self.representation_recorder = representation_recorder
+        self._hint_ceiling = (
+            max(1, min(MAX_REQUESTED_LEVEL, int(hint_ceiling)))
+            if hint_ceiling is not None
+            else None
+        )
+        self._hint_ceiling_active = self._hint_ceiling is not None
         self._active_follow_up: _ActiveFollowUp | None = None
         self._dialog_misses = 0
         self.dialog_events: list[DialogEvent] = []
@@ -152,6 +160,30 @@ class SessionEngine:
             view = replace(view, representation=self._representation)
         self.view = view
         return view
+
+    @property
+    def hint_ceiling_active(self) -> bool:
+        """当前是否处于依赖度防护的主动提示上限内。"""
+        return self._hint_ceiling_active
+
+    @property
+    def hint_ceiling(self) -> int | None:
+        """当前提示上限；未启用时为 None。"""
+        return self._hint_ceiling if self._hint_ceiling_active else None
+
+    def release_hint_ceiling(self, reason: str = "manual") -> bool:
+        """解除主动提示上限；重复解除返回 False。
+
+        只影响后续主动请求，不回溯已展示的提示，也不改变收据独立程度。
+        """
+        if not self._hint_ceiling_active:
+            return False
+        self._hint_ceiling_active = False
+        try:
+            self.repository.record_audit("hint_ceiling", f"release:{reason}")
+        except (OSError, sqlite3.Error):
+            pass
+        return True
 
     def confirm_goal(self, goal: str) -> SessionView:
         """确认学习目标并进入讲解阶段。
@@ -285,6 +317,9 @@ class SessionEngine:
             return self._issue_receipt()
 
         self.state.consecutive_wrong += 1
+        released = False
+        if self._hint_ceiling_active and self.state.consecutive_wrong >= 2:
+            released = self.release_hint_ceiling("two_wrong")
         self._prepare_representation()
         self._record_mistake(exercise, answer)
         if self.state.consecutive_wrong >= 3:
@@ -318,6 +353,7 @@ class SessionEngine:
                         f"——{diagnosis.reason}。\n\n"
                         f"请确认，或改选更贴近的一类；确认后回到提示 L"
                         f"{automatic_next_level(self.state.hint_level)}。"
+                        + ("\n\n本轮已恢复完整提示。" if released else "")
                     ),
                     options=tuple(item.value for item in ErrorType),
                     notice="错因诊断只影响提示措辞，不改变判分。",
@@ -809,6 +845,23 @@ class SessionEngine:
         attempted = {attempt["hint_level"] for attempt in self.state.attempts}
         # M1 只做门槛判定，实际可达性依赖 M2 连错诊断；测试覆盖门槛逻辑即可。
         level, message = grant_requested_level(self.state.hint_level, kind, attempted)
+        if self._hint_ceiling_active:
+            ceiling = self._hint_ceiling or 2
+            if kind == "level5":
+                level = self.state.hint_level
+                message = (
+                    "本轮先自己试一步，暂不开放 L5；"
+                    "连续两次答错会自动恢复完整提示。"
+                )
+            else:
+                requested = level
+                level = min(
+                    requested, max(ceiling, self.state.hint_level)
+                )
+                if level < requested:
+                    message += (
+                        f" 本轮先自己试一步，主动请求最高到 L{ceiling}。"
+                    )
         self.state.hint_requests.append(kind)
         self.state.hint_level = level
         self.state.max_hint_level = max(self.state.max_hint_level, level)
@@ -897,6 +950,8 @@ class SessionEngine:
             max_hint_level=self.state.max_hint_level,
             duration_s=elapsed,
         )
+        if self._hint_ceiling_active and self.state.max_hint_level <= 3:
+            self.release_hint_ceiling("independent_correct")
         self.receipts.append(receipt)
         self._persist_receipt(receipt)
         return self._set(
@@ -998,6 +1053,8 @@ class SessionEngine:
         """
         if self.state.phase is not Phase.RECEIPT:
             raise RuntimeError("当前不在收据阶段")
+        if self._hint_ceiling_active:
+            self.release_hint_ceiling("exercise_completed")
         if self._exercise_pos + 1 < len(self.card.exercises):
             self._exercise_pos += 1
             self.state.phase = Phase.QUIZ

@@ -1,0 +1,24 @@
+version: 1
+exercise_id: hs-trig-002-e2
+card_id: hs-trig-002
+
+paths:
+  - id: right-triangle
+    name: 直角三角形法
+    summary: 把 sin x=3/5 看成一个 3-4-5 直角三角形，邻边为 4，所以 cos x=4/5。
+    final_answer: "4/5"
+    kc_ids: [kc-hs-trig-002-f1]
+    verify_expression: "sqrt(5**2-3**2)"
+    verify_expected: "4"
+    variables: []
+    checkpoints:
+      - index: 1
+        prompt: "斜边 5、对边 3，邻边用勾股定理算出来是多少？"
+        expected: "4"
+        input_kind: number
+        acceptable: ["4"]
+      - index: 2
+        prompt: "所以 cos x = 邻边 / 斜边 = ？"
+        expected: "4/5"
+        input_kind: number
+        acceptable: ["4/5", "0.8"]

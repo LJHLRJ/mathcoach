@@ -34,6 +34,14 @@ from mathcoach.content.loader import (
 from mathcoach.content.validator import ValidationError, validate_prerequisites
 from mathcoach.domain.basis import basis_for_mastery
 from mathcoach.domain.bkt import initial_mastery
+from mathcoach.domain.dependence import (
+    DependenceDialogEvent,
+    DependenceLevel,
+    DependenceSignal,
+    DependenceStepAttempt,
+    DependenceStepRun,
+    evaluate_dependence,
+)
 from mathcoach.domain.diagnosis import Diagnosis, diagnose
 from mathcoach.domain.explanation import (
     ErrorLocalization,
@@ -52,6 +60,7 @@ from mathcoach.domain.knowledge_tree import (
     KnowledgeTreeError,
     load_knowledge_tree,
 )
+from mathcoach.domain.judge import evaluate
 from mathcoach.domain.learning_path import Recommendation, recommend
 from mathcoach.domain.models import (
     Consent,
@@ -79,6 +88,7 @@ from mathcoach.export.package import (
     describe_export,
     write_export,
 )
+from mathcoach.insights import build_step_insights
 from mathcoach.llm import OfflineProvider, build_provider
 from mathcoach.memory.dashboard import build_dashboard
 from mathcoach.memory.path import build_learning_path
@@ -94,6 +104,7 @@ from mathcoach.planner import (
     plan_to_worksheet,
     render_plan_markdown,
 )
+from mathcoach.paths import PATHS, SolutionPath, check_checkpoint
 from mathcoach.recall import (
     RecallQuery,
     RecallStore,
@@ -147,6 +158,7 @@ from mathcoach.steps import (
     StepStore,
     StepVerdict,
 )
+from mathcoach.steps.store import step_db_path
 from mathcoach.steps.presentation import build_step_reason, present_verdict
 from mathcoach.timeutil import end_of_local_day, local_day, local_day_key
 from mathcoach.tutor.catalog import KC_BY_ID
@@ -154,6 +166,7 @@ from mathcoach.tutor.dialog import (
     DialogEvent,
     DialogStore,
     build_follow_up_client,
+    dialog_db_path,
 )
 from mathcoach.tutor.mastery_store import KCMasteryStore, shadow_db_path
 from mathcoach.ui.components import (
@@ -384,9 +397,130 @@ def _representation_recorder() -> RepresentationRecorder | None:
     return RepresentationStoreRecorder()
 
 
+DEPENDENCE_SIGNAL_KEY = "dependence_signals"
+
+
+def _empty_dependence_signal(card_id: str) -> DependenceSignal:
+    """返回无信号结果；游客模式或读取失败时使用。"""
+    return DependenceSignal(level=DependenceLevel.NONE, card_id=card_id)
+
+
+def _load_dependence_signal(card_id: str) -> DependenceSignal:
+    """只读汇总收据、追问与步骤信号，供提示供给决策。"""
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        return _empty_dependence_signal(card_id)
+    repository = st.session_state.repository
+    try:
+        receipts = repository.list_receipts(limit=200)
+        mastery = repository.get_mastery(card_id)
+    except (OSError, sqlite3.Error):
+        return _empty_dependence_signal(card_id)
+    dialog_events: list[DependenceDialogEvent] = []
+    try:
+        if dialog_db_path().exists():
+            with DialogStore() as store:
+                dialog_events = [
+                    DependenceDialogEvent(
+                        card_id=event.card_id,
+                        level=event.level,
+                        kind=event.kind.value,
+                        created_at=event.resolved_at,
+                    )
+                    for event in store.list_events(limit=200)
+                ]
+    except (OSError, sqlite3.Error):
+        dialog_events = []
+    step_runs: list[DependenceStepRun] = []
+    try:
+        if step_db_path().exists():
+            with StepStore() as store:
+                step_runs = [
+                    DependenceStepRun(
+                        exercise_id=run.exercise_id,
+                        card_id=run.card_id,
+                        created_at=run.created_at,
+                        attempts=tuple(
+                            DependenceStepAttempt(
+                                step_index=attempt.step_index,
+                                step_tag=attempt.step_tag,
+                                verdict=attempt.verdict.value,
+                            )
+                            for attempt in run.attempts
+                        ),
+                    )
+                    for run in store.list_runs(limit=100)
+                ]
+    except (OSError, sqlite3.Error):
+        step_runs = []
+    return evaluate_dependence(
+        card_id,
+        receipts,
+        dialog_events=dialog_events,
+        step_runs=step_runs,
+        mastery=mastery,
+    )
+
+
+def _cached_dependence_signal(card_id: str) -> DependenceSignal:
+    """读取会话内缓存的依赖度信号；缺失时补算。"""
+    cache = st.session_state.get(DEPENDENCE_SIGNAL_KEY)
+    if not isinstance(cache, dict):
+        cache = {}
+        st.session_state[DEPENDENCE_SIGNAL_KEY] = cache
+    signal = cache.get(card_id)
+    if signal is None:
+        signal = _load_dependence_signal(card_id)
+        cache[card_id] = signal
+    return signal
+
+
+DEPENDENCE_REASON_LABELS = {
+    "semi_independent_streak": "最近几题提示用得较多",
+    "semi_independent_density": "最近五题多数用到 L4/L5",
+    "dialog_quality_drop": "最近追问命中率低于平时",
+    "step_stuck": "同一步骤近期反复出错",
+}
+
+
+def _render_dependence_note(card_id: str) -> None:
+    """在收据页展示只读依赖度观察，不改变任何判分。"""
+    signal = _cached_dependence_signal(card_id)
+    if signal.level is DependenceLevel.NONE:
+        return
+    labels = [
+        DEPENDENCE_REASON_LABELS.get(reason, reason)
+        for reason in signal.reasons
+    ]
+    if labels:
+        st.caption("学习自主度观察：" + "；".join(dict.fromkeys(labels)) + "。")
+
+
+def _render_hint_ceiling_banner(engine: SessionEngine) -> None:
+    """展示主动提示上限，并提供随时恢复入口。"""
+    if not engine.hint_ceiling_active:
+        return
+    st.info(
+        f"{ICON_INFO} 先自己试一步：主动请求提示暂时只到 "
+        f"L{engine.hint_ceiling}；连续两次答错会自动恢复完整提示。"
+    )
+    if st.button(
+        "恢复完整提示",
+        key=f"release_ceiling_{engine.card.id}_{engine.state.exercise_id}",
+    ):
+        engine.release_hint_ceiling("manual")
+        st.rerun()
+
+
 def _build_session_engine(card: KnowledgeCard) -> SessionEngine:
     """创建带追问客户端与事件记录的会话引擎。"""
     provider = st.session_state.provider
+    signal = _load_dependence_signal(card.id)
+    cache = st.session_state.get(DEPENDENCE_SIGNAL_KEY)
+    if not isinstance(cache, dict):
+        cache = {}
+        st.session_state[DEPENDENCE_SIGNAL_KEY] = cache
+    cache[card.id] = signal
     return SessionEngine(
         card=card,
         provider=provider,
@@ -395,6 +529,7 @@ def _build_session_engine(card: KnowledgeCard) -> SessionEngine:
         dialog_client=build_follow_up_client(provider),
         dialog_recorder=_record_dialog_event,
         representation_recorder=_representation_recorder(),
+        hint_ceiling=signal.hint_ceiling,
     )
 
 
@@ -477,6 +612,40 @@ def _render_exercise_kc_visuals(exercise_id: str) -> None:
                 )
 
 
+def _load_step_insights(exercise_id: str):
+    """读取本机步骤运行并聚合近期卡点；游客模式或读取失败为空。"""
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        return ()
+    try:
+        if not step_db_path().exists():
+            return ()
+        with StepStore() as store:
+            runs = store.list_runs(limit=100)
+    except (OSError, sqlite3.Error):
+        return ()
+    return build_step_insights(runs, exercise_id)
+
+
+def _render_step_insight(engine: SessionEngine, key: str) -> None:
+    """在步骤区展示自己的近期卡点，并提供到该步的追问锚点。"""
+    insights = _load_step_insights(engine.current_exercise.id)
+    if not insights:
+        return
+    top = insights[0]
+    st.caption(
+        f"近期卡点：最近 {top.run_count} 次里，"
+        f"第 {top.step_index} 步错了 {top.fail_count} 次。"
+    )
+    if st.button(
+        "针对这一步提问",
+        key=f"{key}_insight_ask",
+        icon=ICON_HINT,
+    ):
+        engine.request_hint("step", step_index=top.step_index)
+        st.rerun()
+
+
 @st.fragment
 def _render_step_guide(engine: SessionEngine) -> None:
     """为有步骤元数据的题目渲染可选的分步填写区。
@@ -502,6 +671,7 @@ def _render_step_guide(engine: SessionEngine) -> None:
         st.caption(
             "先逐步填写中间结果；最终答案仍以下方“提交答案”为准。"
         )
+        _render_step_insight(engine, key)
         for spec in specs:
             attempt = state["attempts"].get(spec.index)
             frame = frames.get(spec.index)
@@ -836,6 +1006,161 @@ def _render_answer_input(exercise: Exercise, key_suffix: str | None = None) -> s
         ExerciseKind.MATCH: "输入配对（如 A=1;B=2）",
     }
     return st.text_input(labels.get(exercise.kind, "输入答案"), key=f"text_{suffix}")
+
+
+def _render_independent_check(
+    engine: SessionEngine, receipt: Receipt
+) -> None:
+    """依赖度较高时提供一道无提示同类题；结果不写入学习档案。"""
+    signal = _cached_dependence_signal(engine.card.id)
+    if signal.level is DependenceLevel.NONE:
+        return
+    key = f"independent_verify_{receipt.id}"
+    done = st.session_state.get(key)
+    if isinstance(done, dict):
+        result = done.get("result")
+        exercise = done.get("exercise")
+        if result == "correct":
+            st.success(f"{ICON_CHECK} 独立完成，这次没有使用提示。")
+        elif result == "wrong":
+            st.info(
+                f"{ICON_INFO} 这次没做对，不记录成绩；可以回到原题继续。"
+            )
+        elif result == "unverified":
+            st.caption("这一步无法自动核对，本次不计入结果。")
+        else:
+            st.caption("已跳过独立验证。")
+        if isinstance(exercise, Exercise):
+            with st.expander("查看这道题的解析", expanded=False):
+                st.markdown(math_markdown(exercise.solution_outline))
+        return
+    repository = st.session_state.repository
+    try:
+        completed = frozenset(
+            item.exercise_id
+            for item in repository.list_receipts(limit=None)
+        )
+    except (OSError, sqlite3.Error):
+        completed = frozenset()
+    query = RecallQuery(
+        exercise=engine.current_exercise,
+        card_id=engine.card.id,
+        completed_exercise_ids=completed,
+    )
+    try:
+        result = recall_similar(
+            query, cards, tree=_load_knowledge_tree(), limit=3
+        )
+    except Exception:
+        return
+    candidates = [
+        item
+        for item in result.candidates
+        if item.exercise.id != engine.current_exercise.id
+    ]
+    if not candidates:
+        return
+    candidate = candidates[0]
+    with st.container(border=True):
+        st.markdown("**独立验证（可选）**")
+        st.caption(
+            "换一道同类题，不给提示；结果不计入收据与掌握度。"
+        )
+        st.write(math_markdown(candidate.exercise.stem))
+        answer = _render_answer_input(
+            candidate.exercise, key_suffix=f"verify_{receipt.id}"
+        )
+        first, second = st.columns(2)
+        if first.button(
+            "提交验证",
+            key=f"verify_submit_{receipt.id}",
+            disabled=not answer.strip(),
+            **button_kwargs(PRIMARY),
+        ):
+            judgement = evaluate(candidate.exercise, answer)
+            if judgement.correct is True:
+                outcome = "correct"
+            elif judgement.correct is False:
+                outcome = "wrong"
+            else:
+                outcome = "unverified"
+            st.session_state[key] = {
+                "result": outcome,
+                "exercise": candidate.exercise,
+            }
+            st.rerun()
+        if second.button("跳过", key=f"verify_skip_{receipt.id}"):
+            st.session_state[key] = {
+                "result": "skipped",
+                "exercise": candidate.exercise,
+            }
+            st.rerun()
+
+
+def _render_path_probe(
+    receipt: Receipt,
+    path: SolutionPath,
+    *,
+    position: int,
+    total: int,
+) -> None:
+    """渲染一条备选路径；检查点通过后才揭示路径名称与总结。"""
+    key = f"path_probe_{receipt.id}_{path.path_id}"
+    state = st.session_state.get(key)
+    if not isinstance(state, dict):
+        state = {"stage": 0, "done": False}
+        st.session_state[key] = state
+    if state.get("done"):
+        st.success(f"路径成立：{path.name}")
+        st.markdown(math_markdown(path.summary))
+        if path.final_answer:
+            st.caption(f"最终答案：{path.final_answer}")
+        return
+    stage = min(int(state.get("stage", 0)), len(path.checkpoints) - 1)
+    checkpoint = path.checkpoints[stage]
+    label = "另一种思路" if total == 1 else f"另一种思路 {position}/{total}"
+    st.markdown(
+        f"**{label} · 关键一步 {stage + 1} / {len(path.checkpoints)}**"
+    )
+    st.markdown(math_markdown(checkpoint.prompt))
+    answer = st.text_input(
+        "这一步的结果",
+        key=f"{key}_input_{stage}",
+    )
+    if st.button(
+        "验证这一步",
+        key=f"{key}_submit_{stage}",
+        disabled=not answer.strip(),
+        **button_kwargs(PRIMARY),
+    ):
+        verdict = check_checkpoint(checkpoint, answer)
+        if verdict is StepVerdict.CORRECT:
+            state["stage"] = stage + 1
+            if state["stage"] >= len(path.checkpoints):
+                state["done"] = True
+            st.rerun()
+        elif verdict is StepVerdict.REJECTED:
+            st.warning("输入格式不符合，请用数值或表达式。")
+        elif verdict is StepVerdict.UNVERIFIABLE:
+            st.info("无法自动核对，请检查写法后重试。")
+        else:
+            st.warning("这一步还不对，再检查一下。")
+
+
+def _render_strategy_probe(receipt: Receipt) -> None:
+    """收据后的多解入口；没有登记路径的题目不展示。"""
+    paths = PATHS.get(receipt.exercise_id, ())
+    if not paths:
+        return
+    with st.expander("还有没有别的方法？", expanded=False):
+        st.caption(
+            "先写出关键一步，验证通过后再显示这条思路；"
+            "不影响本次收据与掌握度。"
+        )
+        for position, path in enumerate(paths, start=1):
+            _render_path_probe(
+                receipt, path, position=position, total=len(paths)
+            )
 
 
 def _render_update_section() -> None:
@@ -1428,6 +1753,7 @@ def _render_session() -> None:
             )
             if view.notice:
                 st.caption(view.notice)
+            _render_hint_ceiling_banner(engine)
             _render_visual_block(engine.card.id)
             st.write(math_markdown(view.body))
             _render_step_guide(engine)
@@ -1582,6 +1908,7 @@ def _render_session() -> None:
         st.caption(f"REMSJ · {stage.label}：{stage.description}")
         if view.notice:
             st.caption(view.notice)
+        _render_hint_ceiling_banner(engine)
         if view.representation is Representation.WORKED_EXAMPLE:
             _render_worked_example(engine.card)
         if engine.state.hint_level >= 4:
@@ -1630,6 +1957,10 @@ def _render_session() -> None:
                 else:
                     st.caption(f"叙事：下一节点「{upcoming.name}」等待解锁。")
             _render_explanation(engine.card, engine.current_exercise)
+            if receipt is not None:
+                _render_dependence_note(engine.card.id)
+                _render_independent_check(engine, receipt)
+                _render_strategy_probe(receipt)
         if st.button(
             "继续",
             key="advance",

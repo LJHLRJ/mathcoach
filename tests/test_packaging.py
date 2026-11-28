@@ -44,6 +44,14 @@ def test_build_config_includes_board_and_scenario_content():
     assert (ROOT / "content" / "scenario" / "hs-func-004.yaml").is_file()
 
 
+def test_build_config_includes_solution_paths():
+    """构建配置包含多解路径内容。"""
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert '"paths/*.yaml"' in pyproject
+    assert (ROOT / "content" / "paths" / "hs-trig-002-e2.yaml").is_file()
+
+
 def test_app_module_is_discoverable():
     """app 模块可被导入系统发现。"""
     spec = importlib.util.find_spec("app")

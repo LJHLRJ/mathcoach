@@ -176,3 +176,16 @@
 - 移除 `mathcoach/board/` 与 `_render_board_frame` 即回退分步板书。
 - 卸载 `faster-whisper` 即隐藏语音入口。
 - 移除 `mathcoach/representation/` 与 `SessionView.representation` 即回退表示降级。
+
+## 2026-11-28 追加：依赖度防护、多解检验与本地步骤洞察
+
+- 依赖度防护：新增只读信号模块，按卡片汇总历史收据、追问事件与步骤运行；最近五条收据中三条 L4/L5、包含 L5 且掌握度不低于 0.4 时，把主动请求提示暂时限制到 L2。连续两次答错、独立答对、换题或手动点击“恢复完整提示”即解除；不修改 BKT 公式、收据独立程度与 FSRS。
+- 独立验证邀请：依赖度较高时，收据页提供一道无提示同类题；结果只在本页展示，不写收据、BKT 或错题本，可随时跳过。
+- 多解策略检验：新增 `content/paths/*.yaml`，静态登记备选解法的关键检查点；加载期用 verify 预检，收据后先验证检查点，通过后才显示路径名称与总结。没有登记路径的题目不显示入口。
+- 本地步骤洞察：只读本机 `step-signals.sqlite3`，聚合最近三次运行中反复出错的步骤，在分步填写区展示“近期卡点”，并提供到该步的追问锚点；不做跨用户同伴聚合。
+- 隐私边界：所有洞察均为本机数据；依赖度信号在游客模式或读取失败时为空，不新增任何上传。
+- 验证：`942 passed, 5 skipped`。新增测试：
+  - `tests/test_dependence.py`、`tests/test_engine_hint_ceiling.py`、`tests/test_dependence_ui.py`
+  - `tests/test_paths_catalog.py`、`tests/test_paths_checker.py`、`tests/test_paths_ui.py`
+  - `tests/test_insights.py`、`tests/test_insights_ui.py`
+- 回退：移除 `SessionEngine` 的 `hint_ceiling` 参数与 `_render_hint_ceiling_banner` / `_render_independent_check` 即回退依赖度防护；移除 `mathcoach/paths/`、`content/paths/` 与 `_render_strategy_probe` 即回退多解检验；移除 `mathcoach/insights/` 与 `_render_step_insight` 即回退步骤洞察。
