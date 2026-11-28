@@ -17,6 +17,14 @@ from mathcoach.memory.sqlite_repo import SQLiteRepository
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 
+def _query_param(at: AppTest, key: str) -> str | None:
+    """兼容不同 Streamlit 版本 query_params 的字符串/列表返回。"""
+    value = at.query_params.get(key)
+    if isinstance(value, list):
+        return value[0] if value else None
+    return value
+
+
 def _select_function_card(at: AppTest) -> None:
     """选中函数入门卡。"""
     at.selectbox[0].select("hs-function-intro-001").run()
@@ -315,7 +323,7 @@ def test_diagnosis_learning_card_action_routes(tmp_path, monkeypatch):
     ).click().run()
 
     assert not at.exception
-    assert at.query_params.get("kp") == "hs-function-intro-001"
+    assert _query_param(at, "kp") == "hs-function-intro-001"
     assert any(
         subheader.value == "知识点浏览" for subheader in at.subheader
     )
@@ -338,7 +346,7 @@ def test_diagnosis_prerequisite_action_routes(tmp_path, monkeypatch):
     review_button.click().run()
 
     assert not at.exception
-    assert at.query_params.get("kp") == "hs-function-intro-001"
+    assert _query_param(at, "kp") == "hs-function-intro-001"
     assert any(
         subheader.value == "知识点浏览" for subheader in at.subheader
     )

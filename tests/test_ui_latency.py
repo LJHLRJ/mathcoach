@@ -13,6 +13,12 @@ from mathcoach.domain.models import (
 )
 
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
+COMPONENTS_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "mathcoach"
+    / "ui"
+    / "components.py"
+)
 
 
 class _EchoProvider:
@@ -96,11 +102,13 @@ def test_weekly_narrative_is_generated_on_demand(
 def test_latency_guards_are_wired() -> None:
     """表单、片段与缓存入口在源码中保持接线。"""
     source = APP_PATH.read_text(encoding="utf-8")
+    components = COMPONENTS_PATH.read_text(encoding="utf-8")
 
     assert "@st.fragment\ndef _render_step_guide" in source
     assert "@st.fragment\ndef _render_visual_block" in source
     assert 'st.form(\n                "quiz_answer_form"' in source
-    assert 'st.rerun(scope="fragment")' in source
+    assert "rerun_fragment()" in source
+    assert 'st.rerun(scope="fragment")' in components
     assert 'WEEKLY_NARRATIVE_KEY = "weekly_report_narrative"' in source
     assert "RepositorySnapshot(st.session_state.repository)" in source
     assert "load_with_samples()" in source

@@ -9,6 +9,15 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 import streamlit as st
+from streamlit.errors import StreamlitAPIException
+
+try:
+    from streamlit.errors import (
+        StreamlitInvalidLayoutContextError
+        as _InvalidFragmentRerunError,
+    )
+except ImportError:  # Streamlit 1.59.0 在 scope 错误时抛 StreamlitAPIException
+    _InvalidFragmentRerunError = None
 
 PRIMARY = "primary"
 SECONDARY = "secondary"
@@ -55,3 +64,25 @@ def loading_skeleton(height: int = SKELETON_INLINE) -> Iterator[None]:
     """固定高度骨架占位；在 with 内执行耗时操作。"""
     with st.skeleton(height=height):
         yield
+
+
+def is_fragment_rerun_error(exc: Exception) -> bool:
+    """判断异常是否表示当前上下文不能做片段级 rerun。"""
+    if _InvalidFragmentRerunError is not None and isinstance(
+        exc, _InvalidFragmentRerunError
+    ):
+        return True
+    return (
+        isinstance(exc, StreamlitAPIException)
+        and 'scope="fragment"' in str(exc)
+    )
+
+
+def rerun_fragment() -> None:
+    """片段内局部 rerun；旧版 Streamlit 或整页执行时回退全局 rerun。"""
+    try:
+        st.rerun(scope="fragment")
+    except Exception as exc:
+        if is_fragment_rerun_error(exc):
+            st.rerun()
+        raise

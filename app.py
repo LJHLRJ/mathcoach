@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
-from streamlit.errors import StreamlitInvalidLayoutContextError
 
 import mathcoach
 from mathcoach.analytics import (
@@ -153,6 +152,7 @@ from mathcoach.ui.components import (
     SKELETON_PANEL,
     button_kwargs,
     loading_skeleton,
+    rerun_fragment,
 )
 from mathcoach.ui.first_run import (
     FirstRunError,
@@ -502,11 +502,7 @@ def _render_step_guide(engine: SessionEngine) -> None:
                         st.warning("步骤记录暂不可用，请稍后再试。")
                     else:
                         _invalidate_kc_mastery_cache()
-                        try:
-                            st.rerun(scope="fragment")
-                        except StreamlitInvalidLayoutContextError:
-                            # AppTest 以整页方式执行片段时退回全局 rerun
-                            st.rerun()
+                        rerun_fragment()
             else:
                 label = STEP_VERDICT_LABELS[attempt.verdict]
                 text = f"第 {spec.index} 步：{label}（你填的是 {attempt.input}）"

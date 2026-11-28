@@ -37,11 +37,7 @@ jobs:
       - name: Verify Chrome
         run: google-chrome --version
 
-      - name: Run unit tests
-        env:
-          MATHCOACH_CONTENT_STRICT: "1"
-        run: python -m pytest -v --ignore=tests/test_visual_regression.py
-
+      # 全量单测由 Tests workflow 覆盖；这里只验证固定 Streamlit 版本下的截图。
       - name: Run screenshot regression
         env:
           MATHCOACH_CONTENT_STRICT: "1"

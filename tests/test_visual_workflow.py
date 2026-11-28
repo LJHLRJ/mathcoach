@@ -38,12 +38,16 @@ def test_visual_workflow_runs_test_and_uploads_artifacts():
     assert "git push" not in text
 
 
-def test_visual_workflow_runs_full_unit_tests_on_each_push():
-    """每次推送同时运行除视觉外的全量单测。"""
-    text = WORKFLOW.read_text(encoding="utf-8")
+def test_visual_workflow_leaves_full_unit_tests_to_tests_workflow():
+    """全量单测由 Tests workflow 负责，视觉 workflow 只跑截图。"""
+    visual = WORKFLOW.read_text(encoding="utf-8")
+    tests = (ROOT / ".github/workflows/tests.yml").read_text(
+        encoding="utf-8"
+    )
 
-    assert "Run unit tests" in text
-    assert "--ignore=tests/test_visual_regression.py" in text
+    assert "Run unit tests" not in visual
+    assert "--ignore=tests/test_visual_regression.py" not in visual
+    assert "python -m pytest -q" in tests
 
 
 def test_visual_dependencies_are_ci_only_and_baselines_exist():
