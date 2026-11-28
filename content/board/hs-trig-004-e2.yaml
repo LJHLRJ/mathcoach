@@ -1,0 +1,29 @@
+version: 1
+exercise_id: hs-trig-004-e2
+card_id: hs-trig-004
+
+frames:
+  - step_index: 1
+    title: 读出 A
+    narration: y=3sin x 中，A=3 决定纵向伸缩。
+    figure: wave
+    params: {amplitude: 3, omega: 1}
+    highlight: amplitude
+    kc_id: kc-hs-trig-004-f1
+    dialog_level: 3
+    verify:
+      expression: "3"
+      expected: "3"
+      variables: []
+  - step_index: 2
+    title: 振幅取绝对值
+    narration: 振幅是 |A|=3，表示相对平衡位置的最大偏离。
+    figure: wave
+    params: {amplitude: 3, omega: 1}
+    highlight: amplitude
+    kc_id: kc-hs-trig-004-p2
+    dialog_level: 4
+    verify:
+      expression: "abs(3)"
+      expected: "3"
+      variables: []

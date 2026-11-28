@@ -1,0 +1,15 @@
+version: 1
+card_id: hs-func-004
+title: 拖动切点，观察切线斜率
+figure: tangent_slope
+params:
+  - name: x0
+    label: 切点 x0
+    min: -2
+    max: 2
+    step: 0.1
+    default: 1
+prompts:
+  - 把 x0 拖到 0，切线斜率是多少？
+  - 斜率在哪些区间为负？
+bridge: 带着“切线斜率”的直觉去做第 1 题。

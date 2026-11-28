@@ -1,0 +1,33 @@
+version: 1
+card_id: hs-vector-002
+title: 拖动两个向量，观察合成
+figure: vector_sum
+params:
+  - name: ax
+    label: a 的 x 分量
+    min: -4
+    max: 4
+    step: 0.5
+    default: 1
+  - name: ay
+    label: a 的 y 分量
+    min: -4
+    max: 4
+    step: 0.5
+    default: 2
+  - name: bx
+    label: b 的 x 分量
+    min: -4
+    max: 4
+    step: 0.5
+    default: 3
+  - name: by
+    label: b 的 y 分量
+    min: -4
+    max: 4
+    step: 0.5
+    default: 4
+prompts:
+  - 把 a 和 b 拖成同一方向，合向量长度怎么变？
+  - 让 a+b 落在第四象限，需要满足什么？
+bridge: 带着“对应分量相加”的直觉去做第 1 题。

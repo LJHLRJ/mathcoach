@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 from ..domain.models import Phase, Receipt
+from ..domain.representation import Representation
 
 
 @dataclass(frozen=True)
@@ -12,11 +13,13 @@ class FollowUpView:
         level: 追问所在层级，当前为 L3 或 L4。
         prompt: 已通过校验的追问问法。
         supplement: 是否是部分命中后的补充追问。
+        anchor_step_index: 追问锚定的步骤序号；None 表示整题级追问。
     """
 
     level: int
     prompt: str
     supplement: bool = False
+    anchor_step_index: int | None = None
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,7 @@ class SessionView:
         receipt: 刚生成的收据。
         receipts: 本次会话已生成的收据。
         follow_up: L3–L4 追问；None 表示普通陈述式提示。
+        representation: 表示降级后的讲解形态；None 表示沿用默认形态。
     """
 
     phase: Phase
@@ -42,3 +46,4 @@ class SessionView:
     receipt: Receipt | None = None
     receipts: tuple[Receipt, ...] = ()
     follow_up: FollowUpView | None = None
+    representation: Representation | None = None

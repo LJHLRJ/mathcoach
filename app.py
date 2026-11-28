@@ -13,6 +13,7 @@ from mathcoach.analytics import (
     build_attribution,
     build_narrator,
 )
+from mathcoach.board import BOARD_FRAMES, BoardFrameSpec, render_frame
 from mathcoach.mastery import (
     WEAK_KC_THRESHOLD,
     RepairPlan,
@@ -70,6 +71,8 @@ from mathcoach.domain.narrative import (
 )
 from mathcoach.domain.prerequisites import Gap, MistakeStat, trace_gap
 from mathcoach.domain.receipt import RESTATEMENT_SPARSE
+from mathcoach.domain.representation import Representation
+from mathcoach.domain.scaffold import stage_for_level
 from mathcoach.domain.spaced_repetition import quality_from_independence
 from mathcoach.export.package import (
     build_export_artifact,
@@ -97,6 +100,10 @@ from mathcoach.recall import (
     query_from_mistake,
     recall_similar,
 )
+from mathcoach.representation import (
+    RepresentationRecorder,
+    RepresentationStoreRecorder,
+)
 from mathcoach.report import (
     ExplainableReport,
     build_explainable_report,
@@ -105,6 +112,7 @@ from mathcoach.report import (
     render_narrative_markdown,
     render_report_markdown,
 )
+from mathcoach.scenario import SCENARIOS, render_scenario
 from mathcoach.safety.guards import REFUSAL_TEXT, Blocked
 from mathcoach.safety.redlines import (
     ConfirmationRequired,
@@ -133,10 +141,13 @@ from mathcoach.session.daily import (
 from mathcoach.session.engine import SessionEngine
 from mathcoach.steps import (
     STEP_SPECS,
+    StepAttempt,
     StepRecorder,
+    StepSpec,
     StepStore,
     StepVerdict,
 )
+from mathcoach.steps.presentation import build_step_reason, present_verdict
 from mathcoach.timeutil import end_of_local_day, local_day, local_day_key
 from mathcoach.tutor.catalog import KC_BY_ID
 from mathcoach.tutor.dialog import (
@@ -214,6 +225,7 @@ from mathcoach.ui.visuals.registry import (
     render_visual,
 )
 from mathcoach.update_check import UpdateCheckError, check_for_update
+from mathcoach.voice import transcribe_and_normalize, voice_available
 from mathcoach.worksheet import (
     WorksheetSource,
     build_worksheet,
@@ -364,6 +376,14 @@ def _record_dialog_event(event: DialogEvent) -> None:
         return
 
 
+def _representation_recorder() -> RepresentationRecorder | None:
+    """创建表示降级记录器；游客模式不落库。"""
+    consent: Consent = st.session_state.consent
+    if not (consent.memory or consent.mistake_book):
+        return None
+    return RepresentationStoreRecorder()
+
+
 def _build_session_engine(card: KnowledgeCard) -> SessionEngine:
     """创建带追问客户端与事件记录的会话引擎。"""
     provider = st.session_state.provider
@@ -374,6 +394,7 @@ def _build_session_engine(card: KnowledgeCard) -> SessionEngine:
         consent=st.session_state.consent,
         dialog_client=build_follow_up_client(provider),
         dialog_recorder=_record_dialog_event,
+        representation_recorder=_representation_recorder(),
     )
 
 
@@ -410,6 +431,25 @@ def _step_state_key(engine: SessionEngine) -> str:
         else "none"
     )
     return f"step_state_{engine.current_exercise.id}_{started}"
+
+
+def _render_worked_example(card: KnowledgeCard) -> None:
+    """表示降级：用知识点具体例子替代抽象推导。"""
+    example = card.example.strip()
+    if not example:
+        return
+    st.markdown("**换成具体例子**")
+    st.markdown(math_markdown(example))
+    st.caption("先在这个例子上对齐概念，再回到原题。")
+
+
+def _render_board_frame(frame: BoardFrameSpec) -> None:
+    """渲染一帧分步板书；图形失败时保留文字说明。"""
+    st.caption(f"板书 · 第 {frame.step_index} 步：{frame.title}")
+    if frame.narration:
+        st.markdown(math_markdown(frame.narration))
+    if render_frame(frame) == "failed":
+        st.info(f"{ICON_INFO} 这一步的图形暂不可用，已保留文字说明。")
 
 
 def _render_kc_visual_hint(kc_id: str) -> None:
@@ -454,71 +494,94 @@ def _render_step_guide(engine: SessionEngine) -> None:
             "finalized": False,
         }
     state = st.session_state[key]
+    frames = {
+        frame.step_index: frame
+        for frame in BOARD_FRAMES.get(engine.current_exercise.id, ())
+    }
     with st.expander("分步填写（可选）", expanded=True):
         st.caption(
             "先逐步填写中间结果；最终答案仍以下方“提交答案”为准。"
         )
         for spec in specs:
             attempt = state["attempts"].get(spec.index)
+            frame = frames.get(spec.index)
+            if attempt is not None:
+                _render_step_result(spec, attempt)
+                continue
+            if frame is not None:
+                _render_board_frame(frame)
             st.markdown(f"**第 {spec.index} 步**：{spec.prompt}")
-            if attempt is None:
-                start_key = f"{key}_started_{spec.index}"
-                if start_key not in st.session_state:
-                    st.session_state[start_key] = time.time()
-                answer = st.text_input(
-                    "这一步的结果",
-                    key=f"{key}_input_{spec.index}",
+            start_key = f"{key}_started_{spec.index}"
+            if start_key not in st.session_state:
+                st.session_state[start_key] = time.time()
+            if frame is not None and st.button(
+                "针对这一步提问",
+                key=f"{key}_ask_{spec.index}",
+                icon=ICON_HINT,
+            ):
+                engine.request_hint("step", step_index=spec.index)
+                st.rerun()
+            answer = st.text_input(
+                "这一步的结果",
+                key=f"{key}_input_{spec.index}",
+            )
+            if st.button(
+                "检查这一步",
+                key=f"{key}_check_{spec.index}",
+                disabled=not answer.strip(),
+            ):
+                elapsed_s = max(
+                    0.0,
+                    time.time()
+                    - float(st.session_state.pop(start_key, time.time())),
                 )
-                if st.button(
-                    "检查这一步",
-                    key=f"{key}_check_{spec.index}",
-                    disabled=not answer.strip(),
-                ):
-                    elapsed_s = max(
-                        0.0,
-                        time.time()
-                        - float(st.session_state.pop(start_key, time.time())),
-                    )
+                try:
+                    recorder = _step_recorder()
                     try:
-                        recorder = _step_recorder()
-                        try:
-                            if not state["run_id"]:
-                                state["run_id"] = recorder.start(
-                                    engine.current_exercise.id,
-                                    engine.card.id,
-                                    specs,
-                                )
-                            state["attempts"][spec.index] = (
-                                recorder.record(
-                                    state["run_id"],
-                                    spec,
-                                    answer,
-                                    elapsed_s=elapsed_s,
-                                )
+                        if not state["run_id"]:
+                            state["run_id"] = recorder.start(
+                                engine.current_exercise.id,
+                                engine.card.id,
+                                specs,
                             )
-                        finally:
-                            recorder.close()
-                    except (OSError, sqlite3.Error):
-                        st.warning("步骤记录暂不可用，请稍后再试。")
-                    else:
-                        _invalidate_kc_mastery_cache()
-                        rerun_fragment()
-            else:
-                label = STEP_VERDICT_LABELS[attempt.verdict]
-                text = f"第 {spec.index} 步：{label}（你填的是 {attempt.input}）"
-                if attempt.verdict is StepVerdict.CORRECT:
-                    st.success(text)
-                elif attempt.verdict is StepVerdict.INCORRECT:
-                    st.error(text)
-                    _render_kc_visual_hint(spec.kc_id)
+                        state["attempts"][spec.index] = (
+                            recorder.record(
+                                state["run_id"],
+                                spec,
+                                answer,
+                                elapsed_s=elapsed_s,
+                            )
+                        )
+                    finally:
+                        recorder.close()
+                except (OSError, sqlite3.Error):
+                    st.warning("步骤记录暂不可用，请稍后再试。")
                 else:
-                    st.info(text)
+                    _invalidate_kc_mastery_cache()
+                    rerun_fragment()
         if state["attempts"]:
             st.caption(
                 f"已填写 {len(state['attempts'])} / {len(specs)} 步。"
             )
         if state["finalized"]:
             st.caption("最终答案已提交，步骤记录已结算。")
+
+
+def _render_step_result(spec: StepSpec, attempt: StepAttempt) -> None:
+    """把已判定步骤渲染成原位标注：输入、徽标与可展开原因。"""
+    marker = present_verdict(attempt.verdict)
+    with st.container(border=True):
+        st.markdown(f"**第 {spec.index} 步**：{spec.prompt}")
+        st.caption(f"你的输入：{attempt.input}")
+        getattr(st, marker.tone)(STEP_VERDICT_LABELS[attempt.verdict])
+        with st.expander("为什么这样判定？", expanded=False):
+            st.markdown(build_step_reason(spec, attempt))
+        if attempt.verdict is StepVerdict.INCORRECT:
+            st.caption(
+                "回到这一步对应的概念，再检查一次；"
+                "最终答案仍以下方提交为准。"
+            )
+            _render_kc_visual_hint(spec.kc_id)
 
 
 def _finalize_step_run(
@@ -1274,6 +1337,18 @@ def _render_visual_block(card_id: str) -> None:
         st.info(f"{ICON_INFO} 可视化暂不可用")
 
 
+def _render_scenario_block(card_id: str) -> None:
+    """讲解页的情境探索入口；失败时只提示，不阻断小测。"""
+    spec = SCENARIOS.get(card_id)
+    if spec is None:
+        return
+    with st.expander(f"情境探索：{spec.title}", expanded=False):
+        if render_scenario(spec) == "failed":
+            st.info(f"{ICON_INFO} 情境组件暂不可用，已保留文字讲解。")
+        if spec.bridge:
+            st.caption(spec.bridge)
+
+
 def _render_session() -> None:
     """按当前阶段渲染陪练主流程。"""
     view = engine.view
@@ -1317,6 +1392,7 @@ def _render_session() -> None:
                 st.info(f"{ICON_INFO} {view.notice}")
             # 可视化是可选增强：失败时只提示，不阻断讲解/小测
             _render_visual_block(engine.card.id)
+            _render_scenario_block(engine.card.id)
             kpi_row(
                 [
                     ("当前卡片", engine.card.name),
@@ -1426,14 +1502,55 @@ def _render_session() -> None:
     if view.phase is Phase.HINT:
         if view.follow_up is not None:
             st.caption(f"当前题目：{engine.current_exercise.stem}")
+            if view.follow_up.anchor_step_index is not None:
+                st.caption(
+                    f"当前步骤：第 {view.follow_up.anchor_step_index} 步"
+                )
             hint_block(
                 view.follow_up.level,
                 math_markdown(view.follow_up.prompt),
             )
+            stage = stage_for_level(view.follow_up.level)
+            st.caption(f"REMSJ · {stage.label}：{stage.description}")
             if view.follow_up.supplement:
                 st.caption("再补充一个更具体的问题。")
             if view.notice:
                 st.caption(view.notice)
+            voice_key = (
+                f"voice_text_{engine.state.exercise_id}_"
+                f"{len(engine.state.attempts)}_"
+                f"L{view.follow_up.level}_"
+                f"{int(view.follow_up.supplement)}"
+            )
+            if voice_available():
+                st.caption("语音回答仅在本机转写，不会上传。")
+                audio = st.audio_input(
+                    "语音回答（可选）", key=f"{voice_key}_audio"
+                )
+                if audio is not None and st.button(
+                    "转写语音",
+                    key=f"{voice_key}_transcribe",
+                    icon=ICON_HINT,
+                ):
+                    with st.spinner("正在本机转写…"):
+                        spoken = transcribe_and_normalize(
+                            audio.getvalue()
+                        )
+                    if spoken:
+                        st.session_state[voice_key] = spoken
+                    else:
+                        st.warning("没有识别到内容，请改用文字输入。")
+                spoken_text = st.session_state.get(voice_key)
+                if spoken_text:
+                    st.info(f"识别为：{spoken_text}")
+                    if st.button(
+                        "提交语音回答",
+                        key=f"{voice_key}_submit",
+                        icon=ICON_SUBMIT,
+                        **button_kwargs(PRIMARY),
+                    ):
+                        engine.submit_follow_up(spoken_text)
+                        st.rerun()
             answer = st.text_input(
                 "你的回答",
                 key=(
@@ -1461,8 +1578,12 @@ def _render_session() -> None:
         ):
             st.error(f"{ICON_ERROR} 再看一眼提示")
         hint_block(engine.state.hint_level, math_markdown(view.body))
+        stage = stage_for_level(engine.state.hint_level)
+        st.caption(f"REMSJ · {stage.label}：{stage.description}")
         if view.notice:
             st.caption(view.notice)
+        if view.representation is Representation.WORKED_EXAMPLE:
+            _render_worked_example(engine.card)
         if engine.state.hint_level >= 4:
             _render_explanation(engine.card, engine.current_exercise)
         elif engine.state.diagnosis is not None:

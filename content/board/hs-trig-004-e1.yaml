@@ -1,0 +1,29 @@
+version: 1
+exercise_id: hs-trig-004-e1
+card_id: hs-trig-004
+
+frames:
+  - step_index: 1
+    title: 先读出 ω
+    narration: y=sin(2x) 中，x 前的系数就是 ω=2；ω 决定横向伸缩。
+    figure: wave
+    params: {amplitude: 1, omega: 2}
+    highlight: omega
+    kc_id: kc-hs-trig-004-f1
+    dialog_level: 3
+    verify:
+      expression: "2/2"
+      expected: "1"
+      variables: []
+  - step_index: 2
+    title: 再看周期
+    narration: 把 ω=2 代入 T=2π/|ω|，曲线每隔 π 重复一次。
+    figure: wave
+    params: {amplitude: 1, omega: 2}
+    highlight: period
+    kc_id: kc-hs-trig-004-p1
+    dialog_level: 4
+    verify:
+      expression: "2/2"
+      expected: "1"
+      variables: []

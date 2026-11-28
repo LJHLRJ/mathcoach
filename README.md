@@ -12,7 +12,11 @@
 - 分步错误定位与草稿行为信号：步骤判定、耗时/缺失/放弃回流 KC 影子库；错题可召回相似题或生成变式。
 - 智能练习册与可解释学情报告：按薄弱 KC、到期复习与迁移题选题；报告以结论—证据结构展示，可选受限 AI 叙事。
 - KC 前置依赖图与修复建议：只读回溯薄弱先修，不改 FSRS 队列或正式 BKT。
-- KC 动态可视化讲解：象限符号、补角公式、振幅与周期。
+- KC 动态可视化讲解：象限符号、补角公式、振幅与周期、余弦定理。
+- REMSJ 元认知支架（小切片）：提示页按 L1–L6 标注复述题意、提取条件、关联概念、求解与说明理由；步骤判定新增步骤级错因映射。
+- 草稿原位标注：步骤判定贴在该行，显示输入、判定徽标与可展开原因；错误步骤给出步骤级错因与 KC 动态讲解，不展示标准答案。
+- 情境化仿真入口：讲解页新增切点斜率与向量合成两个参数可调情境，探索不计入掌握度。
+- 分步板书与语音追问（可选）：振幅周期/余弦定理按步骤展示图形帧，帧内数学声明先过 verify；语音仅在本机转写，失败回退文字。
 - 交互优化：周报 AI 叙事按需生成，仪表盘/周报单次快照，小测表单与片段化渲染减少整页 rerun。
 - 提示阶梯 L1–L6、连错 2 次错因诊断、连错 3 次收尾、独立/半独立收据；诊断后可去复习先修卡、看学习卡片或练同类题，收据页支持 L6 复述质量记录。
 - SQLite 本地记忆：收据、错题本、复习队列；游客模式只存内存。
@@ -66,16 +70,16 @@ flowchart LR
 
 ## 下载与安装
 
-当前版本：**v0.9.0**（2026-11-28）。下载入口以 GitHub Releases 为准：
+当前版本：**v0.10.0**（2026-11-28）。下载入口以 GitHub Releases 为准：
 
 - 最新稳定版：<https://github.com/LJHLRJ/mathcoach/releases/latest>
 - 全部版本与 Release Notes：<https://github.com/LJHLRJ/mathcoach/releases>
 
 | 平台 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `MathCoachSetup-0.9.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
+| Windows x64 | `MathCoachSetup-0.10.0.exe` | Inno Setup 安装器；按用户安装，无需管理员权限 |
 | Windows x64 | `MathCoach-windows.zip` | 便携版；解压后运行 `MathCoach.exe` |
-| macOS | `MathCoach-0.9.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
+| macOS | `MathCoach-0.10.0.dmg` | 打开后将 `MathCoach.app` 拖到“应用程序” |
 | macOS | `MathCoach-macos.zip` | 便携版；解压后打开 `MathCoach.app` |
 
 - 当前仅提供稳定版，没有预览通道；变更记录见 GitHub Releases。
@@ -213,8 +217,9 @@ python -m build
 | M19 | 年级/难度标注与按年级筛选入口 | 已完成 | `mathcoach/domain/grade_index.py`、`mathcoach/ui/grade_page.py`、`docs/grade-navigation.md` |
 | M20 | 做题驱动学习闭环补强 | 已完成（v0.8.0） | `app.py`、`mathcoach/session/engine.py`、`mathcoach/domain/learning_path.py`、`mathcoach/memory/report.py` |
 | M21 | 教学链路、分步定位、练习册、报告与 KC 动态可视化 | 已完成（v0.9.0） | `mathcoach/tutor/`、`mathcoach/steps/`、`mathcoach/mastery/`、`mathcoach/planner/`、`mathcoach/report/`、`mathcoach/ui/visuals/` |
+| M22 | REMSJ 支架、草稿原位标注、情境仿真、分步板书与语音追问 | 已完成（v0.10.0） | `mathcoach/domain/scaffold.py`、`mathcoach/steps/presentation.py`、`mathcoach/scenario/`、`mathcoach/board/`、`mathcoach/voice/` |
 
-当前发布：**v0.9.0**（2026-11-28），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+当前发布：**v0.10.0**（2026-11-28），Release 资产包含 Windows 安装器/便携版与 macOS DMG/便携版。变更记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 第三方资源与许可证
 

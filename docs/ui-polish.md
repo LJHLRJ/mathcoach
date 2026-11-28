@@ -155,7 +155,24 @@
   - `tests/test_visuals_quadrant_sign.py`、`tests/test_visuals_supplement_angle.py`、`tests/test_visuals_amplitude_period.py`
   - `tests/test_kc_visuals_ui.py`
 
+## 2026-11-28 追加：REMSJ、草稿原位标注与情境仿真
+
+- REMSJ 小切片：提示页显示当前阶段（复述题意/提取条件/关联概念/求解/说明理由）；步骤判定新增步骤级错因映射。
+- 草稿原位标注：已判定步骤显示输入、徽标与可展开的“为什么这样判定”，不展示标准答案；错误步骤保留 KC 动态讲解。
+- 情境仿真：讲解页新增切点斜率与向量合成两个参数可调情境，探索不计入掌握度。
+- 分步板书：振幅周期与余弦定理题目按步骤展示图形帧；帧内数学声明先过 verify，失败回退文字。
+- 语音追问：本地 Whisper 可选，未安装或识别失败回退文字。
+- 验证：`900 passed, 5 skipped`。
+
 ## 2026-11-28 追加回退
 
 - 交互延迟：删除 `RepositorySnapshot` 接入、恢复周报渲染时直接调用 `generate_report_narrative`、移除 `quiz_answer_form` 与相关 `@st.fragment` 即可回到逐次重算。
 - KC 可视化：移除 `_KC_VISUALS` 中的登记项即可隐藏入口；删除对应 `mathcoach/ui/visuals/*.py` 不影响卡片级可视化。
+
+## 2026-11-28 追加回退（第二批）
+
+- 移除 `_render_scenario_block` 与 `content/scenario/` 即回退情境入口。
+- 移除 `_render_step_result` 的“为什么这样判定”与阶段标签即回退原位标注/REMSJ。
+- 移除 `mathcoach/board/` 与 `_render_board_frame` 即回退分步板书。
+- 卸载 `faster-whisper` 即隐藏语音入口。
+- 移除 `mathcoach/representation/` 与 `SessionView.representation` 即回退表示降级。

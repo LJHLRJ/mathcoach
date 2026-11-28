@@ -1,0 +1,29 @@
+version: 1
+exercise_id: hs-trig-005-e2
+card_id: hs-trig-005
+
+frames:
+  - step_index: 1
+    title: 先看特殊角
+    narration: C=90° 时 cos C=0，减号项整体消失。
+    figure: cosine_rule
+    params: {a: 3, b: 4, angle_c: 90}
+    highlight: angle
+    kc_id: kc-hs-trig-005-f1
+    dialog_level: 3
+    verify:
+      expression: "3**2+4**2"
+      expected: "25"
+      variables: []
+  - step_index: 2
+    title: 求第三边
+    narration: c²=9+16=25，边长取正根，所以 c=5。
+    figure: cosine_rule
+    params: {a: 3, b: 4, angle_c: 90}
+    highlight: side_c
+    kc_id: kc-hs-trig-005-p1
+    dialog_level: 4
+    verify:
+      expression: "sqrt(3**2+4**2)"
+      expected: "5"
+      variables: []

@@ -1,0 +1,29 @@
+version: 1
+exercise_id: hs-trig-005-e1
+card_id: hs-trig-005
+
+frames:
+  - step_index: 1
+    title: 先看夹角项
+    narration: 余弦定理中，2ab cos C 前面是减号；夹角 C 越大，第三边越短。
+    figure: cosine_rule
+    params: {a: 5, b: 4, angle_c: 60}
+    highlight: minus
+    kc_id: kc-hs-trig-005-f1
+    dialog_level: 3
+    verify:
+      expression: "5**2+4**2-2*5*4*(1/2)"
+      expected: "21"
+      variables: []
+  - step_index: 2
+    title: 写出完整公式
+    narration: c²=a²+b²−2ab cos C；把 a=5、b=4、C=60° 代入可求第三边。
+    figure: cosine_rule
+    params: {a: 5, b: 4, angle_c: 60}
+    highlight: side_c
+    kc_id: kc-hs-trig-005-f1
+    dialog_level: 4
+    verify:
+      expression: "sqrt(5**2+4**2-2*5*4*(1/2))"
+      expected: "sqrt(21)"
+      variables: []

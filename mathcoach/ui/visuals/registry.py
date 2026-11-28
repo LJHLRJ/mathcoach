@@ -41,6 +41,12 @@ def _render_amplitude_period() -> None:
     render()
 
 
+def _render_cosine_rule() -> None:
+    from .cosine_rule import render
+
+    render()
+
+
 _VISUALS: dict[str, Callable[[], None]] = {
     "hs-func-004": _render_tangent,  # 导数的几何意义：曲线与切线
     "ug-linear-004": _render_planes3d,  # 线性方程组：三平面交点
@@ -51,6 +57,7 @@ _KC_VISUALS: dict[str, Callable[[], None]] = {
     "kc-hs-trig-002-p1": _render_quadrant_sign,  # 象限符号判定
     "kc-hs-trig-003-f1": _render_supplement_angle,  # 补角公式
     "kc-hs-trig-004-f1": _render_amplitude_period,  # 振幅与周期
+    "kc-hs-trig-005-f1": _render_cosine_rule,  # 余弦定理
 }
 
 

@@ -1,6 +1,7 @@
 """会话状态机：只调用 domain 纯函数，不 import Streamlit。"""
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
@@ -26,6 +27,11 @@ from ..domain.models import (
     SessionState,
 )
 from ..domain.receipt import RESTATEMENT_SPARSE, assess_restatement, build_receipt
+from ..domain.representation import (
+    LoadSignals,
+    Representation,
+    choose_representation,
+)
 from ..domain.spaced_repetition import Quality
 from ..llm.base import Provider, RenderTask
 from ..memory.repository import InMemoryRepository, Repository
@@ -34,6 +40,7 @@ from ..mastery import (
     quality_for_correct,
     reference_seconds_from_history,
 )
+from ..representation import RepresentationEvent, RepresentationRecorder
 from ..safety.guards import REFUSAL_TEXT, detect_injection
 from ..safety.redlines import (
     ConfirmationRequired,
@@ -63,6 +70,7 @@ class _ActiveFollowUp:
     level: int
     supplement: bool
     shown_at: datetime
+    anchor_step_index: int | None = None
 
 
 class SessionEngine:
@@ -92,6 +100,7 @@ class SessionEngine:
         dialog_client: FollowUpClient | None = None,
         dialog_recorder: Callable[[DialogEvent], None] | None = None,
         dialog_verify_fn: VerifyFn | None = None,
+        representation_recorder: RepresentationRecorder | None = None,
     ) -> None:
         """创建会话并停在目标确认阶段。
 
@@ -104,6 +113,7 @@ class SessionEngine:
             dialog_client: 追问问法客户端；None 时 L3–L4 保持陈述式提示。
             dialog_recorder: 追问事件落库回调；None 时只存内存。
             dialog_verify_fn: 追问内容验证函数；None 使用默认 verify。
+            representation_recorder: 表示降级事件记录器；None 时只做决策。
         """
         self.card = card
         self.provider = provider
@@ -115,9 +125,13 @@ class SessionEngine:
         self.dialog_client = dialog_client
         self.dialog_recorder = dialog_recorder
         self.dialog_verify_fn = dialog_verify_fn
+        self.representation_recorder = representation_recorder
         self._active_follow_up: _ActiveFollowUp | None = None
         self._dialog_misses = 0
         self.dialog_events: list[DialogEvent] = []
+        self._representation = Representation.FORMULA
+        self._representation_decided_for: str | None = None
+        self._pending_representation: RepresentationEvent | None = None
         self.view = SessionView(
             phase=Phase.GOAL_CONFIRM,
             title=f"目标确认 · {card.name}",
@@ -130,7 +144,12 @@ class SessionEngine:
         return self.card.exercises[self._exercise_pos]
 
     def _set(self, view: SessionView) -> SessionView:
-        """记录并返回当前视图。"""
+        """记录并返回当前视图；降级后自动带上表示形态。"""
+        if (
+            view.representation is None
+            and self._representation is not Representation.FORMULA
+        ):
+            view = replace(view, representation=self._representation)
         self.view = view
         return view
 
@@ -197,6 +216,7 @@ class SessionEngine:
         self.state.exercise_started_at = datetime.now(timezone.utc)
         self._active_follow_up = None
         self._dialog_misses = 0
+        self._reset_representation()
         return self._render_quiz()
 
     def _render_quiz(self, notice: str | None = None) -> SessionView:
@@ -241,6 +261,7 @@ class SessionEngine:
                 notice=f"{REFUSAL_TEXT} 本次不计入连错。"
             )
         judgement = evaluate(exercise, answer)
+        self._record_representation_outcome(judgement.correct)
         self.state.attempts.append(
             {
                 "exercise_id": exercise.id,
@@ -264,6 +285,7 @@ class SessionEngine:
             return self._issue_receipt()
 
         self.state.consecutive_wrong += 1
+        self._prepare_representation()
         self._record_mistake(exercise, answer)
         if self.state.consecutive_wrong >= 3:
             self.state.phase = Phase.WRAPUP
@@ -410,6 +432,7 @@ class SessionEngine:
                 raise ValueError(f"未知错因：{error_type}") from exc
         self.state.phase = Phase.HINT
         self.state.hint_level = automatic_next_level(self.state.hint_level)
+        self._prepare_representation()
         if self.state.diagnosis is not None and self.consent.mistake_book:
             self._safe_write(
                 "mistake",
@@ -448,12 +471,93 @@ class SessionEngine:
             return f"完整推导：{exercise.solution_outline}"
         return "请用自己的话复述本题思路，再说出答案。"
 
+    def _reset_representation(self) -> None:
+        """换题时重置表示形态与待回填事件。"""
+        self._representation = Representation.FORMULA
+        self._representation_decided_for = None
+        self._pending_representation = None
+
+    def _load_representation_signals(self) -> LoadSignals:
+        """收集当前题可用的会话内行为信号。"""
+        elapsed_ratio = 0.0
+        if self.state.exercise_started_at is not None:
+            elapsed = max(
+                0.0,
+                (
+                    datetime.now(timezone.utc)
+                    - self.state.exercise_started_at
+                ).total_seconds(),
+            )
+            try:
+                reference = reference_seconds_from_history(
+                    self.repository.list_receipts(limit=None),
+                    self.card.id,
+                )
+            except (OSError, sqlite3.Error):
+                reference = 0.0
+            if reference > 0:
+                elapsed_ratio = elapsed / reference
+        return LoadSignals(
+            consecutive_wrong=self.state.consecutive_wrong,
+            dialog_misses=self._dialog_misses,
+            hint_requests=len(self.state.hint_requests),
+            elapsed_ratio=elapsed_ratio,
+        )
+
+    def _prepare_representation(self) -> None:
+        """按行为信号决定是否降级；降级后同题不再重复决策。"""
+        exercise_id = self.current_exercise.id
+        if self._representation_decided_for == exercise_id:
+            return
+        decision = choose_representation(
+            self._representation,
+            self._load_representation_signals(),
+        )
+        if not decision.downgraded:
+            return
+        self._representation_decided_for = exercise_id
+        self._representation = decision.target
+        event = RepresentationEvent(
+            exercise_id=exercise_id,
+            card_id=self.card.id,
+            from_repr=decision.base,
+            to_repr=decision.target,
+            triggers=decision.reasons,
+        )
+        self._pending_representation = event
+        if self.representation_recorder is None:
+            return
+        try:
+            self.representation_recorder.record(event)
+        except (OSError, sqlite3.Error):
+            pass
+
+    def _record_representation_outcome(
+        self, correct: bool | None
+    ) -> None:
+        """回填降级后的第一次作答；没有待回填事件时跳过。"""
+        event = self._pending_representation
+        if event is None:
+            return
+        self._pending_representation = None
+        if self.representation_recorder is None:
+            return
+        try:
+            self.representation_recorder.record_outcome(
+                event.id,
+                correct=correct,
+                hint_level=self.state.hint_level,
+            )
+        except (OSError, sqlite3.Error):
+            pass
+
     def _follow_up_view(self, active: _ActiveFollowUp) -> FollowUpView:
         """把内部追问状态转成视图。"""
         return FollowUpView(
             level=active.level,
             prompt=active.prompt,
             supplement=active.supplement,
+            anchor_step_index=active.anchor_step_index,
         )
 
     def _render_follow_up(
@@ -476,7 +580,11 @@ class SessionEngine:
         )
 
     def _start_follow_up(
-        self, level: int, *, supplement: bool = False
+        self,
+        level: int,
+        *,
+        supplement: bool = False,
+        anchor_step_index: int | None = None,
     ) -> FollowUpView | None:
         """尝试在 L3/L4 生成追问；失败时记录降级并返回 None。"""
         if level not in (3, 4):
@@ -514,6 +622,7 @@ class SessionEngine:
             level=level,
             supplement=supplement,
             shown_at=now,
+            anchor_step_index=anchor_step_index,
         )
         return self._follow_up_view(self._active_follow_up)
 
@@ -617,7 +726,9 @@ class SessionEngine:
             self._dialog_misses = 0
             self._active_follow_up = None
             if active.level == 3:
-                self._start_follow_up(4)
+                self._start_follow_up(
+                    4, anchor_step_index=active.anchor_step_index
+                )
                 if self._active_follow_up is not None:
                     self.state.hint_level = 4
                     self.state.max_hint_level = max(
@@ -633,7 +744,9 @@ class SessionEngine:
         if outcome is DialogOutcome.PARTIAL:
             if not active.supplement:
                 self._start_follow_up(
-                    active.level, supplement=True
+                    active.level,
+                    supplement=True,
+                    anchor_step_index=active.anchor_step_index,
                 )
                 if self._active_follow_up is not None:
                     self._record_dialog_event(
@@ -665,7 +778,9 @@ class SessionEngine:
             "追问未命中，降到 L5 完整讲解。"
         )
 
-    def request_hint(self, kind: str) -> SessionView:
+    def request_hint(
+        self, kind: str, *, step_index: int | None = None
+    ) -> SessionView:
         """按门槛发放请求的提示。
 
         步骤与答案请求只把展示层级压到 L4，状态层级不回退；
@@ -673,6 +788,8 @@ class SessionEngine:
 
         Args:
             kind: 请求类型，如 ``step`` / ``answer``。
+            step_index: 可选步骤序号；生成追问时作为锚点，便于学生从
+                当前步骤继续问，而不是回到整道题。
 
         Returns:
             提示阶段视图。
@@ -696,13 +813,16 @@ class SessionEngine:
         self.state.hint_level = level
         self.state.max_hint_level = max(self.state.max_hint_level, level)
         self.state.phase = Phase.HINT
+        self._prepare_representation()
         # 请求步骤/答案只降展示层级，不把 L5 状态退回 L4
         display_level = (
             min(level, MAX_REQUESTED_LEVEL)
             if kind in ("step", "answer")
             else level
         )
-        self._start_follow_up(display_level)
+        self._start_follow_up(
+            display_level, anchor_step_index=step_index
+        )
         if self._active_follow_up is not None:
             return self._render_follow_up(
                 self._active_follow_up,
@@ -890,6 +1010,7 @@ class SessionEngine:
             self.state.exercise_started_at = datetime.now(timezone.utc)
             self._active_follow_up = None
             self._dialog_misses = 0
+            self._reset_representation()
             return self._render_quiz()
 
         self.state.phase = Phase.WRAPUP
