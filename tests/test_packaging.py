@@ -34,6 +34,16 @@ def test_build_config_includes_kc_definitions():
     assert (ROOT / "content" / "kc" / "hs-trig-002.yaml").is_file()
 
 
+def test_build_config_includes_board_and_scenario_content():
+    """构建配置包含分步板书与情境仿真内容。"""
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert '"board/*.yaml"' in pyproject
+    assert '"scenario/*.yaml"' in pyproject
+    assert (ROOT / "content" / "board" / "hs-trig-004-e1.yaml").is_file()
+    assert (ROOT / "content" / "scenario" / "hs-func-004.yaml").is_file()
+
+
 def test_app_module_is_discoverable():
     """app 模块可被导入系统发现。"""
     spec = importlib.util.find_spec("app")

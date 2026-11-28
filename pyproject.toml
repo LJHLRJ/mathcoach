@@ -46,7 +46,7 @@ py-modules = ["app"]
 include = ["mathcoach*", "content*", "static*"]
 
 [tool.setuptools.package-data]
-content = ["*.yaml", "kc/*.yaml", "dialog/*.yaml", "steps/*.yaml", "learning_cards/*.md"]
+content = ["*.yaml", "kc/*.yaml", "dialog/*.yaml", "steps/*.yaml", "learning_cards/*.md", "board/*.yaml", "scenario/*.yaml"]
 "content.highschool" = ["*.yaml"]
 "content.undergraduate" = ["*.yaml"]
 "content.graduate" = ["*.yaml"]

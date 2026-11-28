@@ -2,7 +2,7 @@
 
 本文覆盖从 GitHub Releases 下载桌面版后的安装、首次启动、未签名放行与 SHA256 校验。当前发布版本为 **v0.10.0**（2026-11-28）。
 
-> v0.10.0 资产由 Release 工作流构建后上传；下表先列文件名，大小与 SHA256 待产物发布后补充。
+> v0.10.0 资产由 Release 工作流构建后上传，文件名、大小与 SHA256 见下文“SHA256 校验”。
 
 下载入口：
 
@@ -139,14 +139,14 @@ open /Applications/MathCoach.app
 
 ## SHA256 校验
 
-仓库不提供独立的 `SHA256SUMS` 文件。下表列出 v0.10.0 资产；大小与 SHA256 待产物发布后补充，请以 GitHub Release 页面与 Release Notes 为准。
+仓库不提供独立的 `SHA256SUMS` 文件。下表列出 v0.10.0 资产的大小与 SHA256，取值自 GitHub Release 资产 API 的 `sha256` digest；请以 GitHub Release 页面与 Release Notes 为准。
 
 | 文件 | 大小（字节） | SHA256 |
 |---|---|---|
-| `MathCoachSetup-0.10.0.exe` | 待补充 | 待补充 |
-| `MathCoach-windows.zip` | 待补充 | 待补充 |
-| `MathCoach-0.10.0.dmg` | 待补充 | 待补充 |
-| `MathCoach-macos.zip` | 待补充 | 待补充 |
+| `MathCoachSetup-0.10.0.exe` | 87,131,494 | `e61dfbf7d77603495150e03a38bcbc91ed55b42a1e29d4a1039225f761d11375` |
+| `MathCoach-windows.zip` | 115,883,533 | `0018efa20a93c8c29b260bcd3bfe02ad2d749b7bcba18cfb83a8001bcd2d1a69` |
+| `MathCoach-0.10.0.dmg` | 138,614,856 | `33f2dde841d28067614a22afc2977d68662c3e737f1adf43f8b3b2e0959dc406` |
+| `MathCoach-macos.zip` | 111,747,323 | `f0c3251e26a3aef448cac65ad8ec897b140dbf725beca7dd81f18ab1d48af42c` |
 
 macOS / Linux：
 
@@ -162,7 +162,7 @@ Windows PowerShell：
 Get-FileHash "$env:USERPROFILE\Downloads\MathCoachSetup-0.10.0.exe" -Algorithm SHA256
 ```
 
-预期输出包含 64 位十六进制哈希；PowerShell 还会显示算法名与文件路径。待上表补齐 SHA256 后，将输出与上表逐字符比较；一致即表示文件完整。`shasum` 的常见格式为：
+预期输出包含 64 位十六进制哈希；PowerShell 还会显示算法名与文件路径。将输出与上表逐字符比较；一致即表示文件完整。`shasum` 的常见格式为：
 
 ```text
 <64 位十六进制 SHA256>  MathCoach-0.10.0.dmg
